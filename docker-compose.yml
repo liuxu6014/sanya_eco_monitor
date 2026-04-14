@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sanya-eco-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/sanya_eco.db:/app/sanya_eco.db
+      - ./backend/data:/app/data
+    env_file:
+      - ./backend/.env
+    restart: always
+    # Wait for DB state if needed (not needed for SQLite but good for future)
+    # entrypoint: ["uvicorn", "main:app", ...] is already in Dockerfile
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: sanya-eco-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: always
+
+networks:
+  default:
+    name: sanya-eco-network

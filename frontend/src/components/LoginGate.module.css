@@ -1,0 +1,128 @@
+.shell {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 18% 20%, rgba(0, 212, 255, 0.12), transparent 30%),
+    radial-gradient(circle at 78% 18%, rgba(0, 255, 174, 0.1), transparent 25%),
+    radial-gradient(circle at 50% 100%, rgba(0, 78, 197, 0.2), transparent 35%),
+    #020611;
+}
+
+.backdropGlow {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 35%),
+    radial-gradient(circle at center, rgba(0, 212, 255, 0.08), transparent 45%);
+  pointer-events: none;
+}
+
+.card {
+  position: relative;
+  z-index: 1;
+  width: min(520px, calc(100vw - 40px));
+  padding: 36px 32px 30px;
+  border-radius: 22px;
+  border: 1px solid rgba(0, 212, 255, 0.26);
+  background:
+    linear-gradient(180deg, rgba(10, 21, 47, 0.96) 0%, rgba(4, 10, 24, 0.96) 100%);
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 0 1px rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(18px);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(0, 212, 255, 0.12);
+  border: 1px solid rgba(0, 212, 255, 0.24);
+  color: var(--cyan, #00d4ff);
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+
+.title {
+  margin-top: 18px;
+  color: #fff;
+  font-size: 28px;
+  line-height: 1.35;
+  font-weight: 700;
+}
+
+.subtitle {
+  margin-top: 10px;
+  color: var(--text-dim, #8ba3c7);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.label {
+  display: block;
+  margin-top: 24px;
+  margin-bottom: 10px;
+  color: #dce8ff;
+  font-size: 13px;
+  letter-spacing: 0.6px;
+}
+
+.input {
+  width: 100%;
+  height: 48px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 212, 255, 0.22);
+  background: rgba(5, 12, 28, 0.92);
+  color: #fff;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+
+.input::placeholder {
+  color: rgba(202, 220, 255, 0.38);
+}
+
+.input:focus {
+  border-color: rgba(0, 212, 255, 0.58);
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.12);
+}
+
+.error {
+  margin-top: 12px;
+  color: #ff9aa9;
+  font-size: 13px;
+}
+
+.button {
+  width: 100%;
+  height: 48px;
+  margin-top: 18px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.88) 0%, rgba(0, 96, 255, 0.92) 100%);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+  box-shadow: 0 12px 28px rgba(0, 120, 255, 0.28);
+}
+
+.button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 32px rgba(0, 120, 255, 0.35);
+}
+
+.button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}

@@ -1,0 +1,284 @@
+{
+  "16110669": {
+    "datetime": "2026-04-11 10:11:45",
+    "deviceId": "16110669",
+    "name": "16110669",
+    "eleLists": [
+      {
+        "tfValue": "1 级",
+        "eUnit": "m/s",
+        "eUrl": "https://iot-images.oss-cn-qingdao.aliyuncs.com/html/element/风速.png",
+        "eValue": "0.6",
+        "eKey": "e1",
+        "eName": "风速",
+        "eNum": "108"
+      },
+      {
+        "eUnit": "mm",
+        "eUrl": "https://iot-images.oss-cn-qingdao.aliyuncs.com/html/element/雨量.png",
+        "eValue": "0.0",
+        "eKey": "e2",
+        "eName": "雨量累计",
+        "eNum": "115"
+      },
+      {
+        "eUnit": "℃",
+        "eUrl": "https://iot-images.oss-cn-qingdao.aliyuncs.com/html/element/温度.png",
+        "eValue": "20.6",
+        "eKey": "e3",
+        "eName": "大气温度",
+        "eNum": "101"
+      },
+      {
+        "eUnit": "%RH",
+        "eUrl": "https://iot-images.oss-cn-qingdao.aliyuncs.com/html/element/湿度.png",
+        "eValue": "77.8",
+        "eKey": "e4",
+        "eName": "大气湿度",
+        "eNum": "102"
+      },
+      {
+        "eUnit": "hPa",
+        "eUrl": "https://iot-images.oss-cn-qingdao.aliyuncs.com/html/element/气压.png",
+        "eValue": "954.5",
+        "eKey": "e5",
+        "eName": "数字气压",
+        "eNum": "127"
+      },
+      {
+        "eUnit": "Lux",
+        "eUrl": "https://iot-images.oss-cn-qingdao.aliyuncs.com/html/element/照度.png",
+        "eValue": "37590.0",
+        "eKey": "e6",
+        "eName": "照度",
+        "eNum": "112"
+      },
+      {
+        "tfValue": "东北偏东",
+        "eUnit": "°",
+        "eUrl": "https://iot-images.oss-cn-qingdao.aliyuncs.com/html/element/风向.png",
+        "eValue": "62",
+        "eKey": "e7",
+        "eName": "风向",
+        "eNum": "109"
+      }
+    ],
+    "relLists": []
+  },
+  "16110670": {
+    "datetime": "2026-04-11 10:11:45",
+    "deviceId": "16110670",
+    "name": "16110670",
+    "eleLists": [
+      {
+        "eUnit": "℃",
+        "eUrl": "https://iot-images.oss-cn-qingdao.aliyuncs.com/html/element/温度.png",
+        "eValue": "20.1",
+        "eKey": "e1",
+        "eName": "土壤温度",
+        "eNum": "106"
+      },
+      {
+        "eUnit": "%",
+        "eUrl": "https://iot-images.oss-cn-qingdao.aliyuncs.com/html/element/湿度.png",
+        "eValue": "0.0",
+        "eKey": "e2",
+        "eName": "土壤湿度",
+        "eNum": "107"
+      },
+      {
+        "eUnit": "μS/cm",
+        "eUrl": "https://iot-images.oss-cn-qingdao.aliyuncs.com/html/element/电导率.png",
+        "eValue": "5",
+        "eKey": "e3",
+        "eName": "电导率",
+        "eNum": "220"
+      },
+      {
+        "eUnit": "mg/KG",
+        "eUrl": "https://iot-images.oss-cn-qingdao.aliyuncs.com/html/element/各种离子.png",
+        "eValue": "0",
+        "eKey": "e4",
+        "eName": "氮离子",
+        "eNum": "239"
+      },
+      {
+        "eUnit": "mg/KG",
+        "eUrl": "https://iot-images.oss-cn-qingdao.aliyuncs.com/html/element/各种离子.png",
+        "eValue": "0",
+        "eKey": "e5",
+        "eName": "磷离子",
+        "eNum": "241"
+      },
+      {
+        "eUnit": "mg/KG",
+        "eUrl": "https://iot-images.oss-cn-qingdao.aliyuncs.com/html/element/各种离子.png",
+        "eValue": "0",
+        "eKey": "e6",
+        "eName": "钾离子",
+        "eNum": "240"
+      },
+      {
+        "eUnit": "",
+        "eUrl": "https://iot-images.oss-cn-qingdao.aliyuncs.com/html/element/PH值.png",
+        "eValue": "7.41",
+        "eKey": "e7",
+        "eName": "pH值",
+        "eNum": "128"
+      }
+    ],
+    "relLists": []
+  },
+  "16132920": {
+    "datetime": "2026-04-11 10:11:46",
+    "deviceId": "16132920",
+    "name": "16132920",
+    "eleLists": [
+      {
+        "eUnit": " ",
+        "eUrl": "https://iot-images.oss-cn-qingdao.aliyuncs.com/html/element/温度.png",
+        "eValue": "0.00",
+        "eKey": "e1",
+        "eName": "流速（m\\s）",
+        "eNum": "148"
+      },
+      {
+        "eUnit": "mm",
+        "eUrl": "https://iot-images.oss-cn-qingdao.aliyuncs.com/html/element/雨量.png",
+        "eValue": "0.0",
+        "eKey": "e2",
+        "eName": "雨量累计",
+        "eNum": "115"
+      },
+      {
+        "eUnit": "m",
+        "eUrl": "https://iot-images.oss-cn-qingdao.aliyuncs.com/html/element/水位.png",
+        "eValue": "0.00",
+        "eKey": "e3",
+        "eName": "水位",
+        "eNum": "169"
+      },
+      {
+        "eUnit": " ",
+        "eUrl": "https://iot-images.oss-cn-qingdao.aliyuncs.com/html/element/温度.png",
+        "eValue": "0.00",
+        "eKey": "e4",
+        "eName": "流量（m3\\s）",
+        "eNum": "148"
+      },
+      {
+        "eUnit": " ",
+        "eUrl": "https://iot-images.oss-cn-qingdao.aliyuncs.com/html/element/温度.png",
+        "eValue": "0.00",
+        "eKey": "e5",
+        "eName": "液位压力（kpa）",
+        "eNum": "148"
+      },
+      {
+        "eUnit": "m³",
+        "eUrl": "https://iot-images.oss-cn-qingdao.aliyuncs.com/html/element/流量.png",
+        "eValue": "30",
+        "eKey": "e6",
+        "eName": "累计流量",
+        "eNum": "216"
+      },
+      {
+        "eUnit": " ",
+        "eUrl": "https://iot-images.oss-cn-qingdao.aliyuncs.com/html/element/温度.png",
+        "eValue": "0.00",
+        "eKey": "e7",
+        "eName": "径流（m3\\s）",
+        "eNum": "148"
+      },
+      {
+        "eUnit": " ",
+        "eUrl": "https://iot-images.oss-cn-qingdao.aliyuncs.com/html/element/温度.png",
+        "eValue": "0.000",
+        "eKey": "e8",
+        "eName": "含沙量（kg\\l）",
+        "eNum": "149"
+      }
+    ],
+    "relLists": []
+  },
+  "16116030": {
+    "datetime": "2026-04-11 10:12:24",
+    "deviceId": "16116030",
+    "name": "16116030",
+    "eleLists": [
+      {
+        "eUnit": "",
+        "eUrl": "https://iot-images.oss-cn-qingdao.aliyuncs.com/html/element/PH值.png",
+        "eValue": "7.58",
+        "eKey": "e1",
+        "eName": "PH",
+        "eNum": "128"
+      },
+      {
+        "eUnit": "μS/cm",
+        "eUrl": "https://iot-images.oss-cn-qingdao.aliyuncs.com/html/element/电导率.png",
+        "eValue": "0",
+        "eKey": "e2",
+        "eName": "电导率",
+        "eNum": "220"
+      },
+      {
+        "eUnit": "mg/L",
+        "eUrl": "https://iot-images.oss-cn-qingdao.aliyuncs.com/html/element/一氧化碳.png",
+        "eValue": "76.46",
+        "eKey": "e3",
+        "eName": "COD",
+        "eNum": "2821"
+      },
+      {
+        "eUnit": "mg/L",
+        "eUrl": "https://iot-images.oss-cn-qingdao.aliyuncs.com/html/element/氨氮.png",
+        "eValue": "54.01",
+        "eKey": "e4",
+        "eName": "氨氮",
+        "eNum": "2811"
+      },
+      {
+        "eUnit": "NTU",
+        "eUrl": "https://iot-images.oss-cn-qingdao.aliyuncs.com/html/element/浊度.png",
+        "eValue": "9.6",
+        "eKey": "e5",
+        "eName": "浊度",
+        "eNum": "170"
+      },
+      {
+        "eUnit": "mg/L",
+        "eUrl": "https://iot-images.oss-cn-qingdao.aliyuncs.com/html/element/溶解氧.png",
+        "eValue": "7.21",
+        "eKey": "e6",
+        "eName": "溶解氧",
+        "eNum": "164"
+      },
+      {
+        "eUnit": "℃",
+        "eUrl": "https://iot-images.oss-cn-qingdao.aliyuncs.com/html/element/温度.png",
+        "eValue": "22.8",
+        "eKey": "e7",
+        "eName": "水温",
+        "eNum": "144"
+      },
+      {
+        "eUnit": "mg/L",
+        "eUrl": "https://iot-images.oss-cn-qingdao.aliyuncs.com/html/element/磷.png",
+        "eValue": "0.201",
+        "eKey": "e8",
+        "eName": "总磷",
+        "eNum": "278"
+      },
+      {
+        "eUnit": "mg/L",
+        "eUrl": "https://iot-images.oss-cn-qingdao.aliyuncs.com/html/element/各种离子.png",
+        "eValue": "32.767",
+        "eKey": "e9",
+        "eName": "总氮",
+        "eNum": "280"
+      }
+    ],
+    "relLists": []
+  }
+}

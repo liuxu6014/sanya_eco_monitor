@@ -1,0 +1,130 @@
+.app {
+  width: 100%;
+  height: 1080px;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  background:
+    radial-gradient(circle at 15% 50%, rgba(0, 150, 255, 0.08), transparent 50%),
+    radial-gradient(circle at 85% 30%, rgba(0, 255, 180, 0.05), transparent 50%),
+    radial-gradient(ellipse at 50% 10%, rgba(0, 100, 255, 0.1), transparent 60%),
+    #020611;
+}
+
+.body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: clamp(280px, 20vw, 400px) 1fr clamp(280px, 20vw, 400px);
+  gap: 1.2vw;
+  padding: 1.2vw;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2vw;
+  overflow: hidden;
+  min-height: 0;
+  flex: 1;
+}
+
+/* Map center fills available space */
+.mapWrap {
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+  flex: 1;
+}
+
+/* Panel body overrides so flex children fill height */
+.col :global(.panel-body) {
+  flex: 1;
+  min-height: 0;
+}
+
+/* ... existing corner styles ... */
+:global(.panel-tr) {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 15px;
+  height: 15px;
+  border: 2px solid rgba(0, 212, 255, 0.6);
+  border-left: 0;
+  border-bottom: 0;
+  z-index: 2;
+  pointer-events: none;
+  border-top-right-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+:global(.panel-bl) {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 15px;
+  height: 15px;
+  border: 2px solid rgba(0, 212, 255, 0.6);
+  border-right: 0;
+  border-top: 0;
+  z-index: 2;
+  pointer-events: none;
+  border-bottom-left-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+:global(.stripe) {
+  display: inline-block;
+  width: 3px;
+  height: 13px;
+  background: linear-gradient(180deg, var(--cyan) 0%, rgba(0, 212, 255, 0.15) 100%);
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+:global(.extra) {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+/* Responsive */
+@media (max-width: 1400px) {
+  .body {
+    grid-template-columns: 260px 1fr 260px;
+    gap: 10px;
+    padding: 10px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .body {
+    grid-template-columns: 240px 1fr 240px;
+    gap: 8px;
+    padding: 8px;
+  }
+}
+
+/* For truly narrow screens, consider collapsing or scrolling */
+@media (max-width: 900px) {
+  .body {
+    display: flex;
+    flex-wrap: wrap;
+    overflow-y: auto;
+    grid-template-columns: none;
+  }
+  .col {
+    width: 100%;
+    height: auto;
+    flex: none;
+  }
+  .mapWrap {
+    width: 100%;
+    height: 400px;
+    order: -1;
+  }
+}

@@ -1,0 +1,188 @@
+.header {
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  background: linear-gradient(180deg,
+      rgba(2, 6, 23, 0.7) 0%,
+      rgba(5, 18, 48, 0.5) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0, 180, 255, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  position: relative;
+  z-index: 100;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+/* Bottom glow line - More subtle and cinematic */
+.header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.6), rgba(255, 170, 0, 0.2), rgba(0, 212, 255, 0.6), transparent);
+  box-shadow: 0 -2px 10px rgba(0, 212, 255, 0.4);
+}
+
+/* Animated scan line */
+.scanLine {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.04), transparent);
+  animation: scanMove 4s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes scanMove {
+  to {
+    left: 140%;
+  }
+}
+
+/* ===== Sides ===== */
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 200px;
+}
+
+.location {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--cyan);
+  letter-spacing: 0.5px;
+}
+
+.locDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+  animation: blink 2s ease-in-out infinite;
+}
+
+.date {
+  font-size: 11px;
+  color: var(--text-dim);
+  padding-left: 12px;
+}
+
+.clock {
+  font-size: 24px;
+  font-weight: 300;
+  color: var(--cyan);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 3px;
+  text-shadow: 0 0 15px rgba(0, 212, 255, 0.5);
+}
+
+.btn {
+  background: linear-gradient(180deg, rgba(0, 212, 255, 0.15) 0%, rgba(0, 100, 255, 0.05) 100%);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-top: 1px solid rgba(0, 212, 255, 0.6);
+  border-radius: 6px;
+  backdrop-filter: blur(8px);
+  color: #e0f2fe;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 18px;
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
+  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.btn:hover {
+  background: linear-gradient(180deg, rgba(0, 212, 255, 0.25) 0%, rgba(0, 150, 255, 0.1) 100%);
+  border-color: rgba(0, 212, 255, 0.8);
+  box-shadow: 0 6px 15px rgba(0, 212, 255, 0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+  transform: translateY(-1px);
+  color: #fff;
+}
+
+/* ===== Center ===== */
+.center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.titleBlock {
+  text-align: center;
+}
+
+.title {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: 6px;
+  background: linear-gradient(180deg, #ffffff 0%, #a0e0ff 45%, #00b4ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 12px rgba(0, 212, 255, 0.8));
+  white-space: nowrap;
+}
+
+.subtitle {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 5px;
+  background: linear-gradient(90deg, #00d4ff 0%, #a855f7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-top: 4px;
+  text-transform: uppercase;
+}
+
+/* Decorative arrows */
+.decoLeft,
+.decoRight {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0.8;
+}
+
+.hLine {
+  display: block;
+  width: 40px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--cyan));
+}
+
+.decoRight .hLine {
+  background: linear-gradient(90deg, var(--cyan), transparent);
+}
+
+.arrowA {
+  display: block;
+  width: 0;
+  height: 0;
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+  border-right: 10px solid rgba(0, 212, 255, 0.9);
+}
+
+.arrowB {
+  display: block;
+  width: 0;
+  height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-right: 8px solid rgba(0, 212, 255, 0.5);
+}
