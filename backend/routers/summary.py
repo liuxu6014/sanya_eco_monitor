@@ -17,6 +17,15 @@ router = APIRouter(prefix="/api/summary", tags=["综合概览"])
 async def get_overview(db: AsyncSession = Depends(get_db)):
     """大屏首屏所有关键指标一次性返回"""
     today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    # 分级在线判定阈值
+    REALTIME_THRESHOLD = datetime.now() - timedelta(minutes=15)
+    PERIODIC_THRESHOLD = datetime.now() - timedelta(hours=48)
+
+    def get_status(t, is_realtime=True):
+        if t is None: return "offline"
+        limit = REALTIME_THRESHOLD if is_realtime else PERIODIC_THRESHOLD
+        return "online" if t >= limit else "timeout"
 
     # Latest weather
     weather_res = await db.execute(
@@ -89,7 +98,9 @@ async def get_overview(db: AsyncSession = Depends(get_db)):
                 "sand_content": r.sand_content,
                 "liquid_pressure": r.liquid_pressure,
                 "runoff": r.runoff,
-                "updated_at": r.collection_time.isoformat()
+                "rainfall": r.rainfall,
+                "updated_at": r.collection_time.isoformat(),
+                "status": get_status(r.collection_time, is_realtime=True)
             }
 
     # 2. Water quality
@@ -104,7 +115,9 @@ async def get_overview(db: AsyncSession = Depends(get_db)):
         "tp": wq.total_phosphorus,
         "tn": wq.total_nitrogen,
         "turbidity": wq.turbidity,
-        "updated_at": wq.collection_time.isoformat()
+        "water_temp": wq.temperature,
+        "updated_at": wq.collection_time.isoformat(),
+        "status": get_status(wq.collection_time, is_realtime=True)
     } if wq else None
 
     # 3. Rain gauges
@@ -115,7 +128,8 @@ async def get_overview(db: AsyncSession = Depends(get_db)):
         if r:
             rain_data[code] = {
                 "rainfall": r.rainfall,
-                "updated_at": r.collection_time.isoformat()
+                "updated_at": r.collection_time.isoformat(),
+                "status": get_status(r.collection_time, is_realtime=True)
             }
 
     return {
@@ -142,17 +156,19 @@ async def get_overview(db: AsyncSession = Depends(get_db)):
             },
             "insect": {
                 "total_today": int(today_insect_total),
-                "latest_count": insect.total_count if insect else 0,
+                "latest_count": insect.total_count if insect else None,
                 "top_species": sorted(
                     (insect.species_data or {}).items(), key=lambda x: x[1], reverse=True
                 )[:5] if insect else [],
                 "image_url": insect.image_url if insect else None,
                 "updated_at": insect.collection_time.isoformat() if insect else None,
+                "status": get_status(insect.collection_time, is_realtime=False) if insect else "offline",
             },
             "spore": {
-                "latest_count": spore.total_count if spore else 0,
+                "latest_count": spore.total_count if spore else None,
                 "image_url": spore.image_url if spore else None,
                 "updated_at": spore.collection_time.isoformat() if spore else None,
+                "status": get_status(spore.collection_time, is_realtime=False) if spore else "offline",
             },
             "insect_trend": [
                 {"date": k, "count": v} for k, v in daily_trend.items()
@@ -176,7 +192,9 @@ async def get_overview(db: AsyncSession = Depends(get_db)):
 @router.get("/device-status")
 async def get_device_status(db: AsyncSession = Depends(get_db)):
     """设备在线状态（以最近数据时间判断是否在线）"""
-    threshold = datetime.now() - timedelta(hours=2)
+    # 分级在线判定阈值
+    REALTIME_LIMIT = datetime.now() - timedelta(minutes=15)
+    PERIODIC_LIMIT = datetime.now() - timedelta(hours=48)
 
     async def last_time(model, code=None):
         q = select(model.collection_time).order_by(desc(model.collection_time)).limit(1)
@@ -187,11 +205,25 @@ async def get_device_status(db: AsyncSession = Depends(get_db)):
 
     insect_t  = await last_time(InsectRecord)
     spore_t   = await last_time(SporeRecord)
+    wq_code   = settings.WATER_QUALITY_CODE.strip() or "16116030"
+    wq_t      = await last_time(WaterQualityRecord, wq_code)
 
-    def status(t):
+    def status(t, is_realtime=True):
         if t is None:
             return "offline"
-        return "online" if t >= threshold else "timeout"
+        limit = REALTIME_LIMIT if is_realtime else PERIODIC_LIMIT
+        return "online" if t >= limit else "timeout"
+
+    devices = [
+        {"name": "智能虫情测报灯", "code": "insect", "status": status(insect_t, is_realtime=False), "last_data": insect_t.isoformat() if insect_t else None},
+        {"name": "孢子捕捉仪",     "code": "spore",  "status": status(spore_t, is_realtime=False), "last_data": spore_t.isoformat()  if spore_t  else None},
+        {"name": "面源污染监测站", "code": "water",  "status": status(wq_t, is_realtime=True),     "last_data": wq_t.isoformat() if wq_t else None},
+    ]
+
+    RAIN_CODES = [c.strip() for c in settings.RAIN_GAUGE_CODES.split(",") if c.strip()]
+    for i, code in enumerate(RAIN_CODES, 1):
+        t = await last_time(RainfallRecord, code)
+        devices.append({"name": f"4G雨量计{i}号", "code": f"rain_{code}", "status": status(t, True), "last_data": t.isoformat() if t else None})
 
     RUNOFF_DEVICES = [
         ("16132920", "杧果林径流监测系统1号"),
@@ -201,18 +233,8 @@ async def get_device_status(db: AsyncSession = Depends(get_db)):
         ("16132924", "橡胶林径流监测系统2号"),
         ("16132925", "槟榔林径流监测系统"),
     ]
-
-    devices = [
-        {"name": "智能虫情测报灯", "code": "insect", "status": status(insect_t), "last_data": insect_t.isoformat() if insect_t else None},
-        {"name": "孢子捕捉仪",     "code": "spore",  "status": status(spore_t),  "last_data": spore_t.isoformat()  if spore_t  else None},
-        {"name": "面源污染监测站", "code": "water",  "status": "pending",        "last_data": None},
-        {"name": "4G雨量计1号",    "code": "rain1",  "status": "pending",        "last_data": None},
-        {"name": "4G雨量计2号",    "code": "rain2",  "status": "pending",        "last_data": None},
-        {"name": "4G雨量计3号",    "code": "rain3",  "status": "pending",        "last_data": None},
-    ]
-
     for code, name in RUNOFF_DEVICES:
         t = await last_time(RunoffRecord, code)
-        devices.append({"name": name, "code": f"runoff_{code}", "status": status(t) if t else "pending", "last_data": t.isoformat() if t else None})
+        devices.append({"name": name, "code": f"runoff_{code}", "status": status(t, True), "last_data": t.isoformat() if t else None})
 
     return {"data": devices}

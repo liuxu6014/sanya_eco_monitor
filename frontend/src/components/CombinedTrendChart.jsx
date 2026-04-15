@@ -24,7 +24,7 @@ export default function CombinedTrendChart({ data }) {
 
   const option = {
     backgroundColor: 'transparent',
-    grid: { top: 50, bottom: 35, left: 45, right: 45, containLabel: true },
+    grid: { top: 65, bottom: 35, left: 55, right: 55, containLabel: true },
     tooltip: { 
       ...TOOLTIP, 
       trigger: 'axis', 

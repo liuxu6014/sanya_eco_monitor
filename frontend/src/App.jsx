@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import Header from './components/Header.jsx'
-import WeatherPanel from './components/WeatherPanel.jsx'
-import SoilPanel from './components/SoilPanel.jsx'
+import DeviceStatusPanel from './components/DeviceStatusPanel.jsx'
+import RainGaugePanel from './components/RainGaugePanel.jsx'
 import InsectPanel from './components/InsectPanel.jsx'
 import SporePanel from './components/SporePanel.jsx'
 import MapCenter from './components/MapCenter.jsx'
@@ -16,7 +16,7 @@ import { api } from './utils/api.js'
 import s from './App.module.css'
 
 const IconWeather = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.5 19A4.5 4.5 0 0 0 18 10c-.8-4.4-5.8-6-9-2.5A5.5 5.5 0 0 0 3.5 12C1.5 12.5 1 15.5 2.5 17c1.5 1.5 3 2 4.5 2h10.5z" /></svg>
-const IconSoil = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00ff9d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 12c4 0 6-3 8-3s4 3 8 3c1.5 0 2-1 2-2.5S19 7 12 7 2.5 9 2.5 12z" /><path d="M2.5 17c4 0 6-3 8-3s4 3 8 3" /></svg>
+const IconPulse = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>;
 const IconRunoff = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 8v6a5 5 0 0 1-5 5H8a5 5 0 0 1-5-5V8" /><path d="M3 13l4-4 4 4 4-4 6 6" /></svg>
 const IconWater = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#facc15" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-7.5c-.5 3.5-2 5.9-4 7.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z" /><path d="M9 15a3 3 0 0 0 3 3" /></svg>
 const IconInsect = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2A4 4 0 0 0 8 6v2h8V6a4 4 0 0 0-4-4z" /><path d="M6 10h12v7a6 6 0 0 1-12 0v-7z" /><path d="M4 14l3-3" /><path d="M20 14l-3-3" /><path d="M4 18l3-3" /><path d="M20 18l-3-3" /><path d="M22 6l-3 3" /><path d="M2 6l3 3" /><path d="M12 22v-5" /></svg>
@@ -49,11 +49,7 @@ function DashboardApp() {
   const insectSpecies = usePolling(useCallback(() => api.insectSpecies(7), []), POLL)
   const sporeLatest = usePolling(useCallback(() => api.sporeLatest(), []), POLL)
   const sporeTrend = usePolling(useCallback(() => api.sporeTrend(7), []), POLL)
-  const weatherLatest = usePolling(useCallback(() => api.weatherLatest(), []), POLL)
-  const weatherTrend = usePolling(useCallback(() => api.weatherTrend(24), []), POLL)
-  const soilLatest = usePolling(useCallback(() => api.soilLatest(), []), POLL)
-  const soilTrend = usePolling(useCallback(() => api.soilTrend(24), []), POLL)
-
+  const ecoIndex = usePolling(useCallback(() => api.ecoIndex(), []), POLL)
   const handleTrigger = async () => {
     try {
       await api.triggerCollect()
@@ -66,10 +62,7 @@ function DashboardApp() {
           insectSpecies,
           sporeLatest,
           sporeTrend,
-          weatherLatest,
-          weatherTrend,
-          soilLatest,
-          soilTrend,
+          ecoIndex,
         ].forEach((hook) => hook.refetch())
       }, 3000)
     } catch {}
@@ -85,29 +78,29 @@ function DashboardApp() {
 
         <div className={s.body} style={{ display: activeTab === 'overview' ? undefined : 'none' }}>
           <div className={s.col}>
-            <Panel title="微气象与光照" icon={<IconWeather />} extra="实时" style={{ flex: '1.2' }}>
-              <WeatherPanel weather={weatherLatest.data} trend={weatherTrend.data} />
+            <Panel title="设备物联网络状态" icon={<IconPulse />} extra="心跳监测" style={{ flex: '1.4' }}>
+              <DeviceStatusPanel devices={devices.data} />
             </Panel>
 
-            <Panel title="智慧土壤与肥力" icon={<IconSoil />} extra="实时" style={{ flex: '1.2' }}>
-              <SoilPanel soil={overview.data?.soil} trend={soilTrend.data} />
+            <Panel title="区域降雨监测网络" icon={<IconWeather />} extra="实时监测" style={{ flex: '1' }}>
+              <RainGaugePanel rainData={overview.data?.data?.rain_gauges} />
             </Panel>
 
             <Panel title="水土流失与径流" icon={<IconRunoff />} extra="监测网络" style={{ flex: '1' }}>
-              <RunoffPanel runoffStations={overview.data?.runoff_stations} />
+              <RunoffPanel runoffStations={overview.data?.data?.runoff_stations} />
             </Panel>
           </div>
 
           <div className={s.mapWrap}>
-            <MapCenter overview={overview.data} />
+            <MapCenter overview={overview.data?.data} />
           </div>
 
           <div className={s.col}>
             <Panel title="面源水质污染负荷" icon={<IconWater />} extra="告警监控" style={{ flex: '1.2' }}>
-              <WaterPanel water={overview.data?.water_quality} />
+              <WaterPanel water={overview.data?.data?.water_quality} />
             </Panel>
 
-            <Panel title="虫情预警网络" icon={<IconInsect />} extra="7日" style={{ flex: '1.4' }}>
+            <Panel title="虫情预警网络" icon={<IconInsect />} extra="7日" style={{ flex: '2.2' }}>
               <InsectPanel latest={insectLatest.data} trend={insectTrend.data} species={insectSpecies.data} />
             </Panel>
 

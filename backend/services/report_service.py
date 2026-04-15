@@ -110,8 +110,6 @@ class ReportService:
     ) -> dict[str, Any]:
         start_dt, end_dt = _date_range_bounds(start_date, end_date)
 
-        weather = await self._aggregate_weather(db, start_dt, end_dt)
-        soil = await self._aggregate_soil(db, start_dt, end_dt)
         insect = await self._aggregate_insect(db, start_dt, end_dt)
         spore = await self._aggregate_spore(db, start_dt, end_dt)
         water_quality = await self._aggregate_water_quality(db, start_dt, end_dt)
@@ -123,8 +121,6 @@ class ReportService:
                 "start": start_date.strftime("%Y-%m-%d"),
                 "end": end_date.strftime("%Y-%m-%d"),
             },
-            "weather": weather,
-            "soil": soil,
             "insect": insect,
             "spore": spore,
             "water_quality": water_quality,
@@ -274,11 +270,23 @@ class ReportService:
             for d, c in sorted(daily.items())
         ]
 
+        # Collect capture images grouped by device
+        capture_images: list[dict] = [
+            {
+                "time": r.collection_time.strftime("%Y-%m-%d %H:%M"),
+                "device_code": r.device_code,
+                "url": r.image_url,
+            }
+            for r in records
+            if r.image_url
+        ]
+
         return {
             "total_count": total_count,
             "records_count": len(records),
             "top_species": [list(item) for item in top_species],
             "daily": daily_list,
+            "capture_images": capture_images,
         }
 
     async def _aggregate_spore(
@@ -307,10 +315,22 @@ class ReportService:
             for d, c in sorted(daily.items())
         ]
 
+        # Collect capture images
+        capture_images: list[dict] = [
+            {
+                "time": r.collection_time.strftime("%Y-%m-%d %H:%M"),
+                "device_code": r.device_code,
+                "url": r.image_url,
+            }
+            for r in records
+            if r.image_url
+        ]
+
         return {
             "total_count": total_count,
             "records_count": len(records),
             "daily": daily_list,
+            "capture_images": capture_images,
         }
 
     async def _aggregate_water_quality(
@@ -379,24 +399,73 @@ class ReportService:
         start_dt: datetime,
         end_dt: datetime,
     ) -> dict[str, Any]:
+        DEVICE_NAMES = {
+            '16132920': '杧果林1监测点',
+            '16132921': '橡胶林1监测点',
+            '16132922': '次生林监测点',
+            '16132923': '杧果林2监测点',
+            '16132924': '橡胶林2监测点',
+            '16132925': '槟榔林监测点',
+        }
+
         result = await db.execute(
             select(RunoffRecord).where(
                 RunoffRecord.collection_time >= start_dt,
                 RunoffRecord.collection_time <= end_dt,
-            )
+            ).order_by(RunoffRecord.collection_time)
         )
         records = result.scalars().all()
         if not records:
-            return {"records_count": 0}
+            return {"records_count": 0, "by_device": {}}
 
-        flows = [r.flow_rate for r in records if r.flow_rate is not None]
-        levels = [r.water_level for r in records if r.water_level is not None]
+        # Per-device aggregation
+        by_device: dict[str, dict] = defaultdict(lambda: {
+            "flow_speeds": [], "flow_rates": [], "total_flows": [],
+            "water_levels": [], "sand_contents": [], "liquid_pressures": [],
+            "runoffs": [], "rainfalls": [], "count": 0
+        })
+
+        for r in records:
+            d = by_device[r.device_code]
+            d["count"] += 1
+            for field, lst in [
+                (r.flow_speed, "flow_speeds"), (r.flow_rate, "flow_rates"),
+                (r.total_flow, "total_flows"), (r.water_level, "water_levels"),
+                (r.sand_content, "sand_contents"), (r.liquid_pressure, "liquid_pressures"),
+                (r.runoff, "runoffs"), (r.rainfall, "rainfalls"),
+            ]:
+                if field is not None:
+                    d[lst].append(field)
+
+        device_summary = {}
+        for code, d in by_device.items():
+            device_summary[code] = {
+                "name": DEVICE_NAMES.get(code, code),
+                "records_count": d["count"],
+                "avg_flow_speed":     _safe_avg(d["flow_speeds"]),
+                "max_flow_speed":     _round_or_none(max(d["flow_speeds"])) if d["flow_speeds"] else None,
+                "avg_flow_rate":      _safe_avg(d["flow_rates"]),
+                "max_flow_rate":      _round_or_none(max(d["flow_rates"])) if d["flow_rates"] else None,
+                "total_flow_latest":  _round_or_none(d["total_flows"][-1]) if d["total_flows"] else None,
+                "avg_water_level":    _safe_avg(d["water_levels"]),
+                "max_water_level":    _round_or_none(max(d["water_levels"])) if d["water_levels"] else None,
+                "avg_sand_content":   _safe_avg(d["sand_contents"]),
+                "avg_liquid_pressure":_safe_avg(d["liquid_pressures"]),
+                "total_runoff":       _round_or_none(sum(d["runoffs"])) if d["runoffs"] else 0.0,
+                "total_rainfall":     _round_or_none(sum(d["rainfalls"])) if d["rainfalls"] else 0.0,
+            }
+
+        # Overall aggregated values across all devices
+        all_flows = [r.flow_rate for r in records if r.flow_rate is not None]
+        all_levels = [r.water_level for r in records if r.water_level is not None]
 
         return {
             "records_count": len(records),
-            "avg_flow_rate": _safe_avg(flows),
-            "avg_water_level": _safe_avg(levels),
-            "max_flow_rate": _round_or_none(max(flows)) if flows else None,
+            "device_count": len(by_device),
+            "avg_flow_rate": _safe_avg(all_flows),
+            "max_flow_rate": _round_or_none(max(all_flows)) if all_flows else None,
+            "avg_water_level": _safe_avg(all_levels),
+            "by_device": device_summary,
         }
 
     # ------------------------------------------------------------------
@@ -919,63 +988,7 @@ class ReportService:
         # Build HTML sections
         # ----------------------------------------------------------------
 
-        # Section 2: Weather
-        sec_weather = f"""
-<section class="report-section" id="sec-weather">
-  <h2 class="sec-title"><span class="sec-num">二</span>气象数据监测</h2>
-  <div class="kpi-row">
-    <div class="kpi-card">
-      <div class="kpi-label">监测记录</div>
-      <div class="kpi-value">{_v(w.get('records_count'))}<span class="kpi-unit">条</span></div>
-    </div>
-    <div class="kpi-card kpi-warm">
-      <div class="kpi-label">平均气温</div>
-      <div class="kpi-value">{_v(w.get('avg_temp'), '°C')}</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-label">最高气温</div>
-      <div class="kpi-value">{_v(w.get('max_temp'), '°C')}</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-label">最低气温</div>
-      <div class="kpi-value">{_v(w.get('min_temp'), '°C')}</div>
-    </div>
-    <div class="kpi-card kpi-blue">
-      <div class="kpi-label">平均湿度</div>
-      <div class="kpi-value">{_v(w.get('avg_humidity'), '%')}</div>
-    </div>
-    <div class="kpi-card kpi-blue">
-      <div class="kpi-label">累计降雨量</div>
-      <div class="kpi-value">{_v(w.get('total_rainfall'), 'mm', '0mm')}</div>
-    </div>
-  </div>
-  {_render_section_figures('weather')}
-</section>"""
-
-        # Section 3: Soil
-        sec_soil = f"""
-<section class="report-section" id="sec-soil">
-  <h2 class="sec-title"><span class="sec-num">三</span>土壤墒情监测</h2>
-  <div class="kpi-row">
-    <div class="kpi-card">
-      <div class="kpi-label">监测记录</div>
-      <div class="kpi-value">{_v(s.get('records_count'))}<span class="kpi-unit">条</span></div>
-    </div>
-    <div class="kpi-card kpi-green">
-      <div class="kpi-label">10 cm 平均墒情</div>
-      <div class="kpi-value">{_v(s.get('avg_moisture_10cm'), '%')}</div>
-    </div>
-    <div class="kpi-card kpi-green">
-      <div class="kpi-label">20 cm 平均墒情</div>
-      <div class="kpi-value">{_v(s.get('avg_moisture_20cm'), '%')}</div>
-    </div>
-    <div class="kpi-card kpi-green">
-      <div class="kpi-label">40 cm 平均墒情</div>
-      <div class="kpi-value">{_v(s.get('avg_moisture_40cm'), '%')}</div>
-    </div>
-  </div>
-  {_render_section_figures('soil')}
-</section>"""
+        # (Weather and Soil sections removed)
 
         # Section 4: Insect
         species_rows = "".join(
@@ -994,7 +1007,7 @@ class ReportService:
 
         sec_insect = f"""
 <section class="report-section" id="sec-insect">
-  <h2 class="sec-title"><span class="sec-num">四</span>虫情测报监测</h2>
+  <h2 class="sec-title"><span class="sec-num">二</span>虫情测报监测</h2>
   <div class="kpi-row">
     <div class="kpi-card">
       <div class="kpi-label">监测记录</div>
@@ -1017,7 +1030,7 @@ class ReportService:
         # Section 5: Spore
         sec_spore = f"""
 <section class="report-section" id="sec-spore">
-  <h2 class="sec-title"><span class="sec-num">五</span>孢子捕捉监测</h2>
+  <h2 class="sec-title"><span class="sec-num">三</span>孢子捕捉监测</h2>
   <div class="kpi-row">
     <div class="kpi-card">
       <div class="kpi-label">监测记录</div>
@@ -1039,7 +1052,7 @@ class ReportService:
 
         sec_ai = f"""
 <section class="report-section ai-section" id="sec-ai">
-  <h2 class="sec-title"><span class="sec-num">六</span>AI 智能综合分析报告
+  <h2 class="sec-title"><span class="sec-num">四</span>橡胶林近自然化改造生态效益评估报告
     <span class="ai-badge">DeepSeek</span>
   </h2>
   {ai_body}
@@ -1567,8 +1580,8 @@ body {{
      封面
      ============================================================ -->
 <div class="cover" {cover_style}>
-  <div class="cover-platform">三亚市天涯区农业农村局 · 智慧农业生态监测平台</div>
-  <div class="cover-title">农业生态环境监测报告</div>
+  <div class="cover-platform">三亚市天涯区橡胶林近自然化改造和农田提升监测平台</div>
+  <div class="cover-title">橡胶林近自然化改造生态效益评估报告</div>
   <div class="cover-subtitle">{report_type}</div>
   <div class="cover-meta">
     <div class="cover-meta-item">
@@ -1598,11 +1611,9 @@ body {{
   <div class="toc-title">目 &nbsp; 录</div>
   <ul class="toc-list">
     <li><a href="#sec-overview"><span class="toc-num">一、</span>监测期数据概览</a></li>
-    <li><a href="#sec-weather"><span class="toc-num">二、</span>气象数据监测</a></li>
-    <li><a href="#sec-soil"><span class="toc-num">三、</span>土壤墒情监测</a></li>
-    <li><a href="#sec-insect"><span class="toc-num">四、</span>虫情测报监测</a></li>
-    <li><a href="#sec-spore"><span class="toc-num">五、</span>孢子捕捉监测</a></li>
-    <li><a href="#sec-ai"><span class="toc-num">六、</span>AI 智能综合分析报告</a></li>
+    <li><a href="#sec-insect"><span class="toc-num">二、</span>虫情测报监测</a></li>
+    <li><a href="#sec-spore"><span class="toc-num">三、</span>孢子捕捉监测</a></li>
+    <li><a href="#sec-ai"><span class="toc-num">四、</span>橡胶林近自然化改造生态效益评估报告</a></li>
   </ul>
 </div>
 
@@ -1616,12 +1627,8 @@ body {{
     <h2 class="sec-title"><span class="sec-num">一</span>监测期数据概览</h2>
     <div class="overview-grid">
       <div class="overview-item">
-        <div class="overview-label">气象记录</div>
-        <div class="overview-value">{_v(w.get('records_count'), '', '0')}<span class="overview-unit">条</span></div>
-      </div>
-      <div class="overview-item">
-        <div class="overview-label">墒情记录</div>
-        <div class="overview-value">{_v(s.get('records_count'), '', '0')}<span class="overview-unit">条</span></div>
+        <div class="overview-label">水质记录</div>
+        <div class="overview-value">{_v(summary_dict.get('water_quality', {}).get('records_count'), '', '0')}<span class="overview-unit">条</span></div>
       </div>
       <div class="overview-item">
         <div class="overview-label">虫情捕获</div>
@@ -1637,13 +1644,11 @@ body {{
       </div>
       <div class="overview-item">
         <div class="overview-label">累计降雨</div>
-        <div class="overview-value">{_v(w.get('total_rainfall'), '', '0')}<span class="overview-unit">mm</span></div>
+        <div class="overview-value">{_v(summary_dict.get('rain', {}).get('total_rainfall'), '', '0')}<span class="overview-unit">mm</span></div>
       </div>
     </div>
   </section>
 
-  {sec_weather}
-  {sec_soil}
   {sec_insect}
   {sec_spore}
   {sec_ai}
@@ -1651,8 +1656,8 @@ body {{
 </div><!-- /report-body -->
 
 <footer class="page-footer">
-  <strong>三亚市天涯区农业农村局智慧农业生态监测平台</strong>&nbsp;·&nbsp;
-  数据来源：天涯区在线监测设备网络&nbsp;·&nbsp;
+  <strong>三亚市天涯区橡胶林近自然化改造和农田提升监测平台</strong>&nbsp;·&nbsp;
+  数据来源：橡胶林生态监测设备网络&nbsp;·&nbsp;
   报告生成时间：{generated_at}&nbsp;·&nbsp;
   AI 分析由 DeepSeek 提供支持
 </footer>

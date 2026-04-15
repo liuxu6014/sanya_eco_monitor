@@ -62,22 +62,28 @@ const DEVICES = [
     lat: 18.349816, lng: 109.362321,
     color: '#d500f9',
     labelCenter: [-160, -80],
-    fields: (d) => [
-      { label: '最新捕获', value: d?.spore?.latest_count ?? '—', unit: '个' },
-      { label: '状态', value: d?.spore?.latest_count != null ? '正常' : '待接入', unit: '' },
-    ],
+    fields: (d) => {
+      const s = d?.spore?.status
+      return [
+        { label: '最新捕获', value: d?.spore?.latest_count ?? '—', unit: '个' },
+        { label: '状态', value: s === 'online' ? '在线' : (s ? '离线' : '待接入'), unit: '' },
+      ]
+    },
   },
   {
     id: 'insect',
-    name: '虫情测报灯',
+    name: '智能虫情测报灯',
     code: 'PBCR48F-340838-0001',
     lat: 18.349816, lng: 109.362321,
     color: '#ff1744',
     labelCenter: [-140, -120],
-    fields: (d) => [
-      { label: '今日捕获', value: d?.insect?.total_today ?? '—', unit: '只' },
-      { label: '最新状态', value: d?.insect?.latest_count != null ? '正常' : '待接入', unit: '' },
-    ],
+    fields: (d) => {
+      const s = d?.insect?.status
+      return [
+        { label: '今日捕获', value: d?.insect?.total_today ?? '—', unit: '只' },
+        { label: '状态', value: s === 'online' ? '在线' : (s ? '离线' : '待接入'), unit: '' },
+      ]
+    },
   },
   // ── 底部独立站点 ──────────────────────────────────────
   {
@@ -89,117 +95,157 @@ const DEVICES = [
     labelCenter: [140, -100],
     fields: (d) => {
       const wq = d?.water_quality
+      const s = wq?.status
       return [
         { label: 'PH值', value: wq?.ph ?? '—', unit: '' },
         { label: '溶解氧', value: wq?.do ?? '—', unit: 'mg/L' },
-        { label: '状态', value: wq ? '在线' : '接入中', unit: '' },
+        { label: '状态', value: s === 'online' ? '在线' : (s ? '离线' : '待接入'), unit: '' },
       ]
     },
   },
   // ── 右侧密集区域（已验证互不重叠）──────────────────────
   {
     id: 'runoff_mg1',
-    name: '杧果林径流 #1',
+    name: '杧果林径流监测系统1号',
     code: '16132920',
     lat: 18.3640213, lng: 109.4821167,
     color: '#ff6d00',
     labelCenter: [180, 80],
     fields: (d) => {
       const r = d?.runoff_stations?.['16132920']
-      return [{ label: '流量', value: r?.flow_rate ?? '—', unit: 'm³/h' }]
+      const s = r?.status
+      return [
+        { label: '流量', value: r?.flow_rate ?? '—', unit: 'm³/h' },
+        { label: '状态', value: s === 'online' ? '在线' : (s ? '离线' : '待接入'), unit: '' }
+      ]
     },
   },
   {
     id: 'rain1',
-    name: '4G雨量计 #1',
+    name: '4G雨量计1号',
     code: '16132920',
     lat: 18.3640213, lng: 109.4821167,
     color: '#2979ff',
     labelCenter: [100, 160],
-    fields: (d) => [
-      { label: '雨量', value: d?.rain_gauges?.['16132920']?.rainfall ?? '—', unit: 'mm' }
-    ],
+    fields: (d) => {
+      const g = d?.rain_gauges?.['16132920']
+      const s = g?.status
+      return [
+        { label: '雨量', value: g?.rainfall ?? '—', unit: 'mm' },
+        { label: '状态', value: s === 'online' ? '在线' : (s ? '离线' : '待接入'), unit: '' }
+      ]
+    },
   },
   {
     id: 'runoff_xj1',
-    name: '橡胶林径流 #1',
+    name: '橡胶林径流监测系统1号',
     code: '16132921',
     lat: 18.3628883, lng: 109.4733582,
     color: '#aeea00',
     labelCenter: [-160, 140],
     fields: (d) => {
       const r = d?.runoff_stations?.['16132921']
-      return [{ label: '流量', value: r?.flow_rate ?? '—', unit: 'm³/h' }]
+      const s = r?.status
+      return [
+        { label: '流量', value: r?.flow_rate ?? '—', unit: 'm³/h' },
+        { label: '状态', value: s === 'online' ? '在线' : (s ? '离线' : '待接入'), unit: '' }
+      ]
     },
   },
   {
     id: 'rain2',
-    name: '4G雨量计 #2',
+    name: '4G雨量计2号',
     code: '16132921',
     lat: 18.3628883, lng: 109.4733582,
     color: '#2979ff',
     labelCenter: [-200, 0],
-    fields: (d) => [
-      { label: '雨量', value: d?.rain_gauges?.['16132921']?.rainfall ?? '—', unit: 'mm' }
-    ],
+    fields: (d) => {
+      const g = d?.rain_gauges?.['16132921']
+      const s = g?.status
+      return [
+        { label: '雨量', value: g?.rainfall ?? '—', unit: 'mm' },
+        { label: '状态', value: s === 'online' ? '在线' : (s ? '离线' : '待接入'), unit: '' }
+      ]
+    },
   },
   {
     id: 'runoff_mg2',
-    name: '杧果林径流 #2',
+    name: '杧果林径流监测系统2号',
     code: '16132923',
     lat: 18.3672924, lng: 109.4803925,
     color: '#ff6d00',
     labelCenter: [-180, -140],
     fields: (d) => {
       const r = d?.runoff_stations?.['16132923']
-      return [{ label: '流量', value: r?.flow_rate ?? '—', unit: 'm³/h' }]
+      const s = r?.status
+      return [
+        { label: '流量', value: r?.flow_rate ?? '—', unit: 'm³/h' },
+        { label: '状态', value: s === 'online' ? '在线' : (s ? '离线' : '待接入'), unit: '' }
+      ]
     },
   },
   {
     id: 'runoff_xj2',
-    name: '橡胶林径流 #2',
+    name: '橡胶林径流监测系统2号',
     code: '16132924',
     lat: 18.3700542, lng: 109.4898224,
     color: '#aeea00',
     labelCenter: [220, -60],
     fields: (d) => {
       const r = d?.runoff_stations?.['16132924']
-      return [{ label: '流量', value: r?.flow_rate ?? '—', unit: 'm³/h' }]
+      const s = r?.status
+      return [
+        { label: '流量', value: r?.flow_rate ?? '—', unit: 'm³/h' },
+        { label: '状态', value: s === 'online' ? '在线' : (s ? '离线' : '待接入'), unit: '' }
+      ]
     },
   },
   {
     id: 'runoff_cs',
-    name: '次生林径流',
+    name: '次生林径流监测系统',
     code: '16132922',
     lat: 18.3940544, lng: 109.4813004,
     color: '#1de9b6',
     labelCenter: [120, -100],
     fields: (d) => {
       const r = d?.runoff_stations?.['16132922']
-      return [{ label: '流量', value: r?.flow_rate ?? '—', unit: 'm³/h' }]
+      const s = r?.status
+      return [
+        { label: '流量', value: r?.flow_rate ?? '—', unit: 'm³/h' },
+        { label: '状态', value: s === 'online' ? '在线' : (s ? '离线' : '待接入'), unit: '' }
+      ]
     },
   },
   {
     id: 'rain3',
-    name: '4G雨量计 #3',
+    name: '4G雨量计3号',
     code: '16132922',
     lat: 18.3940544, lng: 109.4813004,
     color: '#2979ff',
     labelCenter: [240, -20],
-    fields: (d) => [
-      { label: '雨量', value: d?.rain_gauges?.['16132922']?.rainfall ?? '—', unit: 'mm' }
-    ],
+    fields: (d) => {
+      const g = d?.rain_gauges?.['16132922']
+      const s = g?.status
+      return [
+        { label: '雨量', value: g?.rainfall ?? '—', unit: 'mm' },
+        { label: '状态', value: s === 'online' ? '在线' : (s ? '离线' : '待接入'), unit: '' }
+      ]
+    },
   },
   {
     id: 'runoff_bl',
-    name: '槟榔林径流',
+    name: '槟榔林径流监测系统',
     code: '16132925',
     lat: 18.3916378, lng: 109.4681549,
     color: '#ff4081',
     labelCenter: [-100, -160],
     fields: (d) => {
       const r = d?.runoff_stations?.['16132925']
-      return [{ label: '流量', value: r?.flow_rate ?? '—', unit: 'm³/h' }]
+      const s = r?.status
+      return [
+        { label: '流量', value: r?.flow_rate ?? '—', unit: 'm³/h' },
+        { label: '状态', value: s === 'online' ? '在线' : (s ? '离线' : '待接入'), unit: '' }
+      ]
     },
   },
 ]
@@ -231,9 +277,11 @@ function MarkerPixelTracker({ onUpdate }) {
 }
 
 // ─── DraggableLabel ──────────────────────────────────────────────────────────
-// 单个可拖动的气泡标签，渲染在 overlay div 中。
-function DraggableLabel({ dev, content, x, y, onDrag, onClick }) {
+function DraggableLabel({ dev, content, x, y, onDrag, onClick, fontScale = 1 }) {
   const dragRef = useRef(null)
+  const baseName = 11 * fontScale
+  const baseVal  = 10 * fontScale
+  const baseUnit =  9 * fontScale
 
   const onMouseDown = (e) => {
     if (e.button !== 0) return
@@ -280,14 +328,14 @@ function DraggableLabel({ dev, content, x, y, onDrag, onClick }) {
         zIndex: 500,
       }}
     >
-      <div style={{ fontSize: 11, fontWeight: 600, color: dev.color, letterSpacing: '.4px', marginBottom: 2 }}>
+      <div style={{ fontSize: baseName, fontWeight: 600, color: dev.color, letterSpacing: '.4px', marginBottom: 2 }}>
         {content.name}
       </div>
-      <div style={{ fontSize: 10, color: 'rgba(200,220,255,.7)' }}>
+      <div style={{ fontSize: baseVal, color: 'rgba(200,220,255,.7)' }}>
         {content.label}:{' '}
         <span style={{ color: '#fff', fontWeight: 700 }}>{content.value}</span>
         {content.unit && (
-          <span style={{ color: 'rgba(200,220,255,.5)', fontSize: 9 }}> {content.unit}</span>
+          <span style={{ color: 'rgba(200,220,255,.5)', fontSize: baseUnit }}> {content.unit}</span>
         )}
       </div>
     </div>
@@ -369,6 +417,17 @@ export default function MapCenter({ overview }) {
   const [resetTrigger, setResetTrigger] = useState(0)
   const [markerPixels, setMarkerPixels] = useState({})   // { id: {x,y} } 标记点屏幕坐标
   const [hiddenLabels, setHiddenLabels] = useState(new Set()) // 被隐藏的标签 id
+  const [labelFontScale, setLabelFontScale] = useState(() => {
+    try { return parseFloat(localStorage.getItem('sanyaEcoLabelFontScale') || '1') } catch { return 1 }
+  })
+
+  const changeFontScale = (delta) => {
+    setLabelFontScale(prev => {
+      const next = Math.round(Math.min(2.5, Math.max(0.5, prev + delta)) * 10) / 10
+      localStorage.setItem('sanyaEcoLabelFontScale', next.toString())
+      return next
+    })
+  }
 
   const [{ initCenter, initZoom }] = useState(() => {
     let c = DEFAULT_CENTER, z = DEFAULT_ZOOM
@@ -394,7 +453,7 @@ export default function MapCenter({ overview }) {
     return init
   })
 
-  const data = overview?.data || {}
+  const data = overview || {}
 
   // 标记点屏幕坐标更新回调（由 MarkerPixelTracker 驱动）
   const handlePixelUpdate = useCallback((positions) => {
@@ -506,6 +565,7 @@ export default function MapCenter({ overview }) {
                   content={content}
                   x={lx}
                   y={ly}
+                  fontScale={labelFontScale}
                   onDrag={(nx, ny) => handleLabelDrag(dev.id, nx, ny)}
                   onClick={() => {
                     setOpenCards(prev => ({ ...prev, [dev.id]: { x: lx + 20, y: ly + 20 } }))
@@ -556,15 +616,31 @@ export default function MapCenter({ overview }) {
           }}
           style={{ cursor: 'pointer' }}
         >
-          <span>◈</span> 农田全局态势
+          <span>◈</span> 全局态势
         </button>
+
+        {/* 右侧：标签字体大小调节 */}
+        <div className={s.labelSizeCtrl}>
+          <button
+            className={s.labelSizeBtn}
+            title="缩小标签"
+            onClick={() => changeFontScale(-0.1)}
+            disabled={labelFontScale <= 0.5}
+          >－</button>
+          <span className={s.labelSizeVal}>{Math.round(labelFontScale * 100)}%</span>
+          <button
+            className={s.labelSizeBtn}
+            title="放大标签"
+            onClick={() => changeFontScale(0.1)}
+            disabled={labelFontScale >= 2.5}
+          >＋</button>
+        </div>
         <div className={s.stats}>
           <div className={s.statItem}>
             <div className={s.statNum} style={{ color: 'var(--cyan)' }}>
               {DEVICES.filter(dev => {
-                const f = dev.fields(data);
-                const statusField = f.find(x => x.label === '状态' || x.label === '最新状态');
-                return statusField ? (statusField.value === '正常' || statusField.value === '在线') : (f[0].value !== '—');
+                const s = dev.fields(data).find(f => f.label === '状态')?.value;
+                return s === '在线';
               }).length}
             </div>
             <div className={s.statLabel}>在线设备</div>
@@ -572,12 +648,11 @@ export default function MapCenter({ overview }) {
           <div className={s.statItem}>
             <div className={s.statNum} style={{ color: 'var(--gold)' }}>
               {DEVICES.filter(dev => {
-                const f = dev.fields(data);
-                const statusField = f.find(x => x.label === '状态' || x.label === '最新状态');
-                return statusField ? (statusField.value === '待接入' || statusField.value === '接入中') : (f[0].value === '—');
+                const s = dev.fields(data).find(f => f.label === '状态')?.value;
+                return s === '离线' || s === '待接入';
               }).length}
             </div>
-            <div className={s.statLabel}>待接入</div>
+            <div className={s.statLabel}>状态异常/未结</div>
           </div>
           <div className={s.statItem}>
             <div className={s.statNum} style={{ color: 'var(--green)' }}>
@@ -587,9 +662,9 @@ export default function MapCenter({ overview }) {
           </div>
           <div className={s.statItem}>
             <div className={s.statNum} style={{ color: '#ff7043' }}>
-              {data.weather?.temperature != null ? `${data.weather.temperature}°` : '—'}
+              {data.water_quality?.cod != null ? `${data.water_quality.cod}` : '—'}
             </div>
-            <div className={s.statLabel}>当前气温</div>
+            <div className={s.statLabel}>水体 COD</div>
           </div>
         </div>
       </div>

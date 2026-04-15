@@ -13,7 +13,7 @@ export default function InsectPanel({ latest, trend, species }) {
     grid: { top:14, bottom:22, left:42, right:8 },
     tooltip: { ...TOOLTIP, trigger:'axis' },
     xAxis: { type:'category', data:td.map(d=>d.date), axisLabel:{color:'#8fc8e8',fontSize:10,hideOverlap:true}, axisLine:{lineStyle:{color:'#1a3a55'}}, splitLine:{show:false} },
-    yAxis: { type:'value', minInterval:1, axisLabel:{color:'#8fc8e8',fontSize:10}, splitLine:{lineStyle:{color:'rgba(0,120,200,0.15)'}}, axisLine:{show:false} },
+    yAxis: { type:'value', minInterval:1, splitNumber:4, axisLabel:{color:'#8fc8e8',fontSize:9,hideOverlap:true}, splitLine:{lineStyle:{color:'rgba(0,120,200,0.15)'}}, axisLine:{show:false} },
     series: [{
       type:'bar', data:td.map(d=>d.total), barMaxWidth:16,
       itemStyle: { color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:'rgba(255,112,67,.95)'},{offset:1,color:'rgba(255,112,67,.2)'}]}, borderRadius:[3,3,0,0] },
@@ -70,11 +70,11 @@ export default function InsectPanel({ latest, trend, species }) {
       )}
 
       {/* 7-day bar */}
-      <div style={{ flexShrink:0, height:110 }}>
+      <div style={{ flexShrink:0, height:85 }}>
         <div style={{ fontSize:10, color:'var(--text-muted)' }}>7日捕获趋势（只）</div>
         {td.length > 0
-          ? <ReactECharts option={barOpt} style={{ height:100 }} opts={{ renderer:'canvas' }} />
-          : <Empty h={100} />}
+          ? <ReactECharts option={barOpt} style={{ height:76 }} opts={{ renderer:'canvas' }} />
+          : <Empty h={76} />}
       </div>
 
       <div className="divider" />

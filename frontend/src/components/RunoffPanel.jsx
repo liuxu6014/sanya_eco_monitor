@@ -1,51 +1,78 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+
+const DEVICE_NAMES = {
+  '16132920': '杧果林1监测点',
+  '16132921': '橡胶林1监测点',
+  '16132922': '次生林监测点',
+  '16132923': '杧果林2监测点',
+  '16132924': '橡胶林2监测点',
+  '16132925': '槟榔林监测点',
+};
+
+const ALL_CODES = ['16132920', '16132921', '16132922', '16132923', '16132924', '16132925'];
 
 export default function RunoffPanel({ runoffStations }) {
-  const [activeCode, setActiveCode] = useState(null);
+  const [activeCode, setActiveCode] = useState(ALL_CODES[0]);
+  const [isAutoPlay, setIsAutoPlay] = useState(true);
+  const timerRef = useRef(null);
 
-  // Initialize activeCode to the first available station with data
   useEffect(() => {
-    if (runoffStations && Object.keys(runoffStations).length > 0) {
-      if (!activeCode || !runoffStations[activeCode]) {
-        setActiveCode(Object.keys(runoffStations)[0]);
-      }
+    if (!isAutoPlay) return;
+
+    timerRef.current = setInterval(() => {
+      setActiveCode(current => {
+        const idx = ALL_CODES.indexOf(current);
+        const nextIdx = (idx + 1) % ALL_CODES.length;
+        return ALL_CODES[nextIdx];
+      });
+    }, 5000); // 5 seconds per station
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
     }
-  }, [runoffStations, activeCode]);
+  }, [isAutoPlay]);
 
-  if (!runoffStations || Object.keys(runoffStations).length === 0) {
-    return (
-      <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666', fontSize: '13px' }}>
-        等待径流监测数据接入...
-      </div>
-    );
-  }
-
-  const stations = Object.keys(runoffStations);
-  const data = runoffStations[activeCode] || {};
-
-  const metrics = [
-    { label: '当前流速', value: data.flow_speed, unit: 'm/s', color: '#4ade80' },
-    { label: '瞬时流量', value: data.flow_rate,  unit: 'm³/s', color: '#38bdf8' },
-    { label: '含沙量',   value: data.sand_content, unit: 'kg/L', color: '#facc15' },
-    { label: '水位',     value: data.water_level,  unit: 'm',     color: '#fff' },
-    { label: '累计流量', value: data.total_flow,   unit: 'm³',    color: '#fff' },
-    { label: '液位压力', value: data.liquid_pressure, unit: 'kPa', color: '#fff' },
-  ];
-
-  const formatValue = (v) => {
-    if (v == null) return '0.00';
-    const num = Number(v);
-    return isNaN(num) ? '—' : num.toFixed(2);
+  const handleManualSelect = (code) => {
+    setActiveCode(code);
+    setIsAutoPlay(false); // Stop auto-play on manual click
+    
+    // Resume auto-play after 30 seconds of inactivity
+    if (timerRef.current) clearInterval(timerRef.current);
+    setTimeout(() => setIsAutoPlay(true), 30000);
   };
 
+  const data = runoffStations?.[activeCode] || null;
+
+  const fmt = (v) => {
+    if (v == null) return '—';
+    const n = Number(v);
+    return isNaN(n) ? '—' : n.toFixed(2);
+  };
+
+  const metrics = [
+    { label: '当前流速',   key: 'flow_speed',      unit: 'm/s',   color: '#4ade80' },
+    { label: '瞬时流量',   key: 'flow_rate',        unit: 'm³/s',  color: '#38bdf8' },
+    { label: '累计流量',   key: 'total_flow',       unit: 'm³',    color: '#38bdf8' },
+    { label: '水位',       key: 'water_level',      unit: 'm',     color: '#facc15' },
+    { label: '含沙量',     key: 'sand_content',     unit: 'kg/L',  color: '#fb923c' },
+    { label: '液位压力',   key: 'liquid_pressure',  unit: 'kPa',   color: '#c084fc' },
+    { label: '径流量',     key: 'runoff',           unit: 'm³',    color: '#4ade80' },
+    { label: '降雨量',     key: 'rainfall',         unit: 'mm',    color: '#60a5fa' },
+  ];
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', height: '100%', padding: '5px 0' }}>
+    <div 
+      style={{ display: 'flex', flexDirection: 'column', gap: '6px', height: '100%', padding: '4px 0' }}
+      onMouseEnter={() => setIsAutoPlay(false)}
+      onMouseLeave={() => setIsAutoPlay(true)}
+    >
+
       {/* Station Selector Tabs */}
-      <div style={{ display: 'flex', gap: '4px', overflowX: 'auto', paddingBottom: '4px', marginBottom: '2px' }} className="no-scrollbar">
-        {stations.map(code => (
-          <div 
+      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+        {ALL_CODES.map(code => (
+          <div
             key={code}
-            onClick={() => setActiveCode(code)}
+            onClick={() => handleManualSelect(code)}
             style={{
               padding: '2px 8px',
               fontSize: '10px',
@@ -53,66 +80,66 @@ export default function RunoffPanel({ runoffStations }) {
               cursor: 'pointer',
               whiteSpace: 'nowrap',
               background: activeCode === code ? 'rgba(56, 189, 248, 0.2)' : 'rgba(255,255,255,0.05)',
-              border: activeCode === code ? '1px solid #38bdf8' : '1px solid transparent',
+              border: activeCode === code ? '1px solid #38bdf8' : '1px solid rgba(255,255,255,0.1)',
               color: activeCode === code ? '#38bdf8' : '#888',
-              transition: 'all 0.2s'
+              transition: 'all 0.2s',
+              position: 'relative',
+              overflow: 'hidden'
             }}
           >
-            {code.slice(-4)}站
+            {DEVICE_NAMES[code] || code}
+            {activeCode === code && isAutoPlay && (
+               <div style={{
+                 position: 'absolute', bottom: 0, left: 0, height: '2px', background: '#38bdf8',
+                 animation: 'runoffProgress 5s linear forwards'
+               }} />
+            )}
           </div>
         ))}
       </div>
 
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(3, 1fr)', 
-        gap: '6px',
-        textAlign: 'center' 
-      }}>
-        {metrics.slice(0, 3).map(m => (
-          <div key={m.label} style={{ background: 'rgba(255,255,255,0.05)', padding: '8px 4px', borderRadius: '6px' }}>
-            <div style={{ fontSize: '10px', color: '#888', marginBottom: '2px' }}>{m.label}</div>
-            <div style={{ fontSize: '15px', color: m.color, fontWeight: 'bold' }}>
-              {formatValue(m.value)} <span style={{fontSize:'9px', fontWeight: 'normal'}}>{m.unit}</span>
+      <style>{`
+        @keyframes runoffProgress {
+          from { width: 0% }
+          to { width: 100% }
+        }
+      `}</style>
+
+      {/* Grid */}
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gridTemplateRows: 'repeat(2, 1fr)', gap: '5px', minHeight: 0 }}>
+        {metrics.map(m => {
+          const val = data ? data[m.key] : null;
+          const hasData = val != null;
+          return (
+            <div key={m.label} style={{
+              background: 'rgba(255,255,255,0.05)',
+              padding: '6px 4px',
+              borderRadius: '6px',
+              textAlign: 'center',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              borderLeft: `2px solid ${hasData ? m.color : 'rgba(255,255,255,0.1)'}`,
+            }}>
+              <div style={{ fontSize: '9px', color: '#888', marginBottom: '3px' }}>{m.label}</div>
+              <div style={{ fontSize: '13px', color: hasData ? m.color : '#444', fontWeight: 'bold', lineHeight: 1.2 }}>
+                {fmt(val)}
+                {hasData && <span style={{ fontSize: '8px', color: '#666', marginLeft: '2px', fontWeight: 'normal' }}>{m.unit}</span>}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
-      
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(3, 1fr)', 
-        gap: '6px',
-        textAlign: 'center' 
-      }}>
-        {metrics.slice(3).map(m => (
-          <div key={m.label} style={{ background: 'rgba(255,255,255,0.05)', padding: '8px 4px', borderRadius: '6px' }}>
-            <div style={{ fontSize: '10px', color: '#888', marginBottom: '2px' }}>{m.label}</div>
-            <div style={{ fontSize: '14px', color: m.color, fontWeight: 'bold' }}>
-              {formatValue(m.value)} <span style={{fontSize:'9px', fontWeight: 'normal'}}>{m.unit}</span>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      <div style={{ flex: 1, minHeight: '40px', marginTop: '6px', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '8px' }}>
-          <div style={{ fontSize: '10px', color: '#666', marginBottom: '4px', display: 'flex', justifyContent: 'space-between' }}>
-            <span>站点: {activeCode}</span>
-            <span style={{ color: '#4ade80' }}>● 实时上报</span>
-          </div>
-          <div style={{ height: '30px', background: 'rgba(250,204,21,0.03)', borderRadius: '4px', position: 'relative', overflow: 'hidden' }}>
-             <svg width="100%" height="100%" preserveAspectRatio="none">
-               <path 
-                d="M0,30 C50,20 100,25 150,12 C200,18 250,8 300,30 L300,30 L0,30 Z" 
-                fill="rgba(250,204,21,0.2)" 
-                stroke="rgba(250,204,21,0.4)"
-                strokeWidth="1"
-              />
-             </svg>
-          </div>
-          <div style={{ fontSize: '9px', color: '#444', marginTop: '4px', textAlign: 'right' }}>
-            数据更新: {data.updated_at ? data.updated_at.replace('T', ' ').slice(0, 19) : '—'}
-          </div>
+      {/* Footer */}
+      <div style={{ fontSize: '9px', color: '#444', display: 'flex', justifyContent: 'space-between', flexShrink: 0 }}>
+        <span>{DEVICE_NAMES[activeCode] || activeCode}  ·  {activeCode}</span>
+        <span style={{ color: data?.status === 'online' ? '#4ade80' : '#475569' }}>
+          {data?.status === 'online' ? '● 实时' : (data ? '● 离线' : '● 无数据')}  
+          <span style={{ marginLeft: 4 }}>
+            {data?.updated_at ? data.updated_at.replace('T', ' ').slice(11, 16) : '--:--'}
+          </span>
+        </span>
       </div>
     </div>
   );

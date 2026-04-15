@@ -9,7 +9,7 @@ export default function SporePanel({ latest, trend }) {
   
   const sporeItems = Object.entries(rec.spore_data || {})
     .sort((a,b) => b[1] - a[1])
-    .slice(0, 3)
+    .slice(0, 2) // Show fewer items to save space
   const maxSpore = Math.max(...sporeItems.map(i => i[1]), 1)
 
   const chartOpt = useMemo(() => {
@@ -18,19 +18,36 @@ export default function SporePanel({ latest, trend }) {
 
     return {
       backgroundColor: 'transparent',
-      grid: { top: 20, bottom: 20, left: 30, right: 10 },
-      tooltip: { trigger: 'axis', backgroundColor: 'rgba(2, 6, 23, 0.9)', borderColor: 'rgba(217, 70, 239, 0.5)', textStyle: { color: '#e2e8f0', fontSize: 10 } },
+      grid: { top: 10, bottom: 20, left: 25, right: 5 },
       xAxis: {
-        type: 'category', data: dates,
-        axisLabel: { color: '#94a3b8', fontSize: 9 }, axisLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } }
+        type: 'category', 
+        data: dates,
+        axisLabel: { color: '#64748b', fontSize: 8 }, 
+        axisLine: { show: false }
       },
-      yAxis: { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)', type:'dashed' } }, axisLabel: { color: '#d946ef', fontSize: 9 } },
+      yAxis: { 
+        type: 'value', 
+        minInterval: 1,
+        interval: 1,
+        splitLine: { lineStyle: { color: 'rgba(255,255,255,0.02)' } }, 
+        axisLabel: { 
+          color: '#d946ef', 
+          fontSize: 8
+        } 
+      },
       series: [
         { 
-          name: '捕获量', type: 'line', smooth: true, showSymbol: false, symbolSize: 6,
+          type: 'line', 
+          smooth: true, 
+          showSymbol: false,
           itemStyle: { color: '#d946ef' }, 
-          lineStyle: { width: 2, shadowColor: 'rgba(217, 70, 239, 0.8)', shadowBlur: 10 },
-          areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(217, 70, 239, 0.6)' }, { offset: 1, color: 'transparent' }] } },
+          lineStyle: { width: 2 },
+          areaStyle: { 
+            color: { 
+              type: 'linear', x: 0, y: 0, x2: 0, y2: 1, 
+              colorStops: [{ offset: 0, color: 'rgba(217, 70, 239, 0.2)' }, { offset: 1, color: 'transparent' }] 
+            } 
+          },
           data: totals 
         }
       ]
@@ -39,41 +56,58 @@ export default function SporePanel({ latest, trend }) {
 
   return (
     <div className={s.panelWrapper}>
-      <div className={s.topRow}>
-        <div className={s.totalCard}>
-          <div className={s.label}>今日孢子捕获总量</div>
-          <div className={s.value}>{rec.total_count ?? '--'} <span className={s.unit}>个/m³</span></div>
-          <div className={s.time}>近次更新: {rec.collection_time ? dayjs(rec.collection_time).format('MM-DD HH:mm') : '--'}</div>
-        </div>
-        
-        <div className={s.speciesBox}>
-          <div className={s.label}>主要病害类群</div>
-          <div className={s.speciesList}>
-            {sporeItems.length > 0 ? sporeItems.map(([name, cnt]) => {
-              const pct = (cnt / maxSpore) * 100
-              return (
-                <div key={name} className={s.speciesRow}>
-                  <div className={s.speciesInfo}>
-                    <span className={s.speciesName}>{name}</span>
-                    <span className={s.speciesCnt}>{cnt}</span>
-                  </div>
-                  <div className={s.barTrack}>
-                    <div className={s.barFill} style={{ width: `${pct}%` }}></div>
-                  </div>
-                </div>
-              )
-            }) : <div className={s.emptyMsg}>当前暂无分类数据</div>}
+      <div className={s.mainRow}>
+        <div className={s.metricCol}>
+          <div className={s.totalCard}>
+            <div>
+              <div className={s.label}>今日总量</div>
+              <div className={s.status}>
+                 <span className={s.dot} /> 实时监测
+              </div>
+            </div>
+            <div className={s.value}>{rec.total_count ?? '0'}</div>
           </div>
+          
+          {sporeItems.length > 0 && (
+            <div className={s.listCard}>
+              {sporeItems.map(([name, cnt]) => {
+                const pct = (cnt / maxSpore) * 100
+                return (
+                  <div key={name} className={s.row}>
+                    <div className={s.info}><span className={s.n}>{name}</span><span className={s.c}>{cnt}</span></div>
+                    <div className={s.track}><div className={s.fill} style={{ width: `${pct}%` }} /></div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className={s.imageCard}>
+           <div className={s.imgBox}>
+             {rec.image_url ? (
+               <img src={rec.image_url} alt="Spore" className={s.pImg} />
+             ) : (
+               <div className={s.pPlaceholder}>
+                 <div className={s.scan} />
+                 <span>影像极低延迟传输中...</span>
+               </div>
+             )}
+           </div>
         </div>
       </div>
 
       <div className={s.chartBox}>
-         <div className={s.label}>近7日捕获趋势动态</div>
-         {td.length > 0 ? (
-           <ReactECharts option={chartOpt} style={{height: '100%', minHeight: '80px'}} />
-         ) : (
-           <div className={s.emptyChart}>无历史分析数据</div>
-         )}
+         <div className={s.chartHeader}>
+           浓度趋势 (近7日动态)
+         </div>
+         <div className={s.chart}>
+           {td.length > 0 ? (
+             <ReactECharts option={chartOpt} style={{height: '100%'}} />
+           ) : (
+             <div className={s.emptyChart}>无趋势数据</div>
+           )}
+         </div>
       </div>
     </div>
   )

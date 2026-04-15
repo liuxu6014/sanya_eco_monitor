@@ -1,14 +1,13 @@
 import ReactECharts from 'echarts-for-react'
 
 const TOOLTIP = { 
-  backgroundColor: 'rgba(3, 17, 46, 0.9)', 
-  borderColor: 'rgba(56, 189, 248, 0.6)', 
+  backgroundColor: 'rgba(3, 17, 46, 0.95)', 
+  borderColor: 'rgba(56, 189, 248, 0.5)', 
   borderWidth: 1,
-  textStyle: { color: '#e0f0ff', fontSize: 13, textShadow: '0 0 2px rgba(56,189,248,0.5)' },
-  padding: [12, 16],
-  backdropFilter: 'blur(5px)',
-  shadowBlur: 15,
-  shadowColor: 'rgba(56,189,248,0.2)',
+  textStyle: { color: '#e0f0ff', fontSize: 11 },
+  padding: [6, 8],
+  backdropFilter: 'blur(8px)',
+  confine: true
 }
 const AXIS_LABEL = { color: '#8fc8e8', fontSize: 11, fontFamily: 'monospace' }
 const SPLIT_LINE = { lineStyle: { color: 'rgba(56, 189, 248, 0.1)', type: 'dotted' } }
@@ -19,7 +18,7 @@ export default function RunoffDailyChart({ data }) {
 
   const option = {
     backgroundColor: 'transparent',
-    grid: { top: 50, bottom: 40, left: 10, right: 10, containLabel: true },
+    grid: { top: 60, bottom: 40, left: 45, right: 45, containLabel: true },
     tooltip: { ...TOOLTIP, trigger: 'axis', axisPointer: { type: 'line', lineStyle: { color: 'rgba(56, 189, 248, 0.5)', width: 2, type: 'dashed' } } },
     legend: {
       top: 0,
@@ -39,14 +38,14 @@ export default function RunoffDailyChart({ data }) {
     yAxis: [
       {
         type: 'value',
-        name: '流速 (m/s)',
+        name: '流量 / 径流 (m/s, m³/s, m³)',
         nameTextStyle: { color: '#4ade80', fontSize: 11, padding: [0, 20, 0, 0] },
         axisLabel: { ...AXIS_LABEL, color: '#4ade80' },
         splitLine: SPLIT_LINE,
       },
       {
         type: 'value',
-        name: '含沙量 (kg/L)',
+        name: '水位 / 压力 / 含沙量',
         nameTextStyle: { color: '#facc15', fontSize: 11, padding: [0, 0, 0, 20] },
         axisLabel: { ...AXIS_LABEL, color: '#facc15' },
         splitLine: { show: false },
@@ -54,31 +53,61 @@ export default function RunoffDailyChart({ data }) {
     ],
     series: [
       {
+        name: '当日降雨量', type: 'bar', yAxisIndex: 1,
+        data: td.map(d => d.rainfall),
+        barMaxWidth: 15,
+        itemStyle: { color: 'rgba(56, 189, 248, 0.12)', borderRadius: [4, 4, 0, 0] },
+        tooltip: { valueFormatter: (v) => v != null ? `${v} mm` : '—' }
+      },
+      {
+        name: '当日径流量', type: 'bar',
+        data: td.map(d => d.runoff),
+        barMaxWidth: 15,
+        itemStyle: { color: 'rgba(74, 222, 128, 0.2)', borderRadius: [4, 4, 0, 0] },
+        tooltip: { valueFormatter: (v) => v != null ? `${v} m³` : '—' }
+      },
+      {
         name: '平均流速', type: 'line', smooth: true,
         data: td.map(d => d.flow),
-        lineStyle: { 
-          color: '#4ade80', width: 3,
-          shadowBlur: 10, shadowColor: 'rgba(74, 222, 128, 0.8)', shadowOffsetY: 3
-        },
-        areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(74, 222, 128, 0.3)' }, { offset: 1, color: 'rgba(74, 222, 128, 0)' }] } },
-        symbol: 'circle',
-        symbolSize: 6,
-        showSymbol: false,
-        itemStyle: { color: '#4ade80', borderWidth: 2, shadowColor: '#4ade80', shadowBlur: 10 },
+        lineStyle: { color: '#4ade80', width: 2 },
+        itemStyle: { color: '#4ade80' },
+        tooltip: { valueFormatter: (v) => v != null ? `${v} m³/s` : '—' }
+      },
+      {
+        name: '瞬时流速', type: 'line', smooth: true,
+        data: td.map(d => d.flow_speed),
+        lineStyle: { color: '#2dd4bf', width: 1, type: 'dashed' },
+        itemStyle: { color: '#2dd4bf' },
+        tooltip: { valueFormatter: (v) => v != null ? `${v} m/s` : '—' }
+      },
+      {
+        name: '累计流量', type: 'line', smooth: true,
+        data: td.map(d => d.total_flow),
+        lineStyle: { color: '#38bdf8', width: 2 },
+        itemStyle: { color: '#38bdf8' },
+        tooltip: { valueFormatter: (v) => v != null ? `${v} m³` : '—' }
       },
       {
         name: '平均含沙量', type: 'line', smooth: true, yAxisIndex: 1,
         data: td.map(d => d.sand),
-        lineStyle: { 
-          color: '#facc15', width: 3, type: 'dashed',
-          shadowBlur: 10, shadowColor: 'rgba(250, 204, 21, 0.8)', shadowOffsetY: 3
-        },
-        areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(250, 204, 21, 0.3)' }, { offset: 1, color: 'rgba(250, 204, 21, 0)' }] } },
-        symbol: 'circle',
-        symbolSize: 6,
-        showSymbol: false,
-        itemStyle: { color: '#facc15', borderWidth: 2, shadowColor: '#facc15', shadowBlur: 10 },
-      }
+        lineStyle: { color: '#facc15', width: 2 },
+        itemStyle: { color: '#facc15' },
+        tooltip: { valueFormatter: (v) => v != null ? `${v} kg/L` : '—' }
+      },
+      {
+        name: '水位监测', type: 'line', smooth: true, yAxisIndex: 1,
+        data: td.map(d => d.water_level),
+        lineStyle: { color: '#fb923c', width: 2 },
+        itemStyle: { color: '#fb923c' },
+        tooltip: { valueFormatter: (v) => v != null ? `${v} m` : '—' }
+      },
+      {
+        name: '液位压力', type: 'line', smooth: true, yAxisIndex: 1,
+        data: td.map(d => d.liquid_pressure),
+        lineStyle: { color: '#f87171', width: 1, type: 'dotted' },
+        itemStyle: { color: '#f87171' },
+        tooltip: { valueFormatter: (v) => v != null ? `${v} kPa` : '—' }
+      },
     ],
   }
 

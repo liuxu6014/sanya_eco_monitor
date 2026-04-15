@@ -116,8 +116,12 @@ export default function SoilDailyChart({ data }) {
             silent: true,
             itemStyle: { color: 'rgba(74, 222, 128, 0.05)' },
             data: [[{ yAxis: 6.5 }, { yAxis: 7.5 }]]
-        }
-      }
+        },
+        tooltip: { valueFormatter: (v) => v ?? '—' }
+      },
+      // Invisible series for tooltip data extraction
+      { name: '土壤温度(10cm)', type: 'line', data: td.map(d => d.temperature_10cm), showSymbol: false, lineStyle: { opacity: 0 }, tooltip: { valueFormatter: (v) => v != null ? `${v} °C` : '—' } },
+      { name: '电导率(EC)', type: 'line', data: td.map(d => d.ec), showSymbol: false, lineStyle: { opacity: 0 }, tooltip: { valueFormatter: (v) => v != null ? `${v} μS/cm` : '—' } },
     ],
   }
 

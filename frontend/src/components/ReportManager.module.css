@@ -524,3 +524,138 @@
     gap: 12px;
   }
 }
+
+/* Generation Overlay Styles */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 18, 0.85);
+  backdrop-filter: blur(12px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: overlayFadeIn 0.3s ease-out;
+}
+
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.loaderContent {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 40px;
+}
+
+/* 3D Rotating Cube */
+.cubeWrap {
+  width: 80px;
+  height: 80px;
+  perspective: 800px;
+  margin-bottom: 32px;
+}
+
+.cube {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  animation: cubeRotate 4s infinite linear;
+}
+
+.side {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  background: rgba(0, 212, 255, 0.05);
+  border: 2px solid var(--cyan);
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.2), inset 0 0 15px rgba(0, 212, 255, 0.2);
+}
+
+.side:nth-child(1) { transform: translateZ(40px); }
+.side:nth-child(2) { transform: rotateY(90deg) translateZ(40px); }
+.side:nth-child(3) { transform: rotateY(180deg) translateZ(40px); }
+.side:nth-child(4) { transform: rotateY(-90deg) translateZ(40px); }
+.side:nth-child(5) { transform: rotateX(90deg) translateZ(40px); }
+.side:nth-child(6) { transform: rotateX(-90deg) translateZ(40px); }
+
+@keyframes cubeRotate {
+  0% { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
+  100% { transform: rotateX(360deg) rotateY(360deg) rotateZ(180deg); }
+}
+
+.loaderTitle {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 12px;
+  letter-spacing: 1px;
+}
+
+.dotAnim {
+  display: inline-block;
+  animation: dots 1.5s infinite;
+  width: 24px;
+  text-align: left;
+}
+
+@keyframes dots {
+  0%, 20% { content: "."; }
+  40% { content: ".."; }
+  60% { content: "..."; }
+  80%, 100% { content: ""; }
+}
+
+.loaderDesc {
+  font-size: 14px;
+  color: var(--text-dim, #8ba3c7);
+  line-height: 1.6;
+  margin-bottom: 32px;
+}
+
+.timerBox {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.timerValue {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--cyan);
+  font-family: 'Outfit', sans-serif;
+  text-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
+}
+
+.timerLabel {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #566a8d;
+  letter-spacing: 1px;
+}
+
+.progressBar {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progressFill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, #00d4ff, #0066ff);
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+  transition: width 1s linear;
+}

@@ -57,7 +57,6 @@
   backdrop-filter: blur(8px);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
 }
 
 .cardTitle {
@@ -77,5 +76,4 @@
   flex: 1;
   min-height: 0;
   padding: 4px 8px 4px;
-  overflow: hidden;
 }

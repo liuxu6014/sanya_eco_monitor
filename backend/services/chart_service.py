@@ -329,9 +329,6 @@ def chart_spore_daily(summary: dict[str, Any]) -> str | None:
 def generate_all_charts(summary: dict[str, Any]) -> dict[str, str | None]:
     """Generate all report charts and return a dict keyed by chart name."""
     return {
-        "气温趋势":   chart_temp_trend(summary),
-        "降雨量":     chart_rainfall(summary),
-        "土壤墒情":   chart_soil_moisture(summary),
         "虫情日捕获": chart_insect_daily(summary),
         "虫种统计":   chart_insect_species(summary),
         "孢子趋势":   chart_spore_daily(summary),

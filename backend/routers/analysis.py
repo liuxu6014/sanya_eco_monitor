@@ -30,13 +30,26 @@ async def get_eco_index(db: AsyncSession = Depends(get_db)):
     since_24h = now - timedelta(hours=24)
     since_7d  = now - timedelta(days=7)
 
-    # ── 气象最新 ──
-    res = await db.execute(select(WeatherRecord).order_by(desc(WeatherRecord.collection_time)).limit(1))
-    w = res.scalar_one_or_none()
+    # ── 气象最新 (取最近一个小时的平均值) ──
+    res = await db.execute(
+        select(WeatherRecord)
+        .where(WeatherRecord.collection_time >= now - timedelta(hours=1))
+    )
+    ws = res.scalars().all()
+    w_temp = sum(r.temperature for r in ws if r.temperature is not None) / len(ws) if ws else 25
+    w_hum  = sum(r.humidity for r in ws if r.humidity is not None) / len(ws) if ws else 70
+    w_rain = sum(r.rainfall for r in ws if r.rainfall is not None) / len(ws) if ws else 0
+    w_light = sum(r.light for r in ws if r.light is not None) / len(ws) if ws else 30000
 
-    # ── 土壤最新 ──
-    res = await db.execute(select(SoilRecord).order_by(desc(SoilRecord.collection_time)).limit(1))
-    s = res.scalar_one_or_none()
+    # ── 土壤最新 (取最近一小时所有站点的平均) ──
+    res = await db.execute(
+        select(SoilRecord)
+        .where(SoilRecord.collection_time >= now - timedelta(hours=1))
+    )
+    ss = res.scalars().all()
+    sm10 = sum(r.moisture_10cm for r in ss if r.moisture_10cm is not None) / len(ss) if ss else 30
+    sm20 = sum(r.moisture_20cm for r in ss if r.moisture_20cm is not None) / len(ss) if ss else 35
+    sm40 = sum(r.moisture_40cm for r in ss if r.moisture_40cm is not None) / len(ss) if ss else 38
 
     # ── 近7日虫情合计 ──
     res = await db.execute(
@@ -58,11 +71,17 @@ async def get_eco_index(db: AsyncSession = Depends(get_db)):
     total_spores = sum(r.total_count for r in spores)
     avg_spores = total_spores / len(spores) if spores else 0
 
-    # ── 径流/降雨 (水土流失分析) ──
-    res = await db.execute(select(RunoffRecord).order_by(desc(RunoffRecord.collection_time)).limit(1))
-    ro = res.scalar_one_or_none()
+    # ── 径流/降雨 (水土流失分析 - 取最近1小时平均) ──
+    res = await db.execute(
+        select(RunoffRecord)
+        .where(RunoffRecord.collection_time >= now - timedelta(hours=1))
+    )
+    ros = res.scalars().all()
+    avg_flow = sum(r.flow_rate for r in ros if r.flow_rate is not None) / len(ros) if ros else 0
+    avg_sand = sum(r.sand_content for r in ros if r.sand_content is not None) / len(ros) if ros else 0
+    avg_runoff_rain = sum(r.rainfall for r in ros if r.rainfall is not None) / len(ros) if ros else 0
 
-    # ── 水质 (面源污染分析) ──
+    # ── 水质 (面源污染分析 - 取最近一条记录) ──
     res = await db.execute(select(WaterQualityRecord).order_by(desc(WaterQualityRecord.collection_time)).limit(1))
     wq = res.scalar_one_or_none()
 
@@ -73,8 +92,8 @@ async def get_eco_index(db: AsyncSession = Depends(get_db)):
     insect_score = _clamp(avg_insects / 1.5, 0, 40)       # 每批次150只满分，占40分
     spore_score  = _clamp(avg_spores  / 1.5, 0, 30)       # 每批次150个满分，占30分
     weather_factor = 0
-    temp = w.temperature if w and w.temperature else 25
-    hum  = w.humidity    if w and w.humidity    else 70
+    temp = w_temp
+    hum  = w_hum
     # 高温高湿是病虫害爆发温床：25-32°C, 湿度>70%
     if 22 <= temp <= 35:
         weather_factor += (temp - 22) / 13 * 15
@@ -108,9 +127,9 @@ async def get_eco_index(db: AsyncSession = Depends(get_db)):
     hum_score = _clamp(hum_score, 0, 25)
 
     # 土壤湿度综合 (10+20+40cm 各占权重)
-    m10 = s.moisture_10cm or 30 if s else 30
-    m20 = s.moisture_20cm or 35 if s else 35
-    m40 = s.moisture_40cm or 38 if s else 38
+    m10 = sm10
+    m20 = sm20
+    m40 = sm40
     avg_moisture = m10 * 0.4 + m20 * 0.35 + m40 * 0.25
     # 最优土壤湿度 30-45%
     if 30 <= avg_moisture <= 45:
@@ -122,7 +141,7 @@ async def get_eco_index(db: AsyncSession = Depends(get_db)):
     moist_score = _clamp(moist_score, 0, 25)
 
     # 光照 (20000-60000 lux 为最佳)
-    light = w.light if w and w.light else 30000
+    light = w_light
     if 20000 <= light <= 60000:
         light_score = 15
     elif light < 20000:
@@ -148,8 +167,8 @@ async def get_eco_index(db: AsyncSession = Depends(get_db)):
     # 高温蒸发加剧
     heat_urgency = _clamp((temp - 20) / 15 * 25, 0, 25)
 
-    # 近期降雨量（从w.rainfall推算，若很少则紧迫）
-    rain = w.rainfall if w and w.rainfall else 0
+    # 近期降雨量 (取气象站和径流站降雨的极大值)
+    rain = max(w_rain, avg_runoff_rain)
     rain_urgency = _clamp((5 - rain) / 5 * 15, 0, 15)
 
     irrigation_urgency = round(moisture_urgency + heat_urgency + rain_urgency)
@@ -158,9 +177,9 @@ async def get_eco_index(db: AsyncSession = Depends(get_db)):
     # 5. 水土流失风险指数 (Erosion Index)
     # 逻辑: 降雨强度 * 径流流速 * 含沙量
     # ══════════════════════════════════════════════════
-    rain_rate = w.rainfall if w and w.rainfall else 0
-    flow_speed = ro.flow_rate if ro and ro.flow_rate else 0
-    sand_val = ro.sand_content if ro and ro.sand_content else 0
+    rain_rate = rain
+    flow_speed = avg_flow
+    sand_val = avg_sand
     # 归一化计算: 假设 10mm降雨 * 1.0m/s流速 * 0.5kg/L含沙量 为极高(100)
     erosion_val = (rain_rate * 5 + flow_speed * 30 + sand_val * 100)
     erosion_index = _clamp(round(erosion_val), 0, 100)
@@ -224,8 +243,9 @@ async def get_eco_index(db: AsyncSession = Depends(get_db)):
                 "avg_insects_7d": round(avg_insects, 1),
                 "avg_spores_7d":  round(avg_spores, 1),
                 "avg_moisture_pct": round(avg_moisture, 1),
-                "temperature": temp,
-                "humidity": hum,
+                "temperature": round(temp, 1),
+                "humidity": round(hum, 1),
+                "rainfall": round(rain, 1),
             }
         }
     }

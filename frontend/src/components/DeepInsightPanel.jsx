@@ -114,7 +114,7 @@ export default function DeepInsightPanel({ ecoIndex }) {
                 theme="#f472b6"
              />
              <SensorHudCard 
-                label="植被生长适宜度" value={d.growth_suitability} 
+                label="气象宜居指数" value={d.growth_suitability} 
                 theme="#4ade80"
              />
           </div>
@@ -141,20 +141,20 @@ export default function DeepInsightPanel({ ecoIndex }) {
              {/* Insights Content */}
              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '10px', opacity: showInsights ? 1 : 0, transform: showInsights ? 'translateY(0)' : 'translateY(10px)', transition: 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)' }}>
                 <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#f8fafc', textShadow: '0 0 5px rgba(255,255,255,0.3)', letterSpacing: '1px' }}>
-                    生态综合评估：{d.eco_health > 80 ? '系统健康度高，状态稳定' : '存在局部环境扰动风险'}
+                    生态综合评估：{d.eco_health > 80 ? '全区环境质量优良，气候平稳' : '存在局部环境扰动风险'}
                 </div>
                 
                 <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
                     <div style={{ width: '4px', height: '14px', borderRadius: '4px', background: '#38bdf8', marginTop: '4px', boxShadow: '0 0 8px #38bdf8' }} />
                     <div style={{ fontSize: '13px', color: '#cbd5e1', lineHeight: '1.6' }}>
-                        {d.erosion_risk > 50 ? "水土预警：检测到局部水土流失风险增加，建议采取坡面护坡保土措施。" : "水土状态：24小时内未见异常土壤侵蚀，地表径流系统运行平稳。"}
+                        {d.erosion_risk > 50 ? "水土预警：检测到局部水土流失风险增加，建议关注坡面汇流系统。" : "水土状态：24小时内未见异常侵蚀现象，地表径流形态平稳。"}
                     </div>
                 </div>
                 
                 <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
                     <div style={{ width: '4px', height: '14px', borderRadius: '4px', background: '#4ade80', marginTop: '4px', boxShadow: '0 0 8px #4ade80' }} />
                     <div style={{ fontSize: '13px', color: '#cbd5e1', lineHeight: '1.6' }}>
-                        植被监测：当前区域的温湿度与土壤养分综合配比，非常适合本地农林作物的自然生长。
+                        气象监测：当前区域光热资源充沛，空气湿度适宜，处于农林作业黄金期。
                     </div>
                 </div>
              </div>

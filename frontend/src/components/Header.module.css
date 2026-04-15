@@ -116,11 +116,13 @@
 
 /* ===== Center ===== */
 .center {
-  flex: 1;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 12px;
+  pointer-events: none;
 }
 
 .titleBlock {
@@ -139,14 +141,16 @@
 }
 
 .subtitle {
-  font-size: 11px;
+  font-size: 9.5px;
   font-weight: 500;
-  letter-spacing: 5px;
+  letter-spacing: 3px;
   background: linear-gradient(90deg, #00d4ff 0%, #a855f7 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   margin-top: 4px;
   text-transform: uppercase;
+  text-align: center;
+  white-space: nowrap;
 }
 
 /* Decorative arrows */

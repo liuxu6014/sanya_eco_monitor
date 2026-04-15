@@ -23,6 +23,8 @@ export default function ReportManager() {
   const [filterType, setFilterType] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [elapsedTime, setElapsedTime] = useState(0)
+  const [estimatedTotal, setEstimatedTotal] = useState(30)
 
   useEffect(() => {
     fetchReports()
@@ -31,6 +33,19 @@ export default function ReportManager() {
   useEffect(() => {
     setCurrentPage(1)
   }, [filterType])
+
+  useEffect(() => {
+    let timer
+    if (generating) {
+      setElapsedTime(0)
+      timer = setInterval(() => {
+        setElapsedTime((prev) => prev + 1)
+      }, 1000)
+    } else {
+      clearInterval(timer)
+    }
+    return () => clearInterval(timer)
+  }, [generating])
 
   const fetchReports = async () => {
     setLoading(true)
@@ -49,6 +64,14 @@ export default function ReportManager() {
 
   const handleGenerate = async () => {
     const reportTypes = filterType === 'all' ? ['daily', 'weekly', 'monthly'] : [filterType]
+    
+    // Estimate: Daily ~150s, Weekly ~180s, Monthly ~240s
+    let est = 0
+    if (reportTypes.includes('daily')) est += 150
+    if (reportTypes.includes('weekly')) est += 180
+    if (reportTypes.includes('monthly')) est += 240
+    setEstimatedTotal(est)
+    
     setGenerating(true)
     setCurrentPage(1)
 
@@ -109,6 +132,42 @@ export default function ReportManager() {
 
   return (
     <div className={s.container}>
+      {generating && (
+        <div className={s.overlay}>
+          <div className={s.loaderContent}>
+            <div className={s.cubeWrap}>
+              <div className={s.cube}>
+                <div className={s.side}></div>
+                <div className={s.side}></div>
+                <div className={s.side}></div>
+                <div className={s.side}></div>
+                <div className={s.side}></div>
+                <div className={s.side}></div>
+              </div>
+            </div>
+            <div className={s.loaderTitle}>
+              正在构建分析报告
+              <span className={s.dotAnim}>...</span>
+            </div>
+            <div className={s.loaderDesc}>
+              AI 专家模型正在分析多源生态数据
+              <br />
+              请稍候，{filterType === 'all' ? '正在生成全套报告' : `正在生成${REPORT_TYPE_LABELS[filterType]}`}
+            </div>
+            <div className={s.timerBox}>
+               <div className={s.timerValue}>{elapsedTime}s</div>
+               <div className={s.timerLabel}>已耗时 / 预估 {estimatedTotal}s</div>
+            </div>
+            <div className={s.progressBar}>
+              <div 
+                className={s.progressFill} 
+                style={{ width: `${Math.min(100, (elapsedTime / estimatedTotal) * 100)}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className={s.header}>
         <div className={s.title}>报告生成与管理</div>
 

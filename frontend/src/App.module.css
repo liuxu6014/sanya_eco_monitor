@@ -15,8 +15,8 @@
   flex: 1;
   display: grid;
   grid-template-columns: clamp(280px, 20vw, 400px) 1fr clamp(280px, 20vw, 400px);
-  gap: 1.2vw;
-  padding: 1.2vw;
+  gap: 8px;
+  padding: 8px;
   overflow: hidden;
   min-height: 0;
 }
@@ -24,7 +24,7 @@
 .col {
   display: flex;
   flex-direction: column;
-  gap: 1.2vw;
+  gap: 8px;
   overflow: hidden;
   min-height: 0;
   flex: 1;

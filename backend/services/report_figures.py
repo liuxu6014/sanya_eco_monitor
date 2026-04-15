@@ -9,33 +9,6 @@ FigureManifestItem = dict[str, Any]
 _FIGURE_PLAN: tuple[dict[str, str], ...] = (
     {
         "type": "chart",
-        "section": "weather",
-        "key": "气温趋势",
-        "caption": "监测期日均气温变化趋势",
-        "html_id": "fig-temp",
-    },
-    {
-        "type": "chart",
-        "section": "weather",
-        "key": "降雨量",
-        "caption": "监测期每日降雨量",
-        "html_id": "fig-rain",
-    },
-    {
-        "type": "scene",
-        "section": "weather",
-        "caption": "气象与生态监测现场实景（AI生成配图）",
-        "html_id": "fig-scene",
-    },
-    {
-        "type": "chart",
-        "section": "soil",
-        "key": "土壤墒情",
-        "caption": "各层次土壤墒情变化（10/20/40 cm）",
-        "html_id": "fig-soil",
-    },
-    {
-        "type": "chart",
         "section": "insect",
         "key": "虫情日捕获",
         "caption": "每日虫情捕获量",

@@ -6,7 +6,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from auth import is_auth_enabled, is_valid_auth_cookie
 from database import init_db
 from scheduler import setup_scheduler, _run_all_collectors
-from routers import insect, sensor, summary, report, analysis, auth
+from routers import (
+    insect as insect_router,
+    sensor as sensor_router,
+    summary as summary_router,
+    report as report_router,
+    analysis as analysis_router,
+    auth as auth_dev_router,
+)
 from config import settings
 
 logging.basicConfig(
@@ -78,12 +85,12 @@ async def require_platform_password(request: Request, call_next):
     return await call_next(request)
 
 
-app.include_router(auth.router)
-app.include_router(insect.router)
-app.include_router(sensor.router)
-app.include_router(summary.router)
-app.include_router(report.router)
-app.include_router(analysis.router)
+app.include_router(auth_dev_router.router)
+app.include_router(insect_router.router)
+app.include_router(sensor_router.router)
+app.include_router(summary_router.router)
+app.include_router(report_router.router)
+app.include_router(analysis_router.router)
 
 
 @app.get("/api/health")
