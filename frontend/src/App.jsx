@@ -13,6 +13,7 @@ import AutoResizer from './components/AutoResizer.jsx'
 import LoginGate from './components/LoginGate.jsx'
 import { usePolling } from './hooks/usePolling.js'
 import { api } from './utils/api.js'
+import { clearRequestCache } from './utils/requestCache.js'
 import s from './App.module.css'
 
 const IconWeather = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.5 19A4.5 4.5 0 0 0 18 10c-.8-4.4-5.8-6-9-2.5A5.5 5.5 0 0 0 3.5 12C1.5 12.5 1 15.5 2.5 17c1.5 1.5 3 2 4.5 2h10.5z" /></svg>
@@ -42,17 +43,37 @@ function Panel({ title, extra, icon, children, style }) {
 
 function DashboardApp() {
   const [activeTab, setActiveTab] = useState('overview')
-  const overview = usePolling(useCallback(() => api.overview(), []), POLL)
-  const devices = usePolling(useCallback(() => api.deviceStatus(), []), POLL)
-  const insectLatest = usePolling(useCallback(() => api.insectLatest(), []), POLL)
-  const insectTrend = usePolling(useCallback(() => api.insectTrend(7), []), POLL)
-  const insectSpecies = usePolling(useCallback(() => api.insectSpecies(7), []), POLL)
-  const sporeLatest = usePolling(useCallback(() => api.sporeLatest(), []), POLL)
-  const sporeTrend = usePolling(useCallback(() => api.sporeTrend(7), []), POLL)
-  const ecoIndex = usePolling(useCallback(() => api.ecoIndex(), []), POLL)
+  const [mountedTabs, setMountedTabs] = useState({
+    overview: true,
+    analytics: false,
+    reports: false,
+  })
+  const pollingOptions = useCallback((cacheKey) => ({
+    cacheKey,
+    persist: true,
+    staleMs: POLL,
+  }), [])
+  const overview = usePolling(useCallback(() => api.overview(), []), POLL, pollingOptions('overview'))
+  const devices = usePolling(useCallback(() => api.deviceStatus(), []), POLL, pollingOptions('device-status'))
+  const insectLatest = usePolling(useCallback(() => api.insectLatest(), []), POLL, pollingOptions('insect-latest'))
+  const insectTrend = usePolling(useCallback(() => api.insectTrend(7), []), POLL, pollingOptions('insect-trend-7d'))
+  const insectSpecies = usePolling(useCallback(() => api.insectSpecies(7), []), POLL, pollingOptions('insect-species-7d'))
+  const sporeLatest = usePolling(useCallback(() => api.sporeLatest(), []), POLL, pollingOptions('spore-latest'))
+  const sporeTrend = usePolling(useCallback(() => api.sporeTrend(7), []), POLL, pollingOptions('spore-trend-7d'))
+  const ecoIndex = usePolling(useCallback(() => api.ecoIndex(), []), POLL, pollingOptions('eco-index'))
+
+  useEffect(() => {
+    setMountedTabs((current) => (
+      current[activeTab]
+        ? current
+        : { ...current, [activeTab]: true }
+    ))
+  }, [activeTab])
+
   const handleTrigger = async () => {
     try {
       await api.triggerCollect()
+      clearRequestCache('analysis-dashboard')
       setTimeout(() => {
         [
           overview,
@@ -73,20 +94,34 @@ function DashboardApp() {
       <div className={s.app}>
         <Header onTriggerCollect={handleTrigger} activeTab={activeTab} onTabChange={setActiveTab} />
 
-        {activeTab === 'analytics' && <AnalyticsPage />}
-        {activeTab === 'reports' && <ReportManager />}
+        {mountedTabs.analytics && (
+          <div
+            className={s.tabPane}
+            style={{ display: activeTab === 'analytics' ? 'flex' : 'none' }}
+          >
+            <AnalyticsPage active={activeTab === 'analytics'} />
+          </div>
+        )}
+        {mountedTabs.reports && (
+          <div
+            className={s.tabPane}
+            style={{ display: activeTab === 'reports' ? 'flex' : 'none' }}
+          >
+            <ReportManager />
+          </div>
+        )}
 
         <div className={s.body} style={{ display: activeTab === 'overview' ? undefined : 'none' }}>
           <div className={s.col}>
-            <Panel title="设备物联网络状态" icon={<IconPulse />} extra="心跳监测" style={{ flex: '1.4' }}>
+            <Panel title="设备物联网络状态" icon={<IconPulse />} style={{ flex: '1.4' }}>
               <DeviceStatusPanel devices={devices.data} />
             </Panel>
 
-            <Panel title="区域降雨监测网络" icon={<IconWeather />} extra="实时监测" style={{ flex: '1' }}>
+            <Panel title="区域降雨" icon={<IconWeather />} style={{ flex: '1' }}>
               <RainGaugePanel rainData={overview.data?.data?.rain_gauges} />
             </Panel>
 
-            <Panel title="水土流失与径流" icon={<IconRunoff />} extra="监测网络" style={{ flex: '1' }}>
+            <Panel title="水土流失与径流" icon={<IconRunoff />} style={{ flex: '1' }}>
               <RunoffPanel runoffStations={overview.data?.data?.runoff_stations} />
             </Panel>
           </div>
@@ -96,15 +131,15 @@ function DashboardApp() {
           </div>
 
           <div className={s.col}>
-            <Panel title="面源水质污染负荷" icon={<IconWater />} extra="告警监控" style={{ flex: '1.2' }}>
+            <Panel title="面源水质污染负荷" icon={<IconWater />} style={{ flex: '1.2' }}>
               <WaterPanel water={overview.data?.data?.water_quality} />
             </Panel>
 
-            <Panel title="虫情预警网络" icon={<IconInsect />} extra="7日" style={{ flex: '2.2' }}>
+            <Panel title="虫情预警" icon={<IconInsect />} style={{ flex: '2.2' }}>
               <InsectPanel latest={insectLatest.data} trend={insectTrend.data} species={insectSpecies.data} />
             </Panel>
 
-            <Panel title="空气孢子捕捉分析" icon={<IconSpore />} extra="状态监测" style={{ flex: '0.8' }}>
+            <Panel title="空气孢子捕捉分析" icon={<IconSpore />} style={{ flex: '0.8' }}>
               <SporePanel latest={sporeLatest.data} trend={sporeTrend.data} />
             </Panel>
           </div>

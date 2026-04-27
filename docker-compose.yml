@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   backend:
     build:
@@ -7,15 +5,27 @@ services:
       dockerfile: Dockerfile
     container_name: sanya-eco-backend
     ports:
-      - "8000:8000"
+      - "8888:8888"
     volumes:
       - ./backend/sanya_eco.db:/app/sanya_eco.db
       - ./backend/data:/app/data
+      - ./logs/backend:/app/logs
     env_file:
       - ./backend/.env
+    environment:
+      LOG_DIR: /app/logs
     restart: always
-    # Wait for DB state if needed (not needed for SQLite but good for future)
-    # entrypoint: ["uvicorn", "main:app", ...] is already in Dockerfile
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8888/api/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   frontend:
     build:
@@ -23,10 +33,24 @@ services:
       dockerfile: Dockerfile
     container_name: sanya-eco-frontend
     ports:
-      - "80:80"
+      - "5188:80"
+    volumes:
+      - ./logs/frontend:/var/log/nginx
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     restart: always
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 networks:
   default:

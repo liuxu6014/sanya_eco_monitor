@@ -1,0 +1,159 @@
+.wrap {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  color: #dbeeff;
+}
+
+.overview {
+  border: 1px solid rgba(56, 189, 248, 0.14);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at top right, rgba(56, 189, 248, 0.08), transparent 34%),
+    linear-gradient(180deg, rgba(7, 27, 58, 0.92), rgba(4, 17, 40, 0.92));
+  padding: 12px;
+}
+
+.overviewHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.sectionEyebrow {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: #7dd3fc;
+  text-transform: uppercase;
+}
+
+.rangePill {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(125, 211, 252, 0.18);
+  background: rgba(7, 21, 44, 0.78);
+  font-size: 11px;
+  font-weight: 700;
+  color: #d9efff;
+}
+
+.overviewBody {
+  display: grid;
+  gap: 10px;
+}
+
+.overviewGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.metricCard {
+  min-width: 0;
+  min-height: 94px;
+  border: 1px solid rgba(56, 189, 248, 0.12);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at top right, rgba(56, 189, 248, 0.06), transparent 40%),
+    rgba(3, 17, 46, 0.54);
+  padding: 12px 14px;
+  display: grid;
+  grid-template-rows: auto minmax(42px, 1fr) auto;
+  row-gap: 6px;
+}
+
+.metricWide {
+  grid-column: span 2;
+}
+
+.metricStrong {
+  background:
+    radial-gradient(circle at top right, rgba(56, 189, 248, 0.18), transparent 42%),
+    linear-gradient(180deg, rgba(8, 31, 67, 0.92), rgba(3, 17, 46, 0.72));
+}
+
+.metricLabel {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #8fb6da;
+}
+
+.metricValue {
+  font-size: 24px;
+  line-height: 1.05;
+  font-weight: 900;
+  color: #f4fbff;
+  white-space: nowrap;
+  align-self: end;
+  display: flex;
+  align-items: flex-end;
+}
+
+.metricStrong .metricValue {
+  font-size: 40px;
+}
+
+.metricMeta {
+  padding-top: 8px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #7fb9dc;
+  word-break: break-word;
+}
+
+.chartWrap {
+  flex: 1;
+  min-height: 260px;
+  border: 1px solid rgba(56, 189, 248, 0.12);
+  border-radius: 16px;
+  background: rgba(4, 18, 44, 0.72);
+  overflow: hidden;
+}
+
+.empty {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: rgba(217, 236, 255, 0.45);
+  letter-spacing: 1px;
+  font-size: 13px;
+}
+
+@media (max-width: 1480px) {
+  .overviewGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .metricWide {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 720px) {
+  .overviewHead {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .overviewGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .metricWide {
+    grid-column: span 1;
+  }
+
+  .metricValue,
+  .metricStrong .metricValue {
+    white-space: normal;
+  }
+}

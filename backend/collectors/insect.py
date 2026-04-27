@@ -1,7 +1,7 @@
 """Collectors for insect lamp and spore capture devices."""
 
 import logging
-from datetime import datetime, timedelta
+from datetime import date, datetime, time, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -84,6 +84,81 @@ async def _existing_collection_times(
     return set(result.scalars().all())
 
 
+async def _latest_collection_time(
+    db: AsyncSession,
+    model,
+    device_code: str,
+) -> datetime | None:
+    result = await db.execute(
+        select(model.collection_time)
+        .where(model.device_code == device_code)
+        .order_by(model.collection_time.desc())
+        .limit(1)
+    )
+    return result.scalar_one_or_none()
+
+
+async def _existing_record_days(
+    db: AsyncSession,
+    model,
+    device_code: str,
+    start_day: date,
+    end_day: date,
+) -> set[date]:
+    start_dt = datetime.combine(start_day, time.min)
+    end_dt = datetime.combine(end_day + timedelta(days=1), time.min)
+    result = await db.execute(
+        select(model.collection_time).where(
+            model.device_code == device_code,
+            model.collection_time >= start_dt,
+            model.collection_time < end_dt,
+        )
+    )
+    return {dt.date() for dt in result.scalars().all()}
+
+
+async def _ensure_zero_snapshots(
+    db: AsyncSession,
+    model,
+    device_code: str,
+    field_name: str,
+    task_name: str,
+) -> int:
+    now = datetime.now().replace(microsecond=0)
+    latest_dt = await _latest_collection_time(db, model, device_code)
+    if latest_dt and latest_dt.date() >= now.date():
+        return 0
+
+    start_day = latest_dt.date() + timedelta(days=1) if latest_dt else now.date()
+    existing_days = await _existing_record_days(db, model, device_code, start_day, now.date())
+
+    added = 0
+    day = start_day
+    while day <= now.date():
+        if day not in existing_days:
+            snapshot_time = now if day == now.date() else datetime.combine(day, time.min)
+            payload = {
+                "device_code": device_code,
+                "collection_time": snapshot_time,
+                "total_count": 0,
+                field_name: {},
+                "image_url": None,
+                "raw_data": {
+                    "synthetic": True,
+                    "reason": "upstream_no_new_data",
+                    "task": task_name,
+                    "day": day.isoformat(),
+                },
+            }
+            db.add(model(**payload))
+            added += 1
+        day += timedelta(days=1)
+
+    if added:
+        logger.info("%s: added %s synthetic zero snapshot(s)", task_name, added)
+    return added
+
+
 async def collect_insect(db: AsyncSession) -> int:
     """Fetch insect trap data and store new records."""
     time_range = _build_time_range(hours_back=settings.INSECT_LOOKBACK_HOURS)
@@ -110,8 +185,9 @@ async def collect_insect(db: AsyncSession) -> int:
     )
 
     saved = 0
+    seen_times = set(existing_times)
     for item, col_time in parsed_items:
-        if col_time in existing_times:
+        if col_time in seen_times:
             continue
         try:
             species = _parse_species(item.get("style") or item.get("bugList") or [])
@@ -130,8 +206,17 @@ async def collect_insect(db: AsyncSession) -> int:
                 )
             )
             saved += 1
+            seen_times.add(col_time)
         except Exception as exc:
             logger.warning("Failed to parse insect record: %s | data=%s", exc, item)
+
+    saved += await _ensure_zero_snapshots(
+        db,
+        InsectRecord,
+        settings.INSECT_CODE,
+        "species_data",
+        "insect",
+    )
 
     db.add(CollectLog(task_name="insect", status="success", records_count=saved))
     await db.commit()
@@ -165,8 +250,9 @@ async def collect_spore(db: AsyncSession) -> int:
     )
 
     saved = 0
+    seen_times = set(existing_times)
     for item, col_time in parsed_items:
-        if col_time in existing_times:
+        if col_time in seen_times:
             continue
         try:
             spore_data = _parse_species(item.get("style") or item.get("sporeList") or [])
@@ -185,8 +271,17 @@ async def collect_spore(db: AsyncSession) -> int:
                 )
             )
             saved += 1
+            seen_times.add(col_time)
         except Exception as exc:
             logger.warning("Failed to parse spore record: %s | data=%s", exc, item)
+
+    saved += await _ensure_zero_snapshots(
+        db,
+        SporeRecord,
+        settings.SPORE_CODE,
+        "spore_data",
+        "spore",
+    )
 
     db.add(CollectLog(task_name="spore", status="success", records_count=saved))
     await db.commit()

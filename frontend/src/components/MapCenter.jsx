@@ -80,7 +80,7 @@ const DEVICES = [
     fields: (d) => {
       const s = d?.insect?.status
       return [
-        { label: '今日捕获', value: d?.insect?.total_today ?? '—', unit: '只' },
+        { label: '昨日捕获', value: d?.insect?.total_yesterday ?? '—', unit: '只' },
         { label: '状态', value: s === 'online' ? '在线' : (s ? '离线' : '待接入'), unit: '' },
       ]
     },
@@ -89,7 +89,7 @@ const DEVICES = [
   {
     id: 'water',
     name: '面源污染监测站',
-    code: '16116030',
+    code: '16133028',
     lat: 18.314145, lng: 109.463094,
     color: '#ffd600',
     labelCenter: [140, -100],
@@ -97,9 +97,9 @@ const DEVICES = [
       const wq = d?.water_quality
       const s = wq?.status
       return [
-        { label: 'PH值', value: wq?.ph ?? '—', unit: '' },
-        { label: '溶解氧', value: wq?.do ?? '—', unit: 'mg/L' },
-        { label: '状态', value: s === 'online' ? '在线' : (s ? '离线' : '待接入'), unit: '' },
+        { label: '氨氮', value: wq?.nh4n ?? '—', unit: 'mg/L' },
+        { label: '高猛酸盐', value: wq?.permanganate ?? '—', unit: 'mg/L' },
+        { label: '状态', value: s === 'online' ? '在线' : (s ? '离线' : '未接入'), unit: '' },
       ]
     },
   },
@@ -453,7 +453,19 @@ export default function MapCenter({ overview }) {
     return init
   })
 
-  const data = overview || {}
+  const rawData = overview || {}
+  const yesterday = new Date()
+  yesterday.setDate(yesterday.getDate() - 1)
+  const yesterdayKey = `${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`
+  const yesterdayTrendItem = (rawData.insect_trend || []).find(item => item?.date === yesterdayKey)
+  const inferredYesterdayTotal = yesterdayTrendItem?.count ?? null
+  const data = {
+    ...rawData,
+    insect: {
+      ...(rawData.insect || {}),
+      total_yesterday: rawData.insect?.total_yesterday ?? inferredYesterdayTotal ?? 0,
+    },
+  }
 
   // 标记点屏幕坐标更新回调（由 MarkerPixelTracker 驱动）
   const handlePixelUpdate = useCallback((positions) => {
@@ -656,15 +668,9 @@ export default function MapCenter({ overview }) {
           </div>
           <div className={s.statItem}>
             <div className={s.statNum} style={{ color: 'var(--green)' }}>
-              {data.insect?.total_today ?? 0}
+              {data.insect?.total_yesterday ?? 0}
             </div>
-            <div className={s.statLabel}>今日虫情</div>
-          </div>
-          <div className={s.statItem}>
-            <div className={s.statNum} style={{ color: '#ff7043' }}>
-              {data.water_quality?.cod != null ? `${data.water_quality.cod}` : '—'}
-            </div>
-            <div className={s.statLabel}>水体 COD</div>
+            <div className={s.statLabel}>昨日虫情</div>
           </div>
         </div>
       </div>

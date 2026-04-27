@@ -29,30 +29,41 @@ export default function LoginGate({ onSuccess }) {
 
   return (
     <div className={s.shell}>
+      <div className={s.dataGrid} />
+      <div className={s.scanBeam} />
+      <div className={s.signalOrb} />
       <div className={s.backdropGlow} />
-      <form className={s.card} onSubmit={handleSubmit}>
-        <div className={s.badge}>平台访问验证</div>
-        <h1 className={s.title}>三亚市天涯区橡胶林近自然化改造和农田提升监测平台</h1>
-        <p className={s.subtitle}>请输入访问密码后进入平台。</p>
+      <div className={s.stage}>
+        <div className={s.hero}>
+          <h1 className={s.title}>三亚市天涯区橡胶林近自然化改造和农田提升监测平台</h1>
+          <div className={s.badge}>平台访问验证</div>
+        </div>
 
-        <label className={s.label} htmlFor="platform-password">访问密码</label>
-        <input
-          id="platform-password"
-          className={s.input}
-          type="password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          placeholder="请输入平台密码"
-          autoComplete="current-password"
-          disabled={submitting}
-        />
+        <form className={s.card} onSubmit={handleSubmit}>
+          <div className={s.cardSweep} />
+          <div className={s.cornerPulse} />
+          <div className={s.formMeta}>
+            <span className={s.formDot} />
+            安全接入校验
+          </div>
+          <input
+            id="platform-password"
+            className={s.input}
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder="请输入平台密码"
+            autoComplete="current-password"
+            disabled={submitting}
+          />
 
-        {error && <div className={s.error}>{error}</div>}
+          {error && <div className={s.error}>{error}</div>}
 
-        <button className={s.button} type="submit" disabled={submitting || !password.trim()}>
-          {submitting ? '验证中...' : '进入平台'}
-        </button>
-      </form>
+          <button className={s.button} type="submit" disabled={submitting || !password.trim()}>
+            {submitting ? '验证中...' : '进入平台'}
+          </button>
+        </form>
+      </div>
     </div>
   )
 }

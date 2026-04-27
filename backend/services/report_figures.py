@@ -9,6 +9,41 @@ FigureManifestItem = dict[str, Any]
 _FIGURE_PLAN: tuple[dict[str, str], ...] = (
     {
         "type": "chart",
+        "section": "hydrology",
+        "key": "雨量日统计",
+        "caption": "监测期每日降雨量",
+        "html_id": "fig-rain-daily",
+    },
+    {
+        "type": "chart",
+        "section": "hydrology",
+        "key": "径流站点对比",
+        "caption": "各监测点累计径流量对比",
+        "html_id": "fig-runoff-device",
+    },
+    {
+        "type": "chart",
+        "section": "hydrology",
+        "key": "核心指标历史对比",
+        "caption": "本期与上一等长周期核心监测指标变化率",
+        "html_id": "fig-history-core",
+    },
+    {
+        "type": "chart",
+        "section": "water_quality",
+        "key": "水质指标均值",
+        "caption": "水质关键指标平均值",
+        "html_id": "fig-water-quality",
+    },
+    {
+        "type": "chart",
+        "section": "water_quality",
+        "key": "水质历史对比",
+        "caption": "水质关键指标本期与上一周期均值对比",
+        "html_id": "fig-history-water",
+    },
+    {
+        "type": "chart",
         "section": "insect",
         "key": "虫情日捕获",
         "caption": "每日虫情捕获量",
@@ -22,6 +57,13 @@ _FIGURE_PLAN: tuple[dict[str, str], ...] = (
         "html_id": "fig-insect-species",
     },
     {
+        "type": "capture",
+        "section": "insect",
+        "key": "insect",
+        "caption": "虫情监测设备最近实拍图",
+        "html_id": "fig-insect-capture",
+    },
+    {
         "type": "pests",
         "section": "insect",
     },
@@ -31,6 +73,19 @@ _FIGURE_PLAN: tuple[dict[str, str], ...] = (
         "key": "孢子趋势",
         "caption": "每日孢子捕获量趋势",
         "html_id": "fig-spore",
+    },
+    {
+        "type": "capture",
+        "section": "spore",
+        "key": "spore",
+        "caption": "孢子监测设备最近实拍图",
+        "html_id": "fig-spore-capture",
+    },
+    {
+        "type": "scene",
+        "section": "spore",
+        "caption": "智慧监测设备场景示意（AI生成配图）",
+        "html_id": "fig-smart-devices",
     },
     {
         "type": "disease",
@@ -43,9 +98,7 @@ _FIGURE_PLAN: tuple[dict[str, str], ...] = (
 _SCENE_PRIORITY: tuple[str, ...] = (
     "smart_devices",
     "forest_ecology",
-    "weather",
     "rainfall",
-    "soil",
     "runoff",
     "pollution",
 )
@@ -66,6 +119,13 @@ def _ordered_pest_names(summary: dict[str, Any], pests: dict[str, str]) -> list[
         if name not in seen:
             ordered.append(name)
     return ordered
+
+
+def _latest_capture_image(summary: dict[str, Any], section: str) -> str | None:
+    capture_images = (summary.get(section) or {}).get("capture_images") or []
+    if not capture_images:
+        return None
+    return capture_images[-1].get("url")
 
 
 def _append_figure(
@@ -133,6 +193,20 @@ def build_figure_manifest(
                     source="ai",
                 )
                 break
+            continue
+
+        if item_type == "capture":
+            src = _latest_capture_image(summary, item["key"])
+            if not src:
+                continue
+            _append_figure(
+                manifest,
+                section=item["section"],
+                caption=item["caption"],
+                html_id=item["html_id"],
+                src=src,
+                source="capture",
+            )
             continue
 
         if item_type == "pests":

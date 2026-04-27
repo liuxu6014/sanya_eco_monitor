@@ -1,0 +1,16 @@
+[Unit]
+Description=Sanya Eco Monitor Backend
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/uploads/sanya_eco_monitor/backend
+ExecStart=/home/ubuntu/uploads/sanya_eco_monitor/scripts/server/run_backend_prod.sh
+Restart=always
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

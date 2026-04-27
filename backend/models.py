@@ -1,13 +1,22 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, Integer, JSON, String, Text
+from sqlalchemy import DateTime, Float, Index, Integer, JSON, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from database import Base
+from time_utils import cn_now_naive
 
 
 class InsectRecord(Base):
     __tablename__ = "insect_records"
+    __table_args__ = (
+        Index(
+            "ux_insect_records_device_code_collection_time",
+            "device_code",
+            "collection_time",
+            unique=True,
+        ),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     device_code: Mapped[str] = mapped_column(String(64), index=True)
@@ -21,6 +30,14 @@ class InsectRecord(Base):
 
 class SporeRecord(Base):
     __tablename__ = "spore_records"
+    __table_args__ = (
+        Index(
+            "ux_spore_records_device_code_collection_time",
+            "device_code",
+            "collection_time",
+            unique=True,
+        ),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     device_code: Mapped[str] = mapped_column(String(64), index=True)
@@ -32,66 +49,38 @@ class SporeRecord(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, index=True)
 
 
-class WeatherRecord(Base):
-    __tablename__ = "weather_records"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    device_code: Mapped[str] = mapped_column(String(64), index=True)
-    collection_time: Mapped[datetime] = mapped_column(DateTime, index=True)
-    temperature: Mapped[float | None] = mapped_column(Float, nullable=True)
-    humidity: Mapped[float | None] = mapped_column(Float, nullable=True)
-    wind_speed: Mapped[float | None] = mapped_column(Float, nullable=True)
-    wind_direction: Mapped[str | None] = mapped_column(String(16), nullable=True)
-    rainfall: Mapped[float | None] = mapped_column(Float, nullable=True)
-    pressure: Mapped[float | None] = mapped_column(Float, nullable=True)
-    light: Mapped[float | None] = mapped_column(Float, nullable=True)
-    raw_data: Mapped[dict] = mapped_column(JSON, default=dict)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, index=True)
-
-
-class SoilRecord(Base):
-    __tablename__ = "soil_records"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    device_code: Mapped[str] = mapped_column(String(64), index=True)
-    collection_time: Mapped[datetime] = mapped_column(DateTime, index=True)
-    moisture_10cm: Mapped[float | None] = mapped_column(Float, nullable=True)
-    moisture_20cm: Mapped[float | None] = mapped_column(Float, nullable=True)
-    moisture_40cm: Mapped[float | None] = mapped_column(Float, nullable=True)
-    temperature_10cm: Mapped[float | None] = mapped_column(Float, nullable=True)
-    temperature_20cm: Mapped[float | None] = mapped_column(Float, nullable=True)
-    temperature_40cm: Mapped[float | None] = mapped_column(Float, nullable=True)
-    ph: Mapped[float | None] = mapped_column(Float, nullable=True)
-    conductivity: Mapped[float | None] = mapped_column(Float, nullable=True)
-    nitrogen: Mapped[float | None] = mapped_column(Float, nullable=True)     # N
-    phosphorus: Mapped[float | None] = mapped_column(Float, nullable=True)   # P
-    potassium: Mapped[float | None] = mapped_column(Float, nullable=True)    # K
-    raw_data: Mapped[dict] = mapped_column(JSON, default=dict)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, index=True)
-
-
 class WaterQualityRecord(Base):
     __tablename__ = "water_quality_records"
+    __table_args__ = (
+        Index(
+            "ux_water_quality_records_device_code_collection_time",
+            "device_code",
+            "collection_time",
+            unique=True,
+        ),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     device_code: Mapped[str] = mapped_column(String(64), index=True)
     collection_time: Mapped[datetime] = mapped_column(DateTime, index=True)
-    ph: Mapped[float | None] = mapped_column(Float, nullable=True)
-    dissolved_oxygen: Mapped[float | None] = mapped_column(Float, nullable=True)
-    conductivity: Mapped[float | None] = mapped_column(Float, nullable=True)
-    turbidity: Mapped[float | None] = mapped_column(Float, nullable=True)
     ammonia_nitrogen: Mapped[float | None] = mapped_column(Float, nullable=True)
     total_phosphorus: Mapped[float | None] = mapped_column(Float, nullable=True)
-    total_nitrogen: Mapped[float | None] = mapped_column(Float, nullable=True) # 总氮
-    cod: Mapped[float | None] = mapped_column(Float, nullable=True)            # COD
-    temperature: Mapped[float | None] = mapped_column(Float, nullable=True)    # 水温
+    total_nitrogen: Mapped[float | None] = mapped_column(Float, nullable=True)
+    permanganate_index: Mapped[float | None] = mapped_column(Float, nullable=True)
     raw_data: Mapped[dict] = mapped_column(JSON, default=dict)
-
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, index=True)
 
 
 class RainfallRecord(Base):
     __tablename__ = "rainfall_records"
+    __table_args__ = (
+        Index(
+            "ux_rainfall_records_device_code_collection_time",
+            "device_code",
+            "collection_time",
+            unique=True,
+        ),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     device_code: Mapped[str] = mapped_column(String(64), index=True)
@@ -105,13 +94,21 @@ class RainfallRecord(Base):
 
 class RunoffRecord(Base):
     __tablename__ = "runoff_records"
+    __table_args__ = (
+        Index(
+            "ux_runoff_records_device_code_collection_time",
+            "device_code",
+            "collection_time",
+            unique=True,
+        ),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     device_code: Mapped[str] = mapped_column(String(64), index=True)
     collection_time: Mapped[datetime] = mapped_column(DateTime, index=True)
-    flow_speed: Mapped[float | None] = mapped_column(Float, nullable=True)     # 流速 (m/s)
-    flow_rate: Mapped[float | None] = mapped_column(Float, nullable=True)      # 瞬时流量 (m3/s)
-    total_flow: Mapped[float | None] = mapped_column(Float, nullable=True)     # 累计流量 (m3)
+    flow_speed: Mapped[float | None] = mapped_column(Float, nullable=True)
+    flow_rate: Mapped[float | None] = mapped_column(Float, nullable=True)
+    total_flow: Mapped[float | None] = mapped_column(Float, nullable=True)
     water_level: Mapped[float | None] = mapped_column(Float, nullable=True)
     rainfall: Mapped[float | None] = mapped_column(Float, nullable=True)
     runoff: Mapped[float | None] = mapped_column(Float, nullable=True)
@@ -123,6 +120,14 @@ class RunoffRecord(Base):
 
 class WaterLevelRecord(Base):
     __tablename__ = "water_level_records"
+    __table_args__ = (
+        Index(
+            "ux_water_level_records_device_code_collection_time",
+            "device_code",
+            "collection_time",
+            unique=True,
+        ),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     device_code: Mapped[str] = mapped_column(String(64), index=True)
@@ -153,4 +158,4 @@ class GeneratedReport(Base):
     title: Mapped[str] = mapped_column(String(128))
     html_path: Mapped[str | None] = mapped_column(String(255), nullable=True)
     docx_path: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=cn_now_naive, index=True)

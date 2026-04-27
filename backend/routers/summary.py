@@ -1,63 +1,195 @@
-"""综合概览接口 — 大屏首屏所需数据的一次性汇总."""
+"""综合概览接口 - 大屏首屏所需数据的一次性汇总."""
+import asyncio
+import logging
+import time
 from datetime import datetime, timedelta
+
+import httpx
 from fastapi import APIRouter, Depends
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc, func
+
+from collectors.base import get_token
+from config import settings
 from database import get_db
 from models import (
-    InsectRecord, SporeRecord, WeatherRecord, SoilRecord, 
-    RainfallRecord, RunoffRecord, CollectLog, WaterQualityRecord
+    CollectLog,
+    InsectRecord,
+    RainfallRecord,
+    RunoffRecord,
+    SporeRecord,
+    WaterQualityRecord,
 )
-from config import settings
+from services.weather_support import get_weather_support
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/summary", tags=["综合概览"])
+
+_device_status_cache: dict[str, object] = {
+    "value": None,
+    "expires_at": 0.0,
+}
+_device_status_lock = asyncio.Lock()
+
+RUNOFF_DEVICES = [
+    ("16132920", "杧果林径流监测系统1号"),
+    ("16132921", "橡胶林径流监测系统1号"),
+    ("16132922", "次生林径流监测系统"),
+    ("16132923", "杧果林径流监测系统2号"),
+    ("16132924", "橡胶林径流监测系统2号"),
+    ("16132925", "槟榔林径流监测系统"),
+]
+
+
+def _probe_time_range(minutes_back: int = 10) -> str:
+    end = datetime.now()
+    start = end - timedelta(minutes=minutes_back)
+    fmt = "%Y-%m-%d %H:%M:%S"
+    return f"{start.strftime(fmt)},{end.strftime(fmt)}"
+
+
+async def _get_latest_by_code(db: AsyncSession, model, code: str):
+    result = await db.execute(
+        select(model).where(model.device_code == code).order_by(desc(model.collection_time)).limit(1)
+    )
+    return result.scalar_one_or_none()
+
+
+async def _get_latest_non_null_field_by_code(
+    db: AsyncSession,
+    model,
+    code: str,
+    field_name: str,
+):
+    field = getattr(model, field_name)
+    result = await db.execute(
+        select(field)
+        .where(model.device_code == code, field.is_not(None))
+        .order_by(desc(model.collection_time))
+        .limit(1)
+    )
+    return result.scalar_one_or_none()
+
+
+async def _latest_non_empty_image(db: AsyncSession, model) -> str | None:
+    result = await db.execute(
+        select(model.image_url)
+        .where(model.image_url.is_not(None), model.image_url != "")
+        .order_by(desc(model.collection_time))
+        .limit(1)
+    )
+    return result.scalar_one_or_none()
+
+
+async def _probe_device_statuses() -> dict[str, str]:
+    statuses: dict[str, str] = {}
+    timeout = httpx.Timeout(8.0, connect=5.0)
+    whxph_base_url = settings.WHXPH_BASE_URL.rstrip("/")
+
+    async with httpx.AsyncClient(verify=False, timeout=timeout) as client:
+        async def probe(name: str, url: str, *, params: dict | None = None, headers: dict | None = None):
+            try:
+                resp = await client.get(url, params=params, headers=headers)
+                statuses[name] = "online" if resp.status_code == 200 else "offline"
+            except Exception as exc:
+                logger.warning("Device probe failed for %s: %s", name, exc)
+                statuses[name] = "offline"
+
+        platform_headers = None
+        try:
+            token = await get_token()
+            platform_headers = {"Authorization": token}
+        except Exception as exc:
+            logger.warning("Failed to fetch platform token for device probes: %s", exc)
+            statuses["insect"] = "offline"
+            statuses["spore"] = "offline"
+
+        tasks = []
+        if platform_headers:
+            bugwarm_url = f"{settings.PLATFORM_BASE_URL}/http/monitor/getBugWarmByCode"
+            probe_range = _probe_time_range()
+            tasks.extend([
+                probe(
+                    "insect",
+                    bugwarm_url,
+                    params={"code": settings.INSECT_CODE, "collectionTime": probe_range},
+                    headers=platform_headers,
+                ),
+                probe(
+                    "spore",
+                    bugwarm_url,
+                    params={"code": settings.SPORE_CODE, "collectionTime": probe_range},
+                    headers=platform_headers,
+                ),
+            ])
+
+        water_code = settings.WATER_QUALITY_CODE.strip() or "16133028"
+        tasks.append(probe("water", f"{whxph_base_url}/data-n/{water_code}"))
+
+        for code in [c.strip() for c in settings.RAIN_GAUGE_CODES.split(",") if c.strip()]:
+            tasks.append(probe(f"rain_{code}", f"{whxph_base_url}/data-n/{code}"))
+
+        for code in [c.strip() for c in settings.RUNOFF_CODES.split(",") if c.strip()]:
+            tasks.append(probe(f"runoff_{code}", f"{whxph_base_url}/data-n/{code}"))
+
+        if tasks:
+            await asyncio.gather(*tasks)
+
+    return statuses
+
+
+async def _get_device_statuses() -> dict[str, str]:
+    now = time.monotonic()
+    cached_value = _device_status_cache["value"]
+    expires_at = float(_device_status_cache["expires_at"])
+    if isinstance(cached_value, dict) and now < expires_at:
+        return dict(cached_value)
+
+    async with _device_status_lock:
+        now = time.monotonic()
+        cached_value = _device_status_cache["value"]
+        expires_at = float(_device_status_cache["expires_at"])
+        if isinstance(cached_value, dict) and now < expires_at:
+            return dict(cached_value)
+
+        statuses = await _probe_device_statuses()
+        ttl = max(5, int(settings.DEVICE_STATUS_CACHE_SECONDS))
+        _device_status_cache["value"] = dict(statuses)
+        _device_status_cache["expires_at"] = now + ttl
+        return dict(statuses)
 
 
 @router.get("/overview")
 async def get_overview(db: AsyncSession = Depends(get_db)):
     """大屏首屏所有关键指标一次性返回"""
     today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-    
-    # 分级在线判定阈值
-    REALTIME_THRESHOLD = datetime.now() - timedelta(minutes=15)
-    PERIODIC_THRESHOLD = datetime.now() - timedelta(hours=48)
+    yesterday = today - timedelta(days=1)
+    device_statuses = await _get_device_statuses()
+    weather_support = await get_weather_support()
 
-    def get_status(t, is_realtime=True):
-        if t is None: return "offline"
-        limit = REALTIME_THRESHOLD if is_realtime else PERIODIC_THRESHOLD
-        return "online" if t >= limit else "timeout"
-
-    # Latest weather
-    weather_res = await db.execute(
-        select(WeatherRecord).order_by(desc(WeatherRecord.collection_time)).limit(1)
-    )
-    weather = weather_res.scalar_one_or_none()
-
-    # Latest soil
-    soil_res = await db.execute(
-        select(SoilRecord).order_by(desc(SoilRecord.collection_time)).limit(1)
-    )
-    soil = soil_res.scalar_one_or_none()
-
-    # Latest insect
     insect_res = await db.execute(
         select(InsectRecord).order_by(desc(InsectRecord.collection_time)).limit(1)
     )
     insect = insect_res.scalar_one_or_none()
 
-    # Latest spore
     spore_res = await db.execute(
         select(SporeRecord).order_by(desc(SporeRecord.collection_time)).limit(1)
     )
     spore = spore_res.scalar_one_or_none()
 
-    # Today's insect total
     today_insect_res = await db.execute(
         select(func.sum(InsectRecord.total_count)).where(InsectRecord.collection_time >= today)
     )
     today_insect_total = today_insect_res.scalar() or 0
+    yesterday_insect_res = await db.execute(
+        select(func.sum(InsectRecord.total_count)).where(
+            InsectRecord.collection_time >= yesterday,
+            InsectRecord.collection_time < today,
+        )
+    )
+    yesterday_insect_total = yesterday_insect_res.scalar() or 0
 
-    # 7-day insect trend
     week_ago = datetime.now() - timedelta(days=7)
     trend_res = await db.execute(
         select(InsectRecord)
@@ -65,114 +197,87 @@ async def get_overview(db: AsyncSession = Depends(get_db)):
         .order_by(InsectRecord.collection_time)
     )
     trend_records = trend_res.scalars().all()
-    daily_trend: dict = {}
-    for r in trend_records:
-        day = r.collection_time.strftime("%m-%d")
-        daily_trend[day] = daily_trend.get(day, 0) + r.total_count
+    daily_trend: dict[str, int] = {}
+    for record in trend_records:
+        day = record.collection_time.strftime("%m-%d")
+        daily_trend[day] = daily_trend.get(day, 0) + record.total_count
 
-    # Last collect log
     log_res = await db.execute(
         select(CollectLog).order_by(desc(CollectLog.created_at)).limit(5)
     )
     logs = log_res.scalars().all()
 
-    # --- ADDED: Actual data for other individual devices on the map ---
-    async def get_latest_by_code(model, code):
-        res = await db.execute(
-            select(model).where(model.device_code == code).order_by(desc(model.collection_time)).limit(1)
-        )
-        return res.scalar_one_or_none()
-
-    # 1. Runoff devices
     runoff_data = {}
-    RUNOFF_CODES = [c.strip() for c in settings.RUNOFF_CODES.split(",") if c.strip()]
-    for code in RUNOFF_CODES:
-        r = await get_latest_by_code(RunoffRecord, code)
-        if r:
-            runoff_data[code] = {
-                "device_code": code,
-                "flow_speed": r.flow_speed,
-                "flow_rate": r.flow_rate,
-                "total_flow": r.total_flow,
-                "water_level": r.water_level,
-                "sand_content": r.sand_content,
-                "liquid_pressure": r.liquid_pressure,
-                "runoff": r.runoff,
-                "rainfall": r.rainfall,
-                "updated_at": r.collection_time.isoformat(),
-                "status": get_status(r.collection_time, is_realtime=True)
-            }
+    runoff_codes = [c.strip() for c in settings.RUNOFF_CODES.split(",") if c.strip()]
+    for code in runoff_codes:
+        record = await _get_latest_by_code(db, RunoffRecord, code)
+        if not record:
+            continue
+        liquid_pressure = record.liquid_pressure
+        if liquid_pressure is None:
+            liquid_pressure = await _get_latest_non_null_field_by_code(
+                db, RunoffRecord, code, "liquid_pressure"
+            )
+        runoff_data[code] = {
+            "device_code": code,
+            "flow_speed": record.flow_speed,
+            "flow_rate": record.flow_rate,
+            "total_flow": record.total_flow,
+            "water_level": record.water_level,
+            "sand_content": record.sand_content,
+            "liquid_pressure": liquid_pressure,
+            "runoff": record.runoff,
+            "rainfall": record.rainfall,
+            "updated_at": record.collection_time.isoformat(),
+            "status": device_statuses.get(f"runoff_{code}", "offline"),
+        }
 
-    # 2. Water quality
-    wq_code = settings.WATER_QUALITY_CODE.strip() or "16116030"
-    wq = await get_latest_by_code(WaterQualityRecord, wq_code)
-    wq_data = {
-        "ph": wq.ph,
-        "ec": wq.conductivity,
-        "cod": wq.cod,
-        "nh4n": wq.ammonia_nitrogen,
-        "do": wq.dissolved_oxygen,
-        "tp": wq.total_phosphorus,
-        "tn": wq.total_nitrogen,
-        "turbidity": wq.turbidity,
-        "water_temp": wq.temperature,
-        "updated_at": wq.collection_time.isoformat(),
-        "status": get_status(wq.collection_time, is_realtime=True)
-    } if wq else None
+    water_code = settings.WATER_QUALITY_CODE.strip() or "16133028"
+    water_record = await _get_latest_by_code(db, WaterQualityRecord, water_code)
+    water_quality = {
+        "nh4n": water_record.ammonia_nitrogen,
+        "tp": water_record.total_phosphorus,
+        "tn": water_record.total_nitrogen,
+        "permanganate": water_record.permanganate_index,
+        "updated_at": water_record.collection_time.isoformat(),
+        "status": device_statuses.get("water", "offline"),
+    } if water_record else None
 
-    # 3. Rain gauges
     rain_data = {}
-    RAIN_CODES = [c.strip() for c in settings.RAIN_GAUGE_CODES.split(",") if c.strip()]
-    for code in RAIN_CODES:
-        r = await get_latest_by_code(RainfallRecord, code)
-        if r:
-            rain_data[code] = {
-                "rainfall": r.rainfall,
-                "updated_at": r.collection_time.isoformat(),
-                "status": get_status(r.collection_time, is_realtime=True)
-            }
+    rain_codes = [c.strip() for c in settings.RAIN_GAUGE_CODES.split(",") if c.strip()]
+    for code in rain_codes:
+        record = await _get_latest_by_code(db, RainfallRecord, code)
+        if not record:
+            continue
+        rain_data[code] = {
+            "rainfall": record.rainfall,
+            "updated_at": record.collection_time.isoformat(),
+            "status": device_statuses.get(f"rain_{code}", "offline"),
+        }
+
+    insect_image_url = insect.image_url if insect and insect.image_url else await _latest_non_empty_image(db, InsectRecord)
+    spore_image_url = spore.image_url if spore and spore.image_url else await _latest_non_empty_image(db, SporeRecord)
 
     return {
         "data": {
-            "weather": {
-                "temperature": weather.temperature if weather else None,
-                "humidity": weather.humidity if weather else None,
-                "wind_speed": weather.wind_speed if weather else None,
-                "wind_direction": weather.wind_direction if weather else None,
-                "rainfall": weather.rainfall if weather else None,
-                "updated_at": weather.collection_time.isoformat() if weather else None,
-            },
-            "soil": {
-                "moisture_10cm": soil.moisture_10cm if soil else None,
-                "moisture_20cm": soil.moisture_20cm if soil else None,
-                "moisture_40cm": soil.moisture_40cm if soil else None,
-                "temperature_10cm": soil.temperature_10cm if soil else None,
-                "n": soil.nitrogen if soil else None,
-                "p": soil.phosphorus if soil else None,
-                "k": soil.potassium if soil else None,
-                "ph": soil.ph if soil else None,
-                "ec": soil.conductivity if soil else None,
-                "updated_at": soil.collection_time.isoformat() if soil else None,
-            },
             "insect": {
                 "total_today": int(today_insect_total),
+                "total_yesterday": int(yesterday_insect_total),
                 "latest_count": insect.total_count if insect else None,
                 "top_species": sorted(
-                    (insect.species_data or {}).items(), key=lambda x: x[1], reverse=True
+                    (insect.species_data or {}).items(), key=lambda item: item[1], reverse=True
                 )[:5] if insect else [],
-                "image_url": insect.image_url if insect else None,
+                "image_url": insect_image_url,
                 "updated_at": insect.collection_time.isoformat() if insect else None,
-                "status": get_status(insect.collection_time, is_realtime=False) if insect else "offline",
+                "status": device_statuses.get("insect", "offline"),
             },
             "spore": {
                 "latest_count": spore.total_count if spore else None,
-                "image_url": spore.image_url if spore else None,
+                "image_url": spore_image_url,
                 "updated_at": spore.collection_time.isoformat() if spore else None,
-                "status": get_status(spore.collection_time, is_realtime=False) if spore else "offline",
+                "status": device_statuses.get("spore", "offline"),
             },
-            "insect_trend": [
-                {"date": k, "count": v} for k, v in daily_trend.items()
-            ],
+            "insect_trend": [{"date": key, "count": value} for key, value in daily_trend.items()],
             "collect_logs": [
                 {
                     "task": log.task_name,
@@ -183,58 +288,68 @@ async def get_overview(db: AsyncSession = Depends(get_db)):
                 for log in logs
             ],
             "runoff_stations": runoff_data,
-            "water_quality": wq_data,
+            "water_quality": water_quality,
             "rain_gauges": rain_data,
+            "weather_support": weather_support,
         }
     }
 
 
 @router.get("/device-status")
 async def get_device_status(db: AsyncSession = Depends(get_db)):
-    """设备在线状态（以最近数据时间判断是否在线）"""
-    # 分级在线判定阈值
-    REALTIME_LIMIT = datetime.now() - timedelta(minutes=15)
-    PERIODIC_LIMIT = datetime.now() - timedelta(hours=48)
+    """设备在线状态，以设备接口 HTTP 200 为在线依据。"""
+    device_statuses = await _get_device_statuses()
 
-    async def last_time(model, code=None):
-        q = select(model.collection_time).order_by(desc(model.collection_time)).limit(1)
+    async def last_time(model, code: str | None = None):
+        query = select(model.collection_time).order_by(desc(model.collection_time)).limit(1)
         if code is not None:
-            q = q.where(model.device_code == code)
-        res = await db.execute(q)
-        return res.scalar_one_or_none()
+            query = query.where(model.device_code == code)
+        result = await db.execute(query)
+        return result.scalar_one_or_none()
 
-    insect_t  = await last_time(InsectRecord)
-    spore_t   = await last_time(SporeRecord)
-    wq_code   = settings.WATER_QUALITY_CODE.strip() or "16116030"
-    wq_t      = await last_time(WaterQualityRecord, wq_code)
-
-    def status(t, is_realtime=True):
-        if t is None:
-            return "offline"
-        limit = REALTIME_LIMIT if is_realtime else PERIODIC_LIMIT
-        return "online" if t >= limit else "timeout"
+    insect_time = await last_time(InsectRecord)
+    spore_time = await last_time(SporeRecord)
+    water_code = settings.WATER_QUALITY_CODE.strip() or "16133028"
+    water_time = await last_time(WaterQualityRecord, water_code)
 
     devices = [
-        {"name": "智能虫情测报灯", "code": "insect", "status": status(insect_t, is_realtime=False), "last_data": insect_t.isoformat() if insect_t else None},
-        {"name": "孢子捕捉仪",     "code": "spore",  "status": status(spore_t, is_realtime=False), "last_data": spore_t.isoformat()  if spore_t  else None},
-        {"name": "面源污染监测站", "code": "water",  "status": status(wq_t, is_realtime=True),     "last_data": wq_t.isoformat() if wq_t else None},
+        {
+            "name": "智能虫情测报灯",
+            "code": "insect",
+            "status": device_statuses.get("insect", "offline"),
+            "last_data": insect_time.isoformat() if insect_time else None,
+        },
+        {
+            "name": "孢子捕捉仪",
+            "code": "spore",
+            "status": device_statuses.get("spore", "offline"),
+            "last_data": spore_time.isoformat() if spore_time else None,
+        },
+        {
+            "name": "面源污染监测站",
+            "code": "water",
+            "status": device_statuses.get("water", "offline"),
+            "last_data": water_time.isoformat() if water_time else None,
+        },
     ]
 
-    RAIN_CODES = [c.strip() for c in settings.RAIN_GAUGE_CODES.split(",") if c.strip()]
-    for i, code in enumerate(RAIN_CODES, 1):
-        t = await last_time(RainfallRecord, code)
-        devices.append({"name": f"4G雨量计{i}号", "code": f"rain_{code}", "status": status(t, True), "last_data": t.isoformat() if t else None})
+    rain_codes = [c.strip() for c in settings.RAIN_GAUGE_CODES.split(",") if c.strip()]
+    for index, code in enumerate(rain_codes, 1):
+        record_time = await last_time(RainfallRecord, code)
+        devices.append({
+            "name": f"4G雨量计{index}号",
+            "code": f"rain_{code}",
+            "status": device_statuses.get(f"rain_{code}", "offline"),
+            "last_data": record_time.isoformat() if record_time else None,
+        })
 
-    RUNOFF_DEVICES = [
-        ("16132920", "杧果林径流监测系统1号"),
-        ("16132921", "橡胶林径流监测系统1号"),
-        ("16132922", "次生林径流监测系统"),
-        ("16132923", "杧果林径流监测系统2号"),
-        ("16132924", "橡胶林径流监测系统2号"),
-        ("16132925", "槟榔林径流监测系统"),
-    ]
     for code, name in RUNOFF_DEVICES:
-        t = await last_time(RunoffRecord, code)
-        devices.append({"name": name, "code": f"runoff_{code}", "status": status(t, True), "last_data": t.isoformat() if t else None})
+        record_time = await last_time(RunoffRecord, code)
+        devices.append({
+            "name": name,
+            "code": f"runoff_{code}",
+            "status": device_statuses.get(f"runoff_{code}", "offline"),
+            "last_data": record_time.isoformat() if record_time else None,
+        })
 
     return {"data": devices}

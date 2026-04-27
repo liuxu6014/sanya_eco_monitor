@@ -1,11 +1,9 @@
-"""Seed the SQLite database with 30 days of realistic mock data.
+"""Seed the SQLite database with 30 days of realistic insect/spore mock data.
 
 Run from the backend directory:
     uv run python scripts/seed_data.py
 
 Inserts data into:
-  - weather_records   (every 30 min, 48 pts/day)
-  - soil_records      (every 30 min, 48 pts/day)
   - insect_records    (twice a day, at 06:00 and 20:00)
   - spore_records     (once a day, at 08:00)
 """
@@ -23,14 +21,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from database import engine, Base
-from models import WeatherRecord, SoilRecord, InsectRecord, SporeRecord
+from models import InsectRecord, SporeRecord
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import text
 
 DAYS = 30
-WEATHER_CODE = "16110669"
-SOIL_CODE = "16110670"
 INSECT_CODE = "202603172301"
 SPORE_CODE = "202603172302"
 
@@ -49,18 +45,6 @@ SPORE_TYPES = [
     "\u7070\u9709\u75c5\u83cc\u5b62\u5b50",   # 灰霉病菌孢子
     "\u9508\u75c5\u83cc\u5b62\u5b50",          # 锈病菌孢子
 ]
-WIND_DIRS = [
-    "\u5317",    # 北
-    "\u4e1c\u5317",  # 东北
-    "\u4e1c",    # 东
-    "\u4e1c\u5357",  # 东南
-    "\u5357",    # 南
-    "\u897f\u5357",  # 西南
-    "\u897f",    # 西
-    "\u897f\u5317",  # 西北
-]
-
-
 def _smooth_noise(base: float, amp: float, seed: float) -> float:
     """Return base + amplitude * sin-based smooth noise."""
     return base + amp * math.sin(seed) + random.uniform(-amp * 0.3, amp * 0.3)
@@ -68,7 +52,7 @@ def _smooth_noise(base: float, amp: float, seed: float) -> float:
 
 async def seed(session: AsyncSession) -> None:
     # Clear existing seed data to avoid duplicates
-    for tbl in ("weather_records", "soil_records", "insect_records", "spore_records"):
+    for tbl in ("insect_records", "spore_records"):
         await session.execute(text(f"DELETE FROM {tbl}"))
     await session.commit()
     print("Cleared existing records.")
@@ -77,60 +61,12 @@ async def seed(session: AsyncSession) -> None:
     start = now - timedelta(days=DAYS - 1)
     start = start.replace(hour=0, minute=0)
 
-    weather_rows: list[WeatherRecord] = []
-    soil_rows: list[SoilRecord] = []
     insect_rows: list[InsectRecord] = []
     spore_rows: list[SporeRecord] = []
 
     for day_i in range(DAYS):
         day_base = start + timedelta(days=day_i)
         day_seed = day_i * 1.3  # for smooth inter-day variation
-
-        # ── Weather: every 30 min ──────────────────────────────────────────
-        for slot in range(48):
-            t = day_base + timedelta(minutes=30 * slot)
-            hour_frac = slot / 48.0  # 0..1 over the day
-            # Diurnal temperature curve: cooler at night, peaking ~14:00
-            diurnal = math.sin(math.pi * (hour_frac - 0.15)) if hour_frac > 0.15 else 0
-            temp = _smooth_noise(28 + 4 * diurnal, 1.0, day_seed + slot * 0.2)
-            temp = max(22.0, min(38.0, temp))
-            humidity = _smooth_noise(80 - 10 * diurnal, 3.0, day_seed + slot * 0.15)
-            humidity = max(55.0, min(98.0, humidity))
-            # Occasional rainfall (10% chance in any slot)
-            has_rain = random.random() < 0.10
-            rainfall = round(random.uniform(0.2, 8.0), 1) if has_rain else 0.0
-            wind_speed = round(random.uniform(0.5, 6.5), 1)
-            pressure = round(_smooth_noise(1012, 4, day_seed + slot * 0.05), 1)
-            light = max(0.0, round(40000 * math.sin(math.pi * hour_frac) + random.uniform(-3000, 3000), 0)) if 0.15 < hour_frac < 0.9 else 0.0
-
-            weather_rows.append(WeatherRecord(
-                device_code=WEATHER_CODE,
-                collection_time=t,
-                temperature=round(temp, 1),
-                humidity=round(humidity, 1),
-                wind_speed=wind_speed,
-                wind_direction=random.choice(WIND_DIRS),
-                rainfall=rainfall,
-                pressure=pressure,
-                light=light,
-                raw_data={},
-            ))
-
-        # ── Soil: every 30 min ─────────────────────────────────────────────
-        base_m10 = _smooth_noise(62, 10, day_seed)
-        base_m20 = _smooth_noise(68, 8, day_seed + 1)
-        base_m40 = _smooth_noise(72, 6, day_seed + 2)
-        for slot in range(48):
-            t = day_base + timedelta(minutes=30 * slot)
-            soil_rows.append(SoilRecord(
-                device_code=SOIL_CODE,
-                collection_time=t,
-                moisture_10cm=round(max(30.0, min(95.0, _smooth_noise(base_m10, 1.5, day_seed + slot * 0.1))), 1),
-                moisture_20cm=round(max(35.0, min(95.0, _smooth_noise(base_m20, 1.0, day_seed + slot * 0.09))), 1),
-                moisture_40cm=round(max(40.0, min(95.0, _smooth_noise(base_m40, 0.8, day_seed + slot * 0.08))), 1),
-                temperature_10cm=round(_smooth_noise(26.5, 1.5, day_seed + slot * 0.05), 1),
-                raw_data={},
-            ))
 
         # ── Insects: 06:00 and 20:00 ────────────────────────────────────────
         for hour in (6, 20):
@@ -183,10 +119,6 @@ async def seed(session: AsyncSession) -> None:
             raw_data={},
         ))
 
-    print(f"Inserting {len(weather_rows)} weather records...")
-    session.add_all(weather_rows)
-    print(f"Inserting {len(soil_rows)} soil records...")
-    session.add_all(soil_rows)
     print(f"Inserting {len(insect_rows)} insect records...")
     session.add_all(insect_rows)
     print(f"Inserting {len(spore_rows)} spore records...")

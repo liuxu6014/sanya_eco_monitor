@@ -26,6 +26,16 @@ from config import settings
 
 logger = logging.getLogger(__name__)
 
+
+def _empty_image_bundle() -> dict[str, Any]:
+    return {
+        "cover": None,
+        "disease": None,
+        "forest_ecology": None,
+        "smart_devices": None,
+        "pests": {},
+    }
+
 # ---------------------------------------------------------------------------
 # Randomized prompt builders — each call returns a varied prompt
 # ---------------------------------------------------------------------------
@@ -82,7 +92,7 @@ def _smart_devices_prompt() -> str:
     time = random.choice(["sunrise", "blue hour", "midday", "dusk"])
     focus = random.choice([
         "insect light trap glowing at night with moths circling",
-        "weather station and runoff sensors in a natural rubber forest",
+        "runoff sensors and rain gauges in a natural rubber forest",
         "spore capture device with collection funnel in morning light",
         "IoT monitoring pole with solar panel amid tropical trees",
     ])
@@ -116,6 +126,86 @@ def _pest_prompt(species_name: str) -> str:
 # Core REST call
 # ---------------------------------------------------------------------------
 
+
+def _is_gemini_model(model: str) -> bool:
+    return model.lower().startswith("gemini")
+
+
+def _is_openai_compatible_base(base_url: str) -> bool:
+    return "/v1" in base_url and "googleapis.com" not in base_url
+
+
+def _candidate_gemini_urls(base_url: str, model: str) -> list[str]:
+    root = base_url.rstrip("/")
+    candidates: list[str] = []
+
+    if root.endswith("/v1"):
+        base_root = root[:-3]
+        candidates.extend(
+            [
+                f"{base_root}/v1beta/models/{model}:generateContent",
+                f"{base_root}/v1/models/{model}:generateContent",
+                f"{root}/models/{model}:generateContent",
+            ]
+        )
+    elif root.endswith("/v1beta"):
+        base_root = root[:-7]
+        candidates.extend(
+            [
+                f"{root}/models/{model}:generateContent",
+                f"{base_root}/v1/models/{model}:generateContent",
+            ]
+        )
+    else:
+        candidates.extend(
+            [
+                f"{root}/v1beta/models/{model}:generateContent",
+                f"{root}/v1/models/{model}:generateContent",
+                f"{root}/models/{model}:generateContent",
+            ]
+        )
+
+    # Deduplicate while preserving order.
+    return list(dict.fromkeys(candidates))
+
+
+def _extract_openai_image(data: dict[str, Any]) -> str | None:
+    items = data.get("data")
+    if not items:
+        return None
+    first = items[0]
+    b64 = first.get("b64_json")
+    if b64:
+        return f"data:image/png;base64,{b64}"
+    img_url = first.get("url")
+    if img_url:
+        return img_url
+    return None
+
+
+def _extract_gemini_image(data: dict[str, Any]) -> str | None:
+    for candidate in data.get("candidates", []):
+        parts = candidate.get("content", {}).get("parts", [])
+        for part in parts:
+            inline = part.get("inlineData") or {}
+            b64 = inline.get("data")
+            if b64:
+                mime = inline.get("mimeType", "image/png")
+                return f"data:{mime};base64,{b64}"
+    return None
+
+
+def _build_gemini_payload(prompt: str, model: str) -> dict[str, Any]:
+    image_config: dict[str, Any] = {"aspectRatio": "16:9"}
+    if "3-pro-image-preview" in model or "3.1-flash-image-preview" in model:
+        image_config["imageSize"] = "2K"
+    return {
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {
+            "imageConfig": image_config,
+        },
+    }
+
 async def _call_image_gen(prompt: str, client: httpx.AsyncClient) -> str | None:
     """Call image-generation API. Supports both Gemini-native and OpenAI-compliant endpoints."""
     if not settings.IMAGE_GEN_API_KEY:
@@ -124,12 +214,41 @@ async def _call_image_gen(prompt: str, client: httpx.AsyncClient) -> str | None:
     base_url = settings.IMAGE_GEN_BASE_URL.rstrip('/')
     model = settings.IMAGE_GEN_MODEL
 
-    # Protocol Detection
-    is_openai_style = "/v1" in base_url and "goog" not in base_url
-    
+    payload = _build_gemini_payload(prompt, model)
+
+    prefer_gemini = _is_gemini_model(model)
+
     try:
-        if is_openai_style:
-            # OpenAI / DALL-E style
+        if prefer_gemini:
+            for url in _candidate_gemini_urls(base_url, model):
+                for request_kwargs in (
+                    {"params": {"key": settings.IMAGE_GEN_API_KEY}},
+                    {"headers": {"x-goog-api-key": settings.IMAGE_GEN_API_KEY}},
+                    {"headers": {"Authorization": f"Bearer {settings.IMAGE_GEN_API_KEY}"}},
+                ):
+                    try:
+                        resp = await client.post(
+                            url,
+                            json=payload,
+                            timeout=60,
+                            **request_kwargs,
+                        )
+                        resp.raise_for_status()
+                        image = _extract_gemini_image(resp.json())
+                        if image:
+                            return image
+                    except httpx.HTTPStatusError as exc:
+                        logger.warning(
+                            "Gemini image endpoint failed: %s %s %s",
+                            exc.response.status_code,
+                            url,
+                            exc.response.text[:200],
+                        )
+                    except Exception as exc:
+                        logger.warning("Gemini image endpoint error on %s: %s", url, exc)
+            return None
+
+        if _is_openai_compatible_base(base_url):
             url = f"{base_url}/images/generations"
             resp = await client.post(
                 url,
@@ -144,48 +263,10 @@ async def _call_image_gen(prompt: str, client: httpx.AsyncClient) -> str | None:
                 timeout=60,
             )
             resp.raise_for_status()
-            data = resp.json()
-            items = data.get("data")
-            if items and len(items) > 0:
-                b64 = items[0].get("b64_json")
-                if b64:
-                    return f"data:image/png;base64,{b64}"
-                # Some proxies might return url instead
-                img_url = items[0].get("url")
-                if img_url and img_url.startswith("data:"):
-                    return img_url
-        else:
-            # Gemini-native style
-            # Construct URL: base_url + /v1beta/models/{model}:generateContent
-            # Note: base_url usually excludes v1beta if it's the official one
-            if "googleapis.com" in base_url and "v1beta" not in base_url:
-                url = f"{base_url}/v1beta/models/{model}:generateContent"
-            else:
-                url = f"{base_url}/models/{model}:generateContent" if "models" not in base_url else f"{base_url}/{model}:generateContent"
-            
-            payload = {
-                "contents": [{"parts": [{"text": prompt}]}],
-                "generationConfig": {
-                    "responseModalities": ["IMAGE"],
-                    "imageConfig": {"aspectRatio": "16:9"},
-                },
-            }
-            resp = await client.post(
-                url,
-                headers={"x-goog-api-key": settings.IMAGE_GEN_API_KEY},
-                json=payload,
-                timeout=60,
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            parts = data.get("candidates", [{}])[0].get("content", {}).get("parts", [])
-            for part in parts:
-                inline = part.get("inlineData")
-                if inline:
-                    mime = inline.get("mimeType", "image/png")
-                    b64 = inline.get("data", "")
-                    return f"data:{mime};base64,{b64}"
-                    
+            image = _extract_openai_image(resp.json())
+            if image:
+                return image
+
     except httpx.HTTPStatusError as e:
         logger.error("Image gen API HTTP error: %s %s", e.response.status_code, e.response.text[:200])
     except Exception as e:
@@ -218,12 +299,12 @@ async def _pest_image(species_name: str, client: httpx.AsyncClient) -> str | Non
 
 async def generate_report_images(summary: dict[str, Any]) -> dict[str, Any]:
     """Generate all AI images for the report concurrently."""
+    if not settings.ENABLE_AI_IMAGE_GEN:
+        logger.info("AI image generation disabled by config, skipping AI image generation")
+        return _empty_image_bundle()
     if not settings.IMAGE_GEN_API_KEY:
         logger.info("IMAGE_GEN_API_KEY not configured — skipping AI image generation")
-        return {
-            "cover": None, "disease": None,
-            "forest_ecology": None, "smart_devices": None, "pests": {},
-        }
+        return _empty_image_bundle()
 
     top_species = (summary.get("insect") or {}).get("top_species") or []
     top3 = [item[0] for item in top_species[:3] if item]
@@ -243,13 +324,7 @@ async def generate_report_images(summary: dict[str, Any]) -> dict[str, Any]:
             for name in top3
         ]
 
-        results: dict[str, Any] = {
-            "cover": None,
-            "disease": None,
-            "forest_ecology": None,
-            "smart_devices": None,
-            "pests": {},
-        }
+        results: dict[str, Any] = _empty_image_bundle()
         for key, task in tasks.items():
             results[key] = await task
         for name, task in pest_tasks:

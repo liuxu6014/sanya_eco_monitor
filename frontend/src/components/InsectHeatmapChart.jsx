@@ -23,8 +23,14 @@ export default function InsectHeatmapChart({ data }) {
     backgroundColor: 'transparent',
     tooltip: {
       ...TOOLTIP,
-      formatter: p => `<div style="font-family: monospace; font-size: 11px; color: #8fc8e8; margin-bottom: 6px; letter-spacing: 1px;">TARGET: [${dates[p.data[0]]}] // ${species[p.data[1]]}</div>
-        <div style="font-size: 14px; font-weight: bold;">捕获量: <b style="color:#ff7043; font-size:18px; text-shadow: 0 0 8px rgba(255,112,67,1);">${p.data[2]}</b> 只</div>`,
+      formatter: (p) => `
+        <div style="font-family: monospace; font-size: 12px; color: #8fc8e8; margin-bottom: 6px; letter-spacing: 0.5px;">
+          ${species[p.data[1]]}（${dates[p.data[0]]}）
+        </div>
+        <div style="font-size: 14px; font-weight: bold;">
+          捕获量: <b style="color:#ff7043; font-size:18px; text-shadow: 0 0 8px rgba(255,112,67,1);">${p.data[2]}</b>只
+        </div>
+      `,
     },
     grid: { top: 20, bottom: 50, left: 100, right: 20, containLabel: false },
     xAxis: {

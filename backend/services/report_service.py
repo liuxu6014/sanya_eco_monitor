@@ -1,6 +1,6 @@
 """Report generation service for the Sanya monitoring platform.
 
-Provides aggregated summaries of weather, soil, insect, and spore data
+Provides aggregated summaries of insect, spore, rainfall, runoff, and water-quality data
 over configurable date ranges, and can render those summaries as Excel
 workbooks or standalone HTML documents.
 """
@@ -21,14 +21,17 @@ from openpyxl.styles import (
     Border,
     Side,
 )
-from sqlalchemy import select
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from config import settings
 from models import (
-    InsectRecord, SporeRecord, WeatherRecord, SoilRecord,
+    InsectRecord, SporeRecord,
     WaterQualityRecord, RainfallRecord, RunoffRecord
 )
+from services.guideline_metrics import build_guideline_metrics
 from services.report_figures import build_figure_manifest
+from time_utils import cn_now_str
 
 
 # ---------------------------------------------------------------------------
@@ -56,12 +59,176 @@ def _date_range_bounds(start_date: date, end_date: date) -> tuple[datetime, date
     return start_dt, end_dt
 
 
+def _rounded_delta(value: float | None, ndigits: int = 2) -> float | int | None:
+    if value is None:
+        return None
+    rounded = round(value, ndigits)
+    if float(rounded).is_integer():
+        return int(rounded)
+    return rounded
+
+
+def _change_rate(current: float | int | None, previous: float | int | None) -> float | None:
+    if current is None or previous in (None, 0):
+        return None
+    return round((float(current) - float(previous)) / float(previous) * 100, 1)
+
+
+def _trend_label(current: float | int | None, previous: float | int | None) -> str:
+    if current is None or previous is None:
+        return "暂无对比"
+    diff = float(current) - float(previous)
+    if abs(diff) < 1e-9:
+        return "持平"
+    return "上升" if diff > 0 else "下降"
+
+
+def _build_period_delta(
+    *,
+    label: str,
+    metric_label: str,
+    unit: str,
+    current_value: float | int | None,
+    previous_value: float | int | None,
+    ndigits: int = 2,
+) -> dict[str, Any]:
+    change_value = None
+    if current_value is not None and previous_value is not None:
+        change_value = _rounded_delta(float(current_value) - float(previous_value), ndigits=ndigits)
+
+    return {
+        "label": label,
+        "metric_label": metric_label,
+        "unit": unit,
+        "current_value": current_value,
+        "previous_value": previous_value,
+        "change_value": change_value,
+        "change_rate": _change_rate(current_value, previous_value),
+        "trend": _trend_label(current_value, previous_value),
+        "available": current_value is not None or previous_value is not None,
+    }
+
+
+def build_history_comparison_summary(
+    *,
+    current_period: dict[str, str],
+    previous_period: dict[str, str],
+    current: dict[str, Any],
+    previous: dict[str, Any],
+) -> dict[str, Any]:
+    modules = {
+        "insect": _build_period_delta(
+            label="虫情测报",
+            metric_label="周期内有效捕获昆虫",
+            unit="只",
+            current_value=(current.get("insect") or {}).get("total_count"),
+            previous_value=(previous.get("insect") or {}).get("total_count"),
+            ndigits=1,
+        ),
+        "spore": _build_period_delta(
+            label="孢子监测",
+            metric_label="周期内有效捕获孢子",
+            unit="个",
+            current_value=(current.get("spore") or {}).get("total_count"),
+            previous_value=(previous.get("spore") or {}).get("total_count"),
+            ndigits=1,
+        ),
+        "rain": _build_period_delta(
+            label="雨量监测",
+            metric_label="累计降雨量",
+            unit="mm",
+            current_value=(current.get("rain") or {}).get("total_rainfall"),
+            previous_value=(previous.get("rain") or {}).get("total_rainfall"),
+            ndigits=2,
+        ),
+        "runoff": _build_period_delta(
+            label="地表径流监测",
+            metric_label="累计径流量",
+            unit="m3",
+            current_value=(current.get("runoff") or {}).get("total_runoff"),
+            previous_value=(previous.get("runoff") or {}).get("total_runoff"),
+            ndigits=2,
+        ),
+    }
+
+    water_metric_fields = (
+        ("氨氮", "avg_nh3_n"),
+        ("总磷", "avg_tp"),
+        ("高锰酸盐指数", "avg_permanganate"),
+        ("总氮", "avg_tn"),
+    )
+    water_metrics: list[dict[str, Any]] = []
+    improved_count = 0
+    degraded_count = 0
+    for label, field_name in water_metric_fields:
+        current_value = (current.get("water_quality") or {}).get(field_name)
+        previous_value = (previous.get("water_quality") or {}).get(field_name)
+        item = _build_period_delta(
+            label=label,
+            metric_label="周期平均值",
+            unit="mg/L",
+            current_value=current_value,
+            previous_value=previous_value,
+            ndigits=3,
+        )
+        water_metrics.append(item)
+        if item["change_value"] is None:
+            continue
+        if float(item["change_value"]) < 0:
+            improved_count += 1
+        elif float(item["change_value"]) > 0:
+            degraded_count += 1
+
+    return {
+        "comparison_basis": "本期与上一等长周期对比",
+        "current_period": current_period,
+        "previous_period": previous_period,
+        "modules": modules,
+        "water_quality": {
+            "metric_label": "水质关键指标周期均值对比",
+            "metrics": water_metrics,
+            "improved_count": improved_count,
+            "degraded_count": degraded_count,
+        },
+    }
+
+
 # ---------------------------------------------------------------------------
 # ReportService
 # ---------------------------------------------------------------------------
 
 class ReportService:
     """Aggregate monitoring data and produce reports."""
+
+    async def _fallback_capture_images(
+        self,
+        db: AsyncSession,
+        model,
+        end_dt: datetime,
+        *,
+        limit: int = 3,
+    ) -> list[dict]:
+        result = await db.execute(
+            select(model)
+            .where(
+                model.collection_time <= end_dt,
+                model.image_url.is_not(None),
+                model.image_url != "",
+            )
+            .order_by(desc(model.collection_time))
+            .limit(limit)
+        )
+        records = list(result.scalars().all())
+        records.reverse()
+        return [
+            {
+                "time": record.collection_time.strftime("%Y-%m-%d %H:%M"),
+                "device_code": record.device_code,
+                "url": record.image_url,
+            }
+            for record in records
+            if record.image_url
+        ]
 
     # ------------------------------------------------------------------
     # Public summary entry points
@@ -109,128 +276,64 @@ class ReportService:
         end_date: date,
     ) -> dict[str, Any]:
         start_dt, end_dt = _date_range_bounds(start_date, end_date)
+        span_days = (end_date - start_date).days + 1
+        previous_end_date = start_date - timedelta(days=1)
+        previous_start_date = previous_end_date - timedelta(days=span_days - 1)
+        previous_start_dt, previous_end_dt = _date_range_bounds(previous_start_date, previous_end_date)
 
         insect = await self._aggregate_insect(db, start_dt, end_dt)
         spore = await self._aggregate_spore(db, start_dt, end_dt)
         water_quality = await self._aggregate_water_quality(db, start_dt, end_dt)
         rain = await self._aggregate_rainfall(db, start_dt, end_dt)
         runoff = await self._aggregate_runoff(db, start_dt, end_dt)
+        previous_insect = await self._aggregate_insect(db, previous_start_dt, previous_end_dt)
+        previous_spore = await self._aggregate_spore(db, previous_start_dt, previous_end_dt)
+        previous_water_quality = await self._aggregate_water_quality(db, previous_start_dt, previous_end_dt)
+        previous_rain = await self._aggregate_rainfall(db, previous_start_dt, previous_end_dt)
+        previous_runoff = await self._aggregate_runoff(db, previous_start_dt, previous_end_dt)
+        guideline_metrics = await build_guideline_metrics(db)
+        current_period = {
+            "start": start_date.strftime("%Y-%m-%d"),
+            "end": end_date.strftime("%Y-%m-%d"),
+        }
+        previous_period = {
+            "start": previous_start_date.strftime("%Y-%m-%d"),
+            "end": previous_end_date.strftime("%Y-%m-%d"),
+        }
+        history_comparison = build_history_comparison_summary(
+            current_period=current_period,
+            previous_period=previous_period,
+            current={
+                "insect": insect,
+                "spore": spore,
+                "water_quality": water_quality,
+                "rain": rain,
+                "runoff": runoff,
+            },
+            previous={
+                "insect": previous_insect,
+                "spore": previous_spore,
+                "water_quality": previous_water_quality,
+                "rain": previous_rain,
+                "runoff": previous_runoff,
+            },
+        )
 
         return {
-            "period": {
-                "start": start_date.strftime("%Y-%m-%d"),
-                "end": end_date.strftime("%Y-%m-%d"),
-            },
+            "period": current_period,
             "insect": insect,
             "spore": spore,
             "water_quality": water_quality,
             "rain": rain,
             "runoff": runoff,
+            "history_comparison": history_comparison,
+            "guideline_metrics": guideline_metrics,
+            "weather_support": guideline_metrics.get("weather_support"),
         }
 
     # ------------------------------------------------------------------
     # Per-model aggregators
     # ------------------------------------------------------------------
-
-    async def _aggregate_weather(
-        self,
-        db: AsyncSession,
-        start_dt: datetime,
-        end_dt: datetime,
-    ) -> dict[str, Any]:
-        result = await db.execute(
-            select(WeatherRecord).where(
-                WeatherRecord.collection_time >= start_dt,
-                WeatherRecord.collection_time <= end_dt,
-            )
-        )
-        records = result.scalars().all()
-
-        temps = [r.temperature for r in records if r.temperature is not None]
-        humidities = [r.humidity for r in records if r.humidity is not None]
-        rainfalls = [r.rainfall for r in records if r.rainfall is not None]
-
-        # Daily aggregation for charts
-        daily_buckets: dict[str, dict] = defaultdict(
-            lambda: {"temps": [], "humidity": [], "rainfall": []}
-        )
-        for r in records:
-            day = r.collection_time.strftime("%Y-%m-%d")
-            if r.temperature is not None:
-                daily_buckets[day]["temps"].append(r.temperature)
-            if r.humidity is not None:
-                daily_buckets[day]["humidity"].append(r.humidity)
-            if r.rainfall is not None:
-                daily_buckets[day]["rainfall"].append(r.rainfall)
-
-        daily_list = [
-            {
-                "date": d,
-                "avg_temp": _safe_avg(v["temps"]),
-                "avg_humidity": _safe_avg(v["humidity"]),
-                "total_rainfall": round(sum(v["rainfall"]), 2) if v["rainfall"] else 0.0,
-            }
-            for d, v in sorted(daily_buckets.items())
-        ]
-
-        return {
-            "avg_temp": _safe_avg(temps),
-            "max_temp": _round_or_none(max(temps)) if temps else None,
-            "min_temp": _round_or_none(min(temps)) if temps else None,
-            "avg_humidity": _safe_avg(humidities),
-            "total_rainfall": _round_or_none(sum(rainfalls)) if rainfalls else 0.0,
-            "records_count": len(records),
-            "daily": daily_list,
-        }
-
-    async def _aggregate_soil(
-        self,
-        db: AsyncSession,
-        start_dt: datetime,
-        end_dt: datetime,
-    ) -> dict[str, Any]:
-        result = await db.execute(
-            select(SoilRecord).where(
-                SoilRecord.collection_time >= start_dt,
-                SoilRecord.collection_time <= end_dt,
-            )
-        )
-        records = result.scalars().all()
-
-        m10 = [r.moisture_10cm for r in records if r.moisture_10cm is not None]
-        m20 = [r.moisture_20cm for r in records if r.moisture_20cm is not None]
-        m40 = [r.moisture_40cm for r in records if r.moisture_40cm is not None]
-
-        # Daily aggregation for charts
-        soil_buckets: dict[str, dict] = defaultdict(
-            lambda: {"m10": [], "m20": [], "m40": []}
-        )
-        for r in records:
-            day = r.collection_time.strftime("%Y-%m-%d")
-            if r.moisture_10cm is not None:
-                soil_buckets[day]["m10"].append(r.moisture_10cm)
-            if r.moisture_20cm is not None:
-                soil_buckets[day]["m20"].append(r.moisture_20cm)
-            if r.moisture_40cm is not None:
-                soil_buckets[day]["m40"].append(r.moisture_40cm)
-
-        soil_daily = [
-            {
-                "date": d,
-                "avg_moisture_10cm": _safe_avg(v["m10"]),
-                "avg_moisture_20cm": _safe_avg(v["m20"]),
-                "avg_moisture_40cm": _safe_avg(v["m40"]),
-            }
-            for d, v in sorted(soil_buckets.items())
-        ]
-
-        return {
-            "avg_moisture_10cm": _safe_avg(m10),
-            "avg_moisture_20cm": _safe_avg(m20),
-            "avg_moisture_40cm": _safe_avg(m40),
-            "records_count": len(records),
-            "daily": soil_daily,
-        }
 
     async def _aggregate_insect(
         self,
@@ -280,6 +383,12 @@ class ReportService:
             for r in records
             if r.image_url
         ]
+        if not capture_images:
+            capture_images = await self._fallback_capture_images(
+                db,
+                InsectRecord,
+                end_dt,
+            )
 
         return {
             "total_count": total_count,
@@ -325,6 +434,12 @@ class ReportService:
             for r in records
             if r.image_url
         ]
+        if not capture_images:
+            capture_images = await self._fallback_capture_images(
+                db,
+                SporeRecord,
+                end_dt,
+            )
 
         return {
             "total_count": total_count,
@@ -339,8 +454,10 @@ class ReportService:
         start_dt: datetime,
         end_dt: datetime,
     ) -> dict[str, Any]:
+        water_code = settings.WATER_QUALITY_CODE.strip() or "16133028"
         result = await db.execute(
             select(WaterQualityRecord).where(
+                WaterQualityRecord.device_code == water_code,
                 WaterQualityRecord.collection_time >= start_dt,
                 WaterQualityRecord.collection_time <= end_dt,
             )
@@ -349,23 +466,17 @@ class ReportService:
         if not records:
             return {"records_count": 0}
 
-        phs = [r.ph for r in records if r.ph is not None]
-        dos = [r.dissolved_oxygen for r in records if r.dissolved_oxygen is not None]
-        turbs = [r.turbidity for r in records if r.turbidity is not None]
         nh3s = [r.ammonia_nitrogen for r in records if r.ammonia_nitrogen is not None]
         tps = [r.total_phosphorus for r in records if r.total_phosphorus is not None]
         tns = [r.total_nitrogen for r in records if r.total_nitrogen is not None]
-        cods = [r.cod for r in records if r.cod is not None]
+        permanganates = [r.permanganate_index for r in records if r.permanganate_index is not None]
 
         return {
             "records_count": len(records),
-            "avg_ph": _safe_avg(phs),
-            "avg_do": _safe_avg(dos),
-            "avg_turbidity": _safe_avg(turbs),
             "avg_nh3_n": _safe_avg(nh3s),
             "avg_tp": _safe_avg(tps),
             "avg_tn": _safe_avg(tns),
-            "avg_cod": _safe_avg(cods),
+            "avg_permanganate": _safe_avg(permanganates),
         }
 
     async def _aggregate_rainfall(
@@ -382,15 +493,26 @@ class ReportService:
         )
         records = result.scalars().all()
         if not records:
-            return {"records_count": 0, "total_rainfall": 0.0}
+            return {"records_count": 0, "total_rainfall": 0.0, "daily": []}
 
-        # Daily max of daily_rainfall per device per day is a good enough guess if data is periodic
-        # But let's just use hourly_rainfall sum if available
-        hourly = [r.hourly_rainfall for r in records if r.hourly_rainfall is not None]
+        daily_totals: dict[str, float] = defaultdict(float)
+        total_rainfall = 0.0
+        for record in records:
+            rainfall_value = record.hourly_rainfall
+            if rainfall_value is None:
+                rainfall_value = record.rainfall
+            if rainfall_value is None:
+                continue
+            total_rainfall += rainfall_value
+            daily_totals[record.collection_time.strftime("%Y-%m-%d")] += rainfall_value
 
         return {
             "records_count": len(records),
-            "total_rainfall": round(sum(hourly), 2) if hourly else 0.0,
+            "total_rainfall": round(total_rainfall, 2),
+            "daily": [
+                {"date": day, "rainfall": round(value, 2)}
+                for day, value in sorted(daily_totals.items())
+            ],
         }
 
     async def _aggregate_runoff(
@@ -416,7 +538,7 @@ class ReportService:
         )
         records = result.scalars().all()
         if not records:
-            return {"records_count": 0, "by_device": {}}
+            return {"records_count": 0, "by_device": {}, "total_runoff": 0.0}
 
         # Per-device aggregation
         by_device: dict[str, dict] = defaultdict(lambda: {
@@ -465,6 +587,10 @@ class ReportService:
             "avg_flow_rate": _safe_avg(all_flows),
             "max_flow_rate": _round_or_none(max(all_flows)) if all_flows else None,
             "avg_water_level": _safe_avg(all_levels),
+            "total_runoff": _round_or_none(
+                sum(item.get("total_runoff", 0.0) for item in device_summary.values())
+            )
+            or 0.0,
             "by_device": device_summary,
         }
 
@@ -482,15 +608,6 @@ class ReportService:
         summary = await self._build_summary(db, start_date, end_date)
         start_dt, end_dt = _date_range_bounds(start_date, end_date)
 
-        # Fetch raw records for detail sheets
-        weather_res = await db.execute(
-            select(WeatherRecord).where(
-                WeatherRecord.collection_time >= start_dt,
-                WeatherRecord.collection_time <= end_dt,
-            ).order_by(WeatherRecord.collection_time)
-        )
-        weather_records = weather_res.scalars().all()
-
         insect_res = await db.execute(
             select(InsectRecord).where(
                 InsectRecord.collection_time >= start_dt,
@@ -498,14 +615,6 @@ class ReportService:
             ).order_by(InsectRecord.collection_time)
         )
         insect_records = insect_res.scalars().all()
-
-        soil_res = await db.execute(
-            select(SoilRecord).where(
-                SoilRecord.collection_time >= start_dt,
-                SoilRecord.collection_time <= end_dt,
-            ).order_by(SoilRecord.collection_time)
-        )
-        soil_records = soil_res.scalars().all()
 
         wb = Workbook()
 
@@ -515,8 +624,6 @@ class ReportService:
 
         self._write_summary_sheet(wb, summary)
         self._write_insect_sheet(wb, insect_records)
-        self._write_weather_sheet(wb, weather_records)
-        self._write_soil_sheet(wb, soil_records)
 
         buf = io.BytesIO()
         wb.save(buf)
@@ -598,57 +705,7 @@ class ReportService:
         self._write_title_row(ws, title, 4, row=1)
         ws.row_dimensions[1].height = 28
 
-        # ---- Weather section ----
         row = 3
-        ws.cell(row=row, column=1, value="【气象概况】").font = self._label_font()
-        ws.cell(row=row, column=1).fill = PatternFill(
-            start_color="DEEAF1", end_color="DEEAF1", fill_type="solid"
-        )
-        ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=4)
-        row += 1
-
-        w = summary["weather"]
-        weather_rows = [
-            ("平均温度 (°C)", w["avg_temp"], "最高温度 (°C)", w["max_temp"]),
-            ("最低温度 (°C)", w["min_temp"], "平均湿度 (%)", w["avg_humidity"]),
-            ("累计降雨量 (mm)", w["total_rainfall"], "气象记录条数", w["records_count"]),
-        ]
-        for label_a, val_a, label_b, val_b in weather_rows:
-            ws.cell(row=row, column=1, value=label_a).font = self._label_font()
-            ws.cell(row=row, column=2, value=val_a if val_a is not None else "—").font = self._value_font()
-            ws.cell(row=row, column=3, value=label_b).font = self._label_font()
-            ws.cell(row=row, column=4, value=val_b if val_b is not None else "—").font = self._value_font()
-            for col in range(1, 5):
-                ws.cell(row=row, column=col).border = self._thin_border()
-                ws.cell(row=row, column=col).alignment = self._center_align()
-            row += 1
-
-        # ---- Soil section ----
-        row += 1
-        ws.cell(row=row, column=1, value="【土壤墒情】").font = self._label_font()
-        ws.cell(row=row, column=1).fill = PatternFill(
-            start_color="DEEAF1", end_color="DEEAF1", fill_type="solid"
-        )
-        ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=4)
-        row += 1
-
-        s = summary["soil"]
-        soil_rows = [
-            ("10cm 平均墒情 (%)", s["avg_moisture_10cm"], "20cm 平均墒情 (%)", s["avg_moisture_20cm"]),
-            ("40cm 平均墒情 (%)", s["avg_moisture_40cm"], "墒情记录条数", s["records_count"]),
-        ]
-        for label_a, val_a, label_b, val_b in soil_rows:
-            ws.cell(row=row, column=1, value=label_a).font = self._label_font()
-            ws.cell(row=row, column=2, value=val_a if val_a is not None else "—").font = self._value_font()
-            ws.cell(row=row, column=3, value=label_b).font = self._label_font()
-            ws.cell(row=row, column=4, value=val_b if val_b is not None else "—").font = self._value_font()
-            for col in range(1, 5):
-                ws.cell(row=row, column=col).border = self._thin_border()
-                ws.cell(row=row, column=col).alignment = self._center_align()
-            row += 1
-
-        # ---- Insect section ----
-        row += 1
         ws.cell(row=row, column=1, value="【虫情测报】").font = self._label_font()
         ws.cell(row=row, column=1).fill = PatternFill(
             start_color="DEEAF1", end_color="DEEAF1", fill_type="solid"
@@ -657,30 +714,20 @@ class ReportService:
         row += 1
 
         ins = summary["insect"]
-        ws.cell(row=row, column=1, value="捕获总数 (只)").font = self._label_font()
-        ws.cell(row=row, column=2, value=ins["total_count"]).font = self._value_font()
-        ws.cell(row=row, column=3, value="记录条数").font = self._label_font()
-        ws.cell(row=row, column=4, value=ins["records_count"]).font = self._value_font()
-        for col in range(1, 5):
-            ws.cell(row=row, column=col).border = self._thin_border()
-            ws.cell(row=row, column=col).alignment = self._center_align()
-        row += 1
-
-        if ins["top_species"]:
-            ws.cell(row=row, column=1, value="主要虫种统计").font = self._label_font()
-            ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=4)
-            ws.cell(row=row, column=1).alignment = self._center_align()
+        insect_rows = [
+            ("捕获总数 (只)", ins["total_count"], "记录条数", ins["records_count"]),
+            ("主要虫种数", len(ins.get("top_species") or []), "实拍图数量", len(ins.get("capture_images") or [])),
+        ]
+        for label_a, val_a, label_b, val_b in insect_rows:
+            ws.cell(row=row, column=1, value=label_a).font = self._label_font()
+            ws.cell(row=row, column=2, value=val_a if val_a is not None else "—").font = self._value_font()
+            ws.cell(row=row, column=3, value=label_b).font = self._label_font()
+            ws.cell(row=row, column=4, value=val_b if val_b is not None else "—").font = self._value_font()
+            for col in range(1, 5):
+                ws.cell(row=row, column=col).border = self._thin_border()
+                ws.cell(row=row, column=col).alignment = self._center_align()
             row += 1
-            for name, count in ins["top_species"]:
-                ws.cell(row=row, column=1, value=name).font = self._value_font()
-                ws.cell(row=row, column=2, value=count).font = self._value_font()
-                ws.cell(row=row, column=1).border = self._thin_border()
-                ws.cell(row=row, column=2).border = self._thin_border()
-                ws.cell(row=row, column=1).alignment = self._center_align()
-                ws.cell(row=row, column=2).alignment = self._center_align()
-                row += 1
 
-        # ---- Spore section ----
         row += 1
         ws.cell(row=row, column=1, value="【孢子捕捉】").font = self._label_font()
         ws.cell(row=row, column=1).fill = PatternFill(
@@ -697,6 +744,71 @@ class ReportService:
         for col in range(1, 5):
             ws.cell(row=row, column=col).border = self._thin_border()
             ws.cell(row=row, column=col).alignment = self._center_align()
+        row += 1
+
+        row += 1
+        ws.cell(row=row, column=1, value="【雨量与径流】").font = self._label_font()
+        ws.cell(row=row, column=1).fill = PatternFill(
+            start_color="DEEAF1", end_color="DEEAF1", fill_type="solid"
+        )
+        ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=4)
+        row += 1
+
+        rain = summary["rain"]
+        runoff = summary["runoff"]
+        hydro_rows = [
+            ("雨量记录条数", rain["records_count"], "累计降雨量 (mm)", rain["total_rainfall"]),
+            ("径流记录条数", runoff["records_count"], "监测设备数", runoff["device_count"]),
+            ("平均流量", runoff["avg_flow_rate"], "平均水位", runoff["avg_water_level"]),
+        ]
+        for label_a, val_a, label_b, val_b in hydro_rows:
+            ws.cell(row=row, column=1, value=label_a).font = self._label_font()
+            ws.cell(row=row, column=2, value=val_a if val_a is not None else "—").font = self._value_font()
+            ws.cell(row=row, column=3, value=label_b).font = self._label_font()
+            ws.cell(row=row, column=4, value=val_b if val_b is not None else "—").font = self._value_font()
+            for col in range(1, 5):
+                ws.cell(row=row, column=col).border = self._thin_border()
+                ws.cell(row=row, column=col).alignment = self._center_align()
+            row += 1
+
+        row += 1
+        ws.cell(row=row, column=1, value="【水质监测】").font = self._label_font()
+        ws.cell(row=row, column=1).fill = PatternFill(
+            start_color="DEEAF1", end_color="DEEAF1", fill_type="solid"
+        )
+        ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=4)
+        row += 1
+
+        wq = summary["water_quality"]
+        water_rows = [
+            ("水质记录条数", wq["records_count"], "平均氨氮", wq["avg_nh3_n"]),
+            ("平均总磷", wq["avg_tp"], "平均高猛酸盐", wq["avg_permanganate"]),
+            ("平均总氮", wq["avg_tn"], "监测设备", settings.WATER_QUALITY_CODE),
+        ]
+        for label_a, val_a, label_b, val_b in water_rows:
+            ws.cell(row=row, column=1, value=label_a).font = self._label_font()
+            ws.cell(row=row, column=2, value=val_a if val_a is not None else "—").font = self._value_font()
+            ws.cell(row=row, column=3, value=label_b).font = self._label_font()
+            ws.cell(row=row, column=4, value=val_b if val_b is not None else "—").font = self._value_font()
+            for col in range(1, 5):
+                ws.cell(row=row, column=col).border = self._thin_border()
+                ws.cell(row=row, column=col).alignment = self._center_align()
+            row += 1
+
+        if ins["top_species"]:
+            row += 1
+            ws.cell(row=row, column=1, value="主要虫种统计").font = self._label_font()
+            ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=4)
+            ws.cell(row=row, column=1).alignment = self._center_align()
+            row += 1
+            for name, count in ins["top_species"]:
+                ws.cell(row=row, column=1, value=name).font = self._value_font()
+                ws.cell(row=row, column=2, value=count).font = self._value_font()
+                ws.cell(row=row, column=1).border = self._thin_border()
+                ws.cell(row=row, column=2).border = self._thin_border()
+                ws.cell(row=row, column=1).alignment = self._center_align()
+                ws.cell(row=row, column=2).alignment = self._center_align()
+                row += 1
 
     def _write_insect_sheet(self, wb: Workbook, records: list[InsectRecord]) -> None:
         ws = wb.create_sheet("虫情数据")
@@ -723,92 +835,6 @@ class ReportService:
             ]
             for col_idx, val in enumerate(row_data, start=1):
                 cell = ws.cell(row=row_idx, column=col_idx, value=val)
-                cell.font = self._value_font()
-                cell.border = self._thin_border()
-                cell.alignment = Alignment(horizontal="center", vertical="center")
-            if row_idx % 2 == 0:
-                for col_idx in range(1, len(headers) + 1):
-                    ws.cell(row=row_idx, column=col_idx).fill = PatternFill(
-                        start_color="EBF3FB", end_color="EBF3FB", fill_type="solid"
-                    )
-
-    def _write_weather_sheet(
-        self, wb: Workbook, records: list[WeatherRecord]
-    ) -> None:
-        ws = wb.create_sheet("气象数据")
-        headers = [
-            "采集时间", "设备编号", "温度 (°C)", "湿度 (%)",
-            "风速 (m/s)", "风向", "降雨量 (mm)", "气压 (hPa)", "光照 (lux)",
-        ]
-        col_widths = [22, 14, 12, 12, 12, 10, 14, 12, 14]
-        for col_idx, w in enumerate(col_widths, start=1):
-            ws.column_dimensions[
-                ws.cell(row=1, column=col_idx).column_letter
-            ].width = w
-
-        self._write_title_row(ws, "气象数据详细记录", len(headers), row=1)
-        ws.row_dimensions[1].height = 24
-        self._apply_header_row(ws, headers, row=2)
-
-        for row_idx, r in enumerate(records, start=3):
-            row_data = [
-                r.collection_time.strftime("%Y-%m-%d %H:%M"),
-                r.device_code,
-                r.temperature,
-                r.humidity,
-                r.wind_speed,
-                r.wind_direction or "—",
-                r.rainfall,
-                r.pressure,
-                r.light,
-            ]
-            for col_idx, val in enumerate(row_data, start=1):
-                cell = ws.cell(
-                    row=row_idx,
-                    column=col_idx,
-                    value=val if val is not None else "—",
-                )
-                cell.font = self._value_font()
-                cell.border = self._thin_border()
-                cell.alignment = Alignment(horizontal="center", vertical="center")
-            if row_idx % 2 == 0:
-                for col_idx in range(1, len(headers) + 1):
-                    ws.cell(row=row_idx, column=col_idx).fill = PatternFill(
-                        start_color="EBF3FB", end_color="EBF3FB", fill_type="solid"
-                    )
-
-    def _write_soil_sheet(self, wb: Workbook, records: list[SoilRecord]) -> None:
-        ws = wb.create_sheet("墒情数据")
-        headers = [
-            "采集时间", "设备编号",
-            "10cm 墒情 (%)", "20cm 墒情 (%)", "40cm 墒情 (%)",
-            "10cm 地温 (°C)",
-        ]
-        col_widths = [22, 14, 16, 16, 16, 16]
-        for col_idx, w in enumerate(col_widths, start=1):
-            ws.column_dimensions[
-                ws.cell(row=1, column=col_idx).column_letter
-            ].width = w
-
-        self._write_title_row(ws, "土壤墒情详细数据", len(headers), row=1)
-        ws.row_dimensions[1].height = 24
-        self._apply_header_row(ws, headers, row=2)
-
-        for row_idx, r in enumerate(records, start=3):
-            row_data = [
-                r.collection_time.strftime("%Y-%m-%d %H:%M"),
-                r.device_code,
-                r.moisture_10cm,
-                r.moisture_20cm,
-                r.moisture_40cm,
-                r.temperature_10cm,
-            ]
-            for col_idx, val in enumerate(row_data, start=1):
-                cell = ws.cell(
-                    row=row_idx,
-                    column=col_idx,
-                    value=val if val is not None else "—",
-                )
                 cell.font = self._value_font()
                 cell.border = self._thin_border()
                 cell.alignment = Alignment(horizontal="center", vertical="center")
@@ -923,12 +949,26 @@ class ReportService:
                 return fallback
             return f"{val}{unit}"
 
-        w = summary_dict.get("weather", {})
-        s = summary_dict.get("soil", {})
+        def _pct(val: float | None) -> str:
+            return f"{val}%" if val is not None else "—"
+
+        rn = summary_dict.get("rain", {})
+        ro = summary_dict.get("runoff", {})
+        wq = summary_dict.get("water_quality", {})
         ins = summary_dict.get("insect", {})
         sp = summary_dict.get("spore", {})
+        gm = summary_dict.get("guideline_metrics", {}) or {}
+        history_comparison = summary_dict.get("history_comparison", {}) or {}
+        weather = summary_dict.get("weather_support", {}) or gm.get("weather_support", {}) or {}
+        methodology = gm.get("methodology", {}) or {}
+        runoff_guideline = gm.get("runoff_erosion", {}) or {}
+        water_guideline = gm.get("water_quality", {}) or {}
+        pest_guideline = gm.get("pest_management", {}) or {}
+        warning_analysis = gm.get("warning_analysis", {}) or {}
+        water_source_support = gm.get("water_source_support", {}) or {}
+        implementation_matrix = gm.get("implementation_matrix", {}) or {}
 
-        generated_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        generated_at = cn_now_str()
 
         # Cover background style (Gemini-generated image)
         cover_style = (
@@ -984,13 +1024,259 @@ class ReportService:
 
         pest_gallery = _render_pest_gallery()
 
+        methodology_html = ""
+        if methodology:
+            methodology_html = f"""
+<div class="methodology-box">
+  <div class="methodology-title">监测体系科学性说明</div>
+  <p>{methodology.get('monitoring_statement', '')}</p>
+  <p>{methodology.get('baseline_statement', '')}</p>
+</div>"""
+
+        history_compare_html = ""
+        history_items = (history_comparison.get("modules") or {}).values()
+        previous_period = history_comparison.get("previous_period", {}) or {}
+        history_cards = []
+        for item in history_items:
+            unit = item.get("unit", "")
+            history_cards.append(
+                f"""
+  <div class="guideline-card">
+    <div class="guideline-label">{item.get('label', '—')}</div>
+    <div class="guideline-value">{item.get('trend', '—')}</div>
+    <div class="guideline-note">{item.get('metric_label', '—')}：本期 {_v(item.get('current_value'), f' {unit}' if unit else '')}，上一周期 {_v(item.get('previous_value'), f' {unit}' if unit else '')}，变化率 {_pct(item.get('change_rate'))}</div>
+  </div>"""
+            )
+        if history_cards:
+            history_compare_html = f"""
+<div class="methodology-box">
+  <div class="methodology-title">历史周期对比摘要</div>
+  <p>对比口径：{history_comparison.get('comparison_basis', '本期与上一等长周期对比')}。上一周期区间为 {previous_period.get('start', '—')} 至 {previous_period.get('end', '—')}。</p>
+</div>
+<div class="guideline-grid">
+{''.join(history_cards)}
+</div>"""
+
+        guideline_cards = [
+            ("估算减蚀率", _pct(runoff_guideline.get("estimated_reduction_rate")), "监测型"),
+            ("污染削减综合率", _pct(water_guideline.get("composite_reduction_rate")), "近30天"),
+            ("病虫风险等级", pest_guideline.get("risk_level", "—"), "闭环研判"),
+            ("气象支撑状态", water_source_support.get("status", "—"), "水源涵养"),
+        ]
+        guideline_overview_html = """
+<div class="guideline-grid">
+""" + "".join(
+            f"""
+  <div class="guideline-card">
+    <div class="guideline-label">{label}</div>
+    <div class="guideline-value">{value}</div>
+    <div class="guideline-note">{note}</div>
+  </div>"""
+            for label, value, note in guideline_cards
+        ) + """
+</div>"""
+
+        fixed_rules_html = ""
+        confirmed_rules = implementation_matrix.get("confirmed_rules") or []
+        if confirmed_rules:
+            fixed_rules_html = """
+<div class="methodology-box">
+  <div class="methodology-title">本期已确认业务口径</div>
+""" + "".join(
+                f"  <p>{item}</p>" for item in confirmed_rules
+            ) + """
+</div>"""
+
+        weather_support_html = ""
+        if weather.get("enabled") and weather.get("status") == "ok":
+            current = weather.get("current", {}) or {}
+            history_summary = weather.get("history_summary", {}) or {}
+            history_range = weather.get("history_range", {}) or {}
+            history_range_text = f"{history_range.get('start', '—')} 至 {history_range.get('end', '—')}"
+            support_note_html = ""
+            if water_source_support.get("message"):
+                support_note_html = f'<div class="support-note">{water_source_support.get("message", "")}</div>'
+            weather_support_html = f"""
+<div class="support-grid">
+  <div class="support-card">
+    <div class="support-title">气象补充数据</div>
+    <div class="support-row"><span>当前天气</span><strong>{current.get('text', '—')}</strong></div>
+    <div class="support-row"><span>当前温度</span><strong>{_v(current.get('temp'), ' ℃')}</strong></div>
+    <div class="support-row"><span>当前湿度</span><strong>{_v(current.get('humidity'), ' %')}</strong></div>
+    <div class="support-row"><span>当前风速</span><strong>{_v(current.get('wind_speed'), ' km/h')}</strong></div>
+  </div>
+  <div class="support-card">
+    <div class="support-title">水源涵养支撑说明</div>
+    <div class="support-row"><span>历史区间</span><strong>{history_range_text}</strong></div>
+    <div class="support-row"><span>最近7天累计降水</span><strong>{_v(history_summary.get('total_precip'), ' mm')}</strong></div>
+    <div class="support-row"><span>最近7天平均气温</span><strong>{_v(history_summary.get('avg_temp_mean'), ' ℃')}</strong></div>
+    <div class="support-row"><span>最近7天平均湿度</span><strong>{_v(history_summary.get('avg_humidity'), ' %')}</strong></div>
+    <div class="support-row"><span>最近7天平均风速</span><strong>{_v(history_summary.get('avg_wind_speed'), ' km/h')}</strong></div>
+    <div class="support-row"><span>降水日数</span><strong>{_v(history_summary.get('rainy_days'), ' 天')}</strong></div>
+    {support_note_html}
+  </div>
+</div>"""
+
+        runoff_rows = "".join(
+            f"<tr><td>{item.get('name', item.get('device_code'))}</td>"
+            f"<td class='num'>{_v(item.get('erosion_proxy'))}</td>"
+            f"<td class='num'>{_v(item.get('avg_sand_content'))}</td>"
+            f"<td class='num'>{_v(item.get('avg_runoff'))}</td>"
+            f"<td class='num'>{_pct(item.get('relative_to_reference'))}</td></tr>"
+            for item in runoff_guideline.get("station_metrics", [])
+        )
+        runoff_guideline_html = f"""
+<div class="table-wrap">
+  <table class="data-table">
+    <caption>水土流失监测型估算结果（次生林参照）</caption>
+    <thead><tr><th>监测点</th><th>侵蚀代理指标</th><th>平均含沙量</th><th>平均径流量</th><th>相对次生林差异</th></tr></thead>
+    <tbody>{runoff_rows}</tbody>
+  </table>
+</div>""" if runoff_rows else ""
+
+        water_rows = "".join(
+            f"<tr><td>{item.get('label')}</td>"
+            f"<td class='num'>{_v(item.get('baseline_avg'))}</td>"
+            f"<td class='num'>{_v(item.get('recent_avg'))}</td>"
+            f"<td class='num'>{_v(item.get('latest_value'))}</td>"
+            f"<td class='num'>{_pct(item.get('recent_reduction_rate'))}</td>"
+            f"<td class='num'>{_pct(item.get('latest_reduction_rate'))}</td></tr>"
+            for item in water_guideline.get("metrics", [])
+        )
+        water_guideline_html = f"""
+<div class="table-wrap">
+  <table class="data-table">
+    <caption>农业面源污染削减率（基准期对比）</caption>
+    <thead><tr><th>指标</th><th>基准期平均</th><th>近30天平均</th><th>最新值</th><th>近30天削减率</th><th>最新削减率</th></tr></thead>
+    <tbody>{water_rows}</tbody>
+  </table>
+</div>""" if water_rows else ""
+
+        adaptive_management_html = ""
+        if pest_guideline:
+            adaptive_management_html = f"""
+<div class="methodology-box">
+  <div class="methodology-title">适应性管理与病虫风险链条</div>
+  <p>{pest_guideline.get('chain_text', '')}</p>
+  <p>{pest_guideline.get('management_record_template', '')}</p>
+</div>"""
+
+        indicator_warnings = warning_analysis.get("indicator_warnings", []) or []
+        warning_comparison = warning_analysis.get("comparison", {}) or {}
+
+        def _render_warning_cards(items: list[dict[str, Any]], title: str, note: str = "") -> str:
+            if not items:
+                return ""
+            cards = "".join(
+                f"""
+  <article class="warning-card warning-{item.get('level_code', 'normal')}">
+    <div class="warning-top">
+      <div>
+        <div class="warning-label">{item.get('title', '—')}</div>
+        <div class="warning-metric">{item.get('metric_label', '—')}</div>
+      </div>
+      <span class="warning-badge">{item.get('level', '—')}</span>
+    </div>
+    <div class="warning-value">{item.get('display_value', '—')}</div>
+    <div class="warning-band">判定区间：{item.get('band', '—')}</div>
+    <div class="warning-progress"><span style="width:{item.get('score', 0)}%"></span></div>
+    <p class="warning-summary">{item.get('summary', '')}</p>
+    <p class="warning-action">建议动作：{item.get('action', '—')}</p>
+  </article>"""
+                for item in items
+            )
+            note_html = f'<div class="warning-note">{note}</div>' if note else ""
+            return f"""
+<div class="warning-block">
+  <div class="warning-block-title">{title}</div>
+  {note_html}
+  <div class="warning-grid">
+{cards}
+  </div>
+</div>"""
+
+        hydrology_warnings_html = _render_warning_cards(
+            [
+                item
+                for item in indicator_warnings
+                if item.get("key") in {"rainfall_peak", "sand_content"}
+            ],
+            "雨量与含沙分级预警",
+            warning_comparison.get("message", ""),
+        )
+        pest_warnings_html = _render_warning_cards(
+            [
+                item
+                for item in indicator_warnings
+                if item.get("key") in {"insect_peak", "spore_peak"}
+            ],
+            "虫情与孢子分级预警",
+        )
+
         # ----------------------------------------------------------------
         # Build HTML sections
         # ----------------------------------------------------------------
 
-        # (Weather and Soil sections removed)
+        sec_hydrology = f"""
+<section class="report-section" id="sec-hydrology">
+  <h2 class="sec-title"><span class="sec-num">二</span>雨量与径流监测</h2>
+  <div class="kpi-row">
+    <div class="kpi-card kpi-blue">
+      <div class="kpi-label">雨量记录</div>
+      <div class="kpi-value">{_v(rn.get('records_count'), '', '0')}<span class="kpi-unit">条</span></div>
+    </div>
+    <div class="kpi-card kpi-blue">
+      <div class="kpi-label">累计降雨量</div>
+      <div class="kpi-value">{_v(rn.get('total_rainfall'), '', '0')}<span class="kpi-unit">mm</span></div>
+    </div>
+    <div class="kpi-card kpi-green">
+      <div class="kpi-label">径流记录</div>
+      <div class="kpi-value">{_v(ro.get('records_count'), '', '0')}<span class="kpi-unit">条</span></div>
+    </div>
+    <div class="kpi-card kpi-green">
+      <div class="kpi-label">监测点数量</div>
+      <div class="kpi-value">{_v(ro.get('device_count'), '', '0')}<span class="kpi-unit">个</span></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">累计径流量</div>
+      <div class="kpi-value">{_v(ro.get('total_runoff'), '', '0')}<span class="kpi-unit">m3</span></div>
+    </div>
+  </div>
+  {weather_support_html}
+  {hydrology_warnings_html}
+  {_render_section_figures('hydrology')}
+  {runoff_guideline_html}
+</section>"""
 
-        # Section 4: Insect
+        sec_water_quality = f"""
+<section class="report-section" id="sec-water-quality">
+  <h2 class="sec-title"><span class="sec-num">三</span>水质监测</h2>
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-label">水质记录</div>
+      <div class="kpi-value">{_v(wq.get('records_count'), '', '0')}<span class="kpi-unit">条</span></div>
+    </div>
+    <div class="kpi-card kpi-blue">
+      <div class="kpi-label">平均氨氮</div>
+      <div class="kpi-value">{_v(wq.get('avg_nh3_n'))}<span class="kpi-unit">mg/L</span></div>
+    </div>
+    <div class="kpi-card kpi-green">
+      <div class="kpi-label">平均总磷</div>
+      <div class="kpi-value">{_v(wq.get('avg_tp'))}<span class="kpi-unit">mg/L</span></div>
+    </div>
+    <div class="kpi-card kpi-warm">
+      <div class="kpi-label">平均高猛酸盐</div>
+      <div class="kpi-value">{_v(wq.get('avg_permanganate'))}<span class="kpi-unit">mg/L</span></div>
+    </div>
+    <div class="kpi-card kpi-warn">
+      <div class="kpi-label">平均总氮</div>
+      <div class="kpi-value">{_v(wq.get('avg_tn'))}<span class="kpi-unit">mg/L</span></div>
+    </div>
+  </div>
+  {_render_section_figures('water_quality')}
+  {water_guideline_html}
+</section>"""
+
         species_rows = "".join(
             f"<tr><td>{item[0]}</td><td class='num'>{item[1]}</td>"
             f"<td class='num'>{item[1] / max(ins.get('total_count', 1), 1) * 100:.1f}%</td></tr>"
@@ -1007,11 +1293,11 @@ class ReportService:
 
         sec_insect = f"""
 <section class="report-section" id="sec-insect">
-  <h2 class="sec-title"><span class="sec-num">二</span>虫情测报监测</h2>
+  <h2 class="sec-title"><span class="sec-num">四</span>虫情测报监测</h2>
   <div class="kpi-row">
     <div class="kpi-card">
       <div class="kpi-label">监测记录</div>
-      <div class="kpi-value">{_v(ins.get('records_count'))}<span class="kpi-unit">条</span></div>
+      <div class="kpi-value">{_v(ins.get('records_count'), '', '0')}<span class="kpi-unit">条</span></div>
     </div>
     <div class="kpi-card kpi-warn">
       <div class="kpi-label">期间捕获总数</div>
@@ -1023,6 +1309,7 @@ class ReportService:
     </div>
   </div>
   {_render_section_figures('insect')}
+  {pest_warnings_html}
   {species_table}
   {pest_gallery}
 </section>"""
@@ -1030,11 +1317,11 @@ class ReportService:
         # Section 5: Spore
         sec_spore = f"""
 <section class="report-section" id="sec-spore">
-  <h2 class="sec-title"><span class="sec-num">三</span>孢子捕捉监测</h2>
+  <h2 class="sec-title"><span class="sec-num">五</span>孢子捕捉监测</h2>
   <div class="kpi-row">
     <div class="kpi-card">
       <div class="kpi-label">监测记录</div>
-      <div class="kpi-value">{_v(sp.get('records_count'))}<span class="kpi-unit">条</span></div>
+      <div class="kpi-value">{_v(sp.get('records_count'), '', '0')}<span class="kpi-unit">条</span></div>
     </div>
     <div class="kpi-card kpi-purple">
       <div class="kpi-label">期间捕获总数</div>
@@ -1042,6 +1329,7 @@ class ReportService:
     </div>
   </div>
   {_render_section_figures('spore')}
+  {adaptive_management_html}
 </section>"""
 
         # Section 6: AI
@@ -1052,7 +1340,7 @@ class ReportService:
 
         sec_ai = f"""
 <section class="report-section ai-section" id="sec-ai">
-  <h2 class="sec-title"><span class="sec-num">四</span>橡胶林近自然化改造生态效益评估报告
+  <h2 class="sec-title"><span class="sec-num">六</span>AI 综合分析报告
     <span class="ai-badge">DeepSeek</span>
   </h2>
   {ai_body}
@@ -1285,6 +1573,220 @@ body {{
   font-weight: 400;
 }}
 
+.methodology-box {{
+  margin: 18px 24px 10px;
+  padding: 16px 18px;
+  border-radius: 10px;
+  border: 1px solid #DCEAF5;
+  background: linear-gradient(180deg, #F8FCFF 0%, #F2F7FB 100%);
+}}
+.methodology-title {{
+  font-size: 14px;
+  font-weight: 800;
+  color: #1A5276;
+  margin-bottom: 8px;
+}}
+.methodology-box p {{
+  font-size: 13px;
+  color: #36506A;
+  line-height: 1.9;
+  margin-bottom: 6px;
+}}
+.methodology-box p:last-child {{
+  margin-bottom: 0;
+}}
+
+.guideline-grid {{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  padding: 10px 24px 20px;
+}}
+.guideline-card {{
+  border-radius: 10px;
+  border: 1px solid #E2ECF3;
+  background: #fff;
+  padding: 14px 16px;
+}}
+.guideline-label {{
+  font-size: 11px;
+  color: #6C7A89;
+  margin-bottom: 6px;
+  letter-spacing: 1px;
+}}
+.guideline-value {{
+  font-size: 24px;
+  font-weight: 800;
+  color: #1A5276;
+  line-height: 1.2;
+}}
+.guideline-note {{
+  margin-top: 6px;
+  font-size: 11px;
+  color: #7F8C8D;
+}}
+
+.support-grid {{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+  padding: 18px 24px 6px;
+}}
+.support-card {{
+  border: 1px solid #E2ECF3;
+  border-radius: 10px;
+  background: #FBFDFF;
+  padding: 16px;
+}}
+.support-title {{
+  font-size: 14px;
+  font-weight: 800;
+  color: #1A5276;
+  margin-bottom: 10px;
+}}
+.support-row {{
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px dashed #E4EBF1;
+  font-size: 13px;
+  color: #35516B;
+}}
+.support-row:last-of-type {{
+  border-bottom: none;
+}}
+.support-row strong {{
+  color: #1F4E79;
+}}
+.support-note {{
+  margin-top: 10px;
+  font-size: 12px;
+  line-height: 1.8;
+  color: #536B82;
+}}
+
+.warning-block {{
+  padding: 0 24px 20px;
+}}
+.warning-block-title {{
+  font-size: 14px;
+  font-weight: 800;
+  color: #1A5276;
+  margin-bottom: 10px;
+}}
+.warning-note {{
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #F8FBFE;
+  border: 1px dashed #D7E7F2;
+  color: #4B6278;
+  font-size: 12px;
+  line-height: 1.8;
+}}
+.warning-grid {{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}}
+.warning-card {{
+  border-radius: 12px;
+  border: 1px solid #E2ECF3;
+  background: linear-gradient(180deg, #FFFFFF 0%, #F8FBFE 100%);
+  padding: 16px;
+  box-shadow: 0 8px 20px rgba(26, 82, 118, 0.06);
+}}
+.warning-top {{
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}}
+.warning-label {{
+  font-size: 14px;
+  font-weight: 800;
+  color: #17324D;
+}}
+.warning-metric {{
+  margin-top: 4px;
+  font-size: 12px;
+  color: #6B7C8D;
+  line-height: 1.6;
+}}
+.warning-badge {{
+  flex-shrink: 0;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+}}
+.warning-value {{
+  margin-top: 14px;
+  font-size: 28px;
+  font-weight: 900;
+  color: #17324D;
+  line-height: 1.1;
+}}
+.warning-band {{
+  margin-top: 8px;
+  font-size: 12px;
+  color: #5D7185;
+}}
+.warning-progress {{
+  height: 8px;
+  margin-top: 12px;
+  border-radius: 999px;
+  background: #EAF1F6;
+  overflow: hidden;
+}}
+.warning-progress span {{
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #7DD3FC 0%, #1D4ED8 100%);
+}}
+.warning-summary,
+.warning-action {{
+  margin-top: 10px;
+  font-size: 13px;
+  line-height: 1.85;
+  color: #35516B;
+}}
+.warning-action {{
+  color: #1F4E79;
+  font-weight: 600;
+}}
+.warning-attention {{
+  border-color: #FDE68A;
+}}
+.warning-attention .warning-badge {{
+  background: #FEF3C7;
+  color: #92400E;
+}}
+.warning-severe {{
+  border-color: #FDA4AF;
+}}
+.warning-severe .warning-badge {{
+  background: #FFE4E6;
+  color: #BE123C;
+}}
+.warning-high {{
+  border-color: #FDBA74;
+}}
+.warning-high .warning-badge {{
+  background: #FFEDD5;
+  color: #C2410C;
+}}
+.warning-critical {{
+  border-color: #FCA5A5;
+}}
+.warning-critical .warning-badge {{
+  background: #FEE2E2;
+  color: #B91C1C;
+}}
+
 /* ============================================================
    KPI 卡片行
    ============================================================ */
@@ -1374,7 +1876,7 @@ body {{
 .data-table {{
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 14px;
   margin-top: 12px;
 }}
 .data-table caption {{
@@ -1382,7 +1884,7 @@ body {{
   color: #1a5276;
   text-align: left;
   padding: 8px 0 6px;
-  font-size: 13px;
+  font-size: 14px;
   letter-spacing: 0.5px;
 }}
 .data-table th {{
@@ -1391,14 +1893,15 @@ body {{
   font-weight: 700;
   padding: 10px 14px;
   text-align: left;
-  font-size: 12px;
+  font-size: 13px;
   letter-spacing: 0.5px;
 }}
 .data-table td {{
-  padding: 8px 14px;
+  padding: 10px 14px;
   border-bottom: 1px solid #EFEFEF;
   color: #2C3E50;
   vertical-align: middle;
+  line-height: 1.7;
 }}
 .data-table td.num {{
   text-align: right;
@@ -1610,10 +2113,12 @@ body {{
 <div class="toc-section">
   <div class="toc-title">目 &nbsp; 录</div>
   <ul class="toc-list">
-    <li><a href="#sec-overview"><span class="toc-num">一、</span>监测期数据概览</a></li>
-    <li><a href="#sec-insect"><span class="toc-num">二、</span>虫情测报监测</a></li>
-    <li><a href="#sec-spore"><span class="toc-num">三、</span>孢子捕捉监测</a></li>
-    <li><a href="#sec-ai"><span class="toc-num">四、</span>橡胶林近自然化改造生态效益评估报告</a></li>
+    <li><a href="#sec-overview"><span class="toc-num">一、</span>监测期综合概况与评估背景</a></li>
+    <li><a href="#sec-hydrology"><span class="toc-num">二、</span>雨量与径流监测</a></li>
+    <li><a href="#sec-water-quality"><span class="toc-num">三、</span>水质监测</a></li>
+    <li><a href="#sec-insect"><span class="toc-num">四、</span>虫情测报监测</a></li>
+    <li><a href="#sec-spore"><span class="toc-num">五、</span>孢子捕捉监测</a></li>
+    <li><a href="#sec-ai"><span class="toc-num">六、</span>AI 综合分析报告</a></li>
   </ul>
 </div>
 
@@ -1624,7 +2129,7 @@ body {{
 
   <!-- 一、数据概览 -->
   <section class="report-section overview-section" id="sec-overview">
-    <h2 class="sec-title"><span class="sec-num">一</span>监测期数据概览</h2>
+    <h2 class="sec-title"><span class="sec-num">一</span>监测期综合概况与评估背景</h2>
     <div class="overview-grid">
       <div class="overview-item">
         <div class="overview-label">水质记录</div>
@@ -1647,8 +2152,12 @@ body {{
         <div class="overview-value">{_v(summary_dict.get('rain', {}).get('total_rainfall'), '', '0')}<span class="overview-unit">mm</span></div>
       </div>
     </div>
+    {methodology_html}
+    {history_compare_html}
   </section>
 
+  {sec_hydrology}
+  {sec_water_quality}
   {sec_insect}
   {sec_spore}
   {sec_ai}

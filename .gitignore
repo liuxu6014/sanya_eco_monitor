@@ -18,6 +18,7 @@ backend/.venv/
 backend/__pycache__/
 frontend/dist/
 .claude/
+logs/
 
 .DS_Store
 Thumbs.db

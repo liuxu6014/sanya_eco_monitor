@@ -8,7 +8,6 @@ from sqlalchemy import select
 from database import AsyncSessionLocal
 from models import GeneratedReport
 from collectors.insect import collect_insect, collect_spore
-from collectors.sensor import collect_weather, collect_soil
 from collectors.runoff import collect_runoff, collect_rain_gauges
 from collectors.water_quality import collect_water_quality
 from config import settings
@@ -22,8 +21,6 @@ async def _run_all_collectors():
     async with AsyncSessionLocal() as db:
         await collect_insect(db)
         await collect_spore(db)
-        await collect_weather(db)
-        await collect_soil(db)
         await collect_runoff(db)
         await collect_rain_gauges(db)
         await collect_water_quality(db)

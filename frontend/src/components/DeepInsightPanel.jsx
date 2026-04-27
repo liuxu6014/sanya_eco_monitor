@@ -1,247 +1,372 @@
-import React, { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import ReactECharts from 'echarts-for-react'
+import s from './DeepInsightPanel.module.css'
 
-export default function DeepInsightPanel({ ecoIndex }) {
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value))
+}
+
+function numericDisplay(value) {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return '--'
+  }
+
+  return Number.isInteger(value) ? String(value) : value.toFixed(1)
+}
+
+function metricScore(value) {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return 0
+  }
+
+  return clamp(Math.abs(value), 0, 100)
+}
+
+function metricProgress(value, mode = 'risk') {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return 0
+  }
+
+  if (mode === 'improvement') {
+    return clamp(value, 0, 100)
+  }
+
+  return metricScore(value)
+}
+
+function metricDisplay(value, suffix = '') {
+  const base = numericDisplay(value)
+  return base === '--' ? base : `${base}${suffix}`
+}
+
+function metricBadge(mode, numericValue, theme) {
+  if (mode === 'improvement') {
+    return {
+      label: '\u4f30\u7b97',
+      critical: numericValue !== null && numericValue < 0,
+    }
+  }
+
+  const critical = numericValue !== null && (numericValue > 70 || (theme === '#f472b6' && numericValue > 50))
+  return {
+    label: critical ? '\u9884\u8b66' : '\u76d1\u6d4b',
+    critical,
+  }
+}
+
+function valueText(value, suffix = '') {
+  if (value === null || value === undefined || value === '') {
+    return '--'
+  }
+
+  return `${value}${suffix}`
+}
+
+function shortDate(value) {
+  return typeof value === 'string' && value.length >= 10 ? value.slice(5) : '--'
+}
+
+function rangeText(start, end) {
+  if (!start || !end) {
+    return '--'
+  }
+
+  return `${shortDate(start)} - ${shortDate(end)}`
+}
+
+export default function DeepInsightPanel({ ecoIndex, guidelineMetrics }) {
   const d = ecoIndex?.data || {}
+  const gm = guidelineMetrics?.data || guidelineMetrics || {}
+  const runoff = gm.runoff_erosion || {}
+  const water = gm.water_quality || {}
+  const pest = gm.pest_management || {}
+  const weather = gm.weather_support || {}
   const [showInsights, setShowInsights] = useState(false)
-  
+
   useEffect(() => {
-     setShowInsights(false)
-     const t = setTimeout(() => setShowInsights(true), 600)
-     return () => clearTimeout(t)
+    setShowInsights(false)
+    const timer = setTimeout(() => setShowInsights(true), 320)
+    return () => clearTimeout(timer)
   }, [d.eco_health])
-  
+
+  const ecoHealth = typeof d.eco_health === 'number' ? d.eco_health : null
+
+  const sensorMetrics = [
+    {
+      label: '水土流失风险',
+      value: d.erosion_risk,
+      theme: '#38bdf8',
+      note: '实时风险值',
+    },
+    {
+      label: '水环境污染负荷',
+      value: d.pollution_load,
+      theme: '#fbbf24',
+      note: '综合负荷值',
+    },
+    {
+      label: '病虫爆发预警',
+      value: d.pest_risk,
+      theme: '#f472b6',
+      note: '风险预警值',
+    },
+    {
+      label: '生物活跃指数',
+      value: d.bio_activity,
+      theme: '#4ade80',
+      note: '群落活跃度',
+    },
+    {
+      label: '\u4f30\u7b97\u51cf\u8680\u7387',
+      value: runoff.estimated_reduction_rate,
+      theme: '#38bdf8',
+      note: '\u76f8\u5bf9\u6b21\u751f\u6797\u53c2\u7167\u7ad9',
+      suffix: '%',
+      mode: 'improvement',
+    },
+    {
+      label: '\u6c61\u67d3\u524a\u51cf\u7efc\u5408\u7387',
+      value: water.composite_reduction_rate,
+      theme: '#fbbf24',
+      note: '\u76f8\u5bf9\u7edf\u4e00\u57fa\u51c6\u671f',
+      suffix: '%',
+      mode: 'improvement',
+    },
+  ]
+
   const radarOption = {
     backgroundColor: 'transparent',
+    animation: false,
     radar: {
       indicator: [
         { name: '流失控制', max: 100 },
-        { name: '生境适宜', max: 100 },
-        { name: '植保防御', max: 100 },
+        { name: '生物活跃', max: 100 },
+        { name: '植保防控', max: 100 },
         { name: '面源环境', max: 100 },
-        { name: '水文健康', max: 100 }
+        { name: '水文健康', max: 100 },
       ],
       shape: 'polygon',
-      radius: '65%',
+      radius: '68%',
       splitNumber: 6,
-      axisName: { color: '#a5b4fc', fontSize: 11, fontWeight: 'bold', textShadow: '0 0 5px #6366f1' },
-      splitLine: { 
-        lineStyle: { 
-          color: ['rgba(99, 102, 241, 0.1)', 'rgba(99, 102, 241, 0.2)', 'rgba(99, 102, 241, 0.4)', 'rgba(99, 102, 241, 0.6)', 'rgba(99, 102, 241, 0.8)', 'rgba(99, 102, 241, 1)']
-        } 
+      axisName: { color: '#a5b4fc', fontSize: 11, fontWeight: 'bold' },
+      splitLine: {
+        lineStyle: {
+          color: [
+            'rgba(99, 102, 241, 0.1)',
+            'rgba(99, 102, 241, 0.2)',
+            'rgba(99, 102, 241, 0.35)',
+            'rgba(99, 102, 241, 0.5)',
+            'rgba(99, 102, 241, 0.7)',
+            'rgba(99, 102, 241, 0.9)',
+          ],
+        },
       },
-      splitArea: { 
+      splitArea: {
         show: true,
-        areaStyle: { color: ['rgba(0,0,0,0)', 'rgba(99, 102, 241, 0.05)'] }
+        areaStyle: { color: ['rgba(0,0,0,0)', 'rgba(99, 102, 241, 0.05)'] },
       },
-      axisLine: { lineStyle: { color: 'rgba(99, 102, 241, 0.5)', type: 'dashed' } }
+      axisLine: { lineStyle: { color: 'rgba(99, 102, 241, 0.35)', type: 'dashed' } },
     },
     series: [
       {
         type: 'radar',
-        data: [{
-          value: [
-            Math.min(100, Math.max(0, 100 - (d.erosion_risk || 0))),
-            d.growth_suitability || 0,
-            Math.min(100, Math.max(0, 100 - (d.pest_risk || 0))),
-            Math.min(100, Math.max(0, 100 - (d.pollution_load || 0))),
-            Math.min(100, Math.max(0, 100 - (d.irrigation_urgency || 0)))
-          ],
-          name: 'Realtime Data',
-          symbol: 'circle',
-          symbolSize: 6,
-          itemStyle: { color: '#818cf8', borderColor: '#fff', borderWidth: 2, shadowColor: '#818cf8', shadowBlur: 10 },
-          areaStyle: { 
-            color: {
-              type: 'radial', x: 0.5, y: 0.5, r: 0.5,
-              colorStops: [{ offset: 0, color: 'rgba(99, 102, 241, 0.6)' }, { offset: 1, color: 'rgba(168, 85, 247, 0.2)' }]
-            }
+        data: [
+          {
+            value: [
+              clamp(100 - (d.erosion_risk || 0), 0, 100),
+              d.bio_activity || 0,
+              clamp(100 - (d.pest_risk || 0), 0, 100),
+              clamp(100 - (d.pollution_load || 0), 0, 100),
+              d.hydrology_health || 0,
+            ],
+            name: 'Realtime Data',
+            symbol: 'circle',
+            symbolSize: 6,
+            itemStyle: {
+              color: '#818cf8',
+              borderColor: '#fff',
+              borderWidth: 2,
+              shadowColor: '#818cf8',
+              shadowBlur: 10,
+            },
+            areaStyle: {
+              color: {
+                type: 'radial',
+                x: 0.5,
+                y: 0.5,
+                r: 0.5,
+                colorStops: [
+                  { offset: 0, color: 'rgba(99, 102, 241, 0.55)' },
+                  { offset: 1, color: 'rgba(168, 85, 247, 0.18)' },
+                ],
+              },
+            },
+            lineStyle: { width: 3, color: '#818cf8', shadowBlur: 15, shadowColor: '#818cf8' },
           },
-          lineStyle: { width: 3, color: '#818cf8', shadowBlur: 15, shadowColor: '#818cf8' }
-        },
-        {
-          value: [90, 85, 95, 88, 92],
-          name: 'Ideal State',
-          symbol: 'none',
-          lineStyle: { width: 2, type: 'dotted', color: 'rgba(56, 189, 248, 0.8)' },
-          areaStyle: { color: 'rgba(56, 189, 248, 0.0)' }
-        }]
-      }
-    ]
+          {
+            value: [90, 85, 95, 88, 92],
+            name: 'Ideal State',
+            symbol: 'none',
+            lineStyle: { width: 2, type: 'dotted', color: 'rgba(56, 189, 248, 0.8)' },
+            areaStyle: { color: 'rgba(56, 189, 248, 0)' },
+          },
+        ],
+      },
+    ],
   }
 
+  const headline = ecoHealth !== null && ecoHealth > 80
+    ? '生态综合评估：全区生态状态稳定，多源监测协同良好。'
+    : '生态综合评估：存在局部环境扰动风险。'
+
+  const runoffText = runoff.estimated_reduction_rate != null
+    ? '水土分析：径流对照结果已形成有效参照，当前减蚀表现整体稳定。'
+    : d.erosion_risk > 50
+      ? '水土分析：局部水土流失扰动有抬升迹象，建议加强坡面与汇流通道巡查。'
+      : '水土状态：24小时内未见异常侵蚀现象，地表径流形态平稳。'
+
+  const waterText = water.composite_reduction_rate != null
+    ? '水质分析：统一基准期口径下整体波动可控，建议持续关注氮磷及高锰酸盐变化。'
+    : '水质分析：当前仅形成阶段性监测观察值，建议继续补充稳定序列。'
+
+  const pestText = pest.risk_level === '高'
+    ? '病虫研判：当前病虫风险较高，建议维持联动巡检并同步开展田间复核。'
+    : pest.risk_level
+      ? '病虫研判：当前病虫风险总体可控，建议保持连续监测。'
+      : '病虫研判：暂未形成稳定风险等级，建议保持连续监测。'
+
+  const focusFacts = [
+    {
+      label: '参照样地',
+      value: runoff.reference_station?.name || '次生林径流点',
+      meta: '径流对照口径',
+    },
+    {
+      label: '系统基准期',
+      value: valueText(water.baseline_period?.days, '天'),
+      meta: '不足30天按已有天数',
+    },
+    {
+      label: '优势虫种',
+      value: pest.top_species?.name || '--',
+      meta: `风险等级 ${valueText(pest.risk_level)}`,
+    },
+    {
+      label: '近7天降水',
+      value: valueText(weather.history_summary?.total_precip, ' mm'),
+      meta: rangeText(weather.history_range?.start, weather.history_range?.end),
+    },
+  ]
+
   return (
-    <div style={{ 
-        display: 'flex', gap: '20px', height: '100%', padding: '10px 15px',
-        color: '#e2e8f0', fontFamily: 'monospace', position: 'relative',
-        overflow: 'hidden', background: 'radial-gradient(circle at center, rgba(30, 41, 59, 0.6) 0%, rgba(2, 6, 23, 0.9) 100%)',
-        backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px)',
-        backgroundSize: '20px 20px'
-    }}>
-      
-      {/* LEFT: Dynamic Heartbeat Radar */}
-      <div style={{ flex: '1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', background: 'url("data:image/svg+xml,%3Csvg width=\'200\' height=\'200\' viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Ccircle cx=\'100\' cy=\'100\' r=\'90\' fill=\'none\' stroke=\'rgba(99,102,241,0.05)\' stroke-width=\'40\' stroke-dasharray=\'2 6\'/%3E%3C/svg%3E") center center no-repeat' }}>
-          
-          <div style={{ position: 'absolute', width: '280px', height: '280px', borderRadius: '50%', border: '1px dashed rgba(99,102,241,0.3)', animation: 'spin 60s linear infinite' }} />
-          <div style={{ position: 'absolute', width: '240px', height: '240px', borderRadius: '50%', border: '1px solid rgba(56,189,248,0.1)', animation: 'spin 40s reverse linear infinite' }} />
+    <div className={s.wrap}>
+      <section className={s.radarCard}>
+        <div className={s.sectionEyebrow}>生态画像</div>
 
-          <div style={{ width: '100%', height: '320px', zIndex: 10 }}>
-              <ReactECharts option={radarOption} style={{ height: '100%', width: '100%' }} />
+        <div className={s.radarShell}>
+          <div className={s.radarHaloOuter} />
+          <div className={s.radarHaloInner} />
+          <ReactECharts option={radarOption} style={{ width: '100%', height: '100%' }} />
+        </div>
+
+        <div className={s.scorePanel}>
+          <div className={s.scoreLabel}>生态健康指数</div>
+          <div className={s.scoreValue}>
+            {ecoHealth ?? '--'}
+            <span>/100</span>
+          </div>
+        </div>
+      </section>
+
+      <div className={s.main}>
+        <div className={s.metricsGrid}>
+          {sensorMetrics.map((item) => (
+            <SensorHudCard
+              key={item.label}
+              label={item.label}
+              value={item.value}
+              theme={item.theme}
+              note={item.note}
+              suffix={item.suffix}
+              mode={item.mode}
+            />
+          ))}
+        </div>
+
+        <section className={`${s.insightCard} ${showInsights ? s.insightVisible : ''}`}>
+          <div className={s.insightHead}>
+            <div className={s.insightCopy}>
+              <div className={s.sectionEyebrow}>综合判断</div>
+              <div className={s.insightTitle}>{headline}</div>
+            </div>
+
+            <div className={s.aiBadge}>AI CORE</div>
           </div>
 
-          <div style={{ position: 'absolute', bottom: '0px', textAlign: 'center', padding: '10px', background: 'rgba(15,23,42,0.8)', border: '1px solid rgba(99,102,241,0.4)', borderRadius: '8px', backdropFilter: 'blur(4px)', boxShadow: '0 4px 15px rgba(0,0,0,0.5)' }}>
-              <div style={{ fontSize: '10px', color: '#a5b4fc', fontWeight: 'bold', letterSpacing: '1px' }}>SYS.ECO_INTEGRITY</div>
-              <div style={{ fontSize: '42px', fontWeight: '900', color: '#fff', textShadow: '0 0 20px rgba(99, 102, 241, 0.8)', lineHeight: '1' }}>
-                  {d.eco_health || '--'}<span style={{ fontSize: '18px', color: '#6366f1' }}>/100</span>
-              </div>
+          <div className={s.insightBody}>
+            <div className={s.insightList}>
+              <InsightRow color="#38bdf8" text={runoffText} />
+              <InsightRow color="#4ade80" text={waterText} />
+              <InsightRow color="#f472b6" text={pestText} />
+            </div>
+
+            <div className={s.factGrid}>
+              {focusFacts.map((item) => (
+                <div key={item.label} className={s.factCard}>
+                  <div className={s.factLabel}>{item.label}</div>
+                  <div className={s.factValue}>{item.value}</div>
+                  <div className={s.factMeta}>{item.meta}</div>
+                </div>
+              ))}
+            </div>
           </div>
+        </section>
       </div>
-
-      {/* RIGHT: Technical Grid Indicators */}
-      <div style={{ flex: '2', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', flex: 1.5 }}>
-             <SensorHudCard 
-                label="水土流失风险" value={d.erosion_risk} 
-                theme="#38bdf8"
-             />
-             <SensorHudCard 
-                label="水环境污染负荷" value={d.pollution_load} 
-                theme="#fbbf24"
-             />
-             <SensorHudCard 
-                label="病虫爆发预警" value={d.pest_risk} 
-                theme="#f472b6"
-             />
-             <SensorHudCard 
-                label="气象宜居指数" value={d.growth_suitability} 
-                theme="#4ade80"
-             />
-          </div>
-
-          {/* AI Smart Insight Box */}
-          <div style={{ 
-              flex: 1, background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(15, 23, 42, 0.8))', 
-              border: '1px solid rgba(99, 102, 241, 0.3)', 
-              borderRadius: '12px', padding: '16px 20px', position: 'relative', overflow: 'hidden',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-              display: 'flex', gap: '24px', alignItems: 'center'
-          }}>
-             {/* Beautiful stylized decoration */}
-             <div style={{ flex: '0 0 80px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                <div style={{ width: '60px', height: '60px', borderRadius: '30px', background: 'rgba(99, 102, 241, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(99, 102, 241, 0.5)', boxShadow: '0 0 20px rgba(99, 102, 241, 0.4)' }}>
-                   <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#818cf8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                       <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" style={{ animation: 'spin 15s linear infinite', transformOrigin: 'center' }}/>
-                       <circle cx="12" cy="12" r="4" fill="#6366f1" />
-                   </svg>
-                </div>
-                <div style={{ fontSize: '11px', color: '#818cf8', fontWeight: 'bold', marginTop: '10px', letterSpacing: '2px' }}>AI CORE</div>
-             </div>
-
-             {/* Insights Content */}
-             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '10px', opacity: showInsights ? 1 : 0, transform: showInsights ? 'translateY(0)' : 'translateY(10px)', transition: 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)' }}>
-                <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#f8fafc', textShadow: '0 0 5px rgba(255,255,255,0.3)', letterSpacing: '1px' }}>
-                    生态综合评估：{d.eco_health > 80 ? '全区环境质量优良，气候平稳' : '存在局部环境扰动风险'}
-                </div>
-                
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                    <div style={{ width: '4px', height: '14px', borderRadius: '4px', background: '#38bdf8', marginTop: '4px', boxShadow: '0 0 8px #38bdf8' }} />
-                    <div style={{ fontSize: '13px', color: '#cbd5e1', lineHeight: '1.6' }}>
-                        {d.erosion_risk > 50 ? "水土预警：检测到局部水土流失风险增加，建议关注坡面汇流系统。" : "水土状态：24小时内未见异常侵蚀现象，地表径流形态平稳。"}
-                    </div>
-                </div>
-                
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                    <div style={{ width: '4px', height: '14px', borderRadius: '4px', background: '#4ade80', marginTop: '4px', boxShadow: '0 0 8px #4ade80' }} />
-                    <div style={{ fontSize: '13px', color: '#cbd5e1', lineHeight: '1.6' }}>
-                        气象监测：当前区域光热资源充沛，空气湿度适宜，处于农林作业黄金期。
-                    </div>
-                </div>
-             </div>
-             
-             {/* Decorative watermark */}
-             <div style={{ position: 'absolute', bottom: '-8px', right: '15px', fontSize: '64px', fontWeight: '900', color: 'rgba(99, 102, 241, 0.04)', letterSpacing: '-2px', fontStyle: 'italic', pointerEvents: 'none' }}>
-                SUMMARY
-             </div>
-          </div>
-      </div>
-
-      <style>{`
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-      `}</style>
     </div>
   )
 }
 
-function SensorHudCard({ label, value, theme }) {
-    const safeValue = typeof value === 'number' && !isNaN(value) ? value : 0;
-    const isCritical = safeValue > 70 || (theme === '#f472b6' && safeValue > 50);
+function InsightRow({ color, text }) {
+  return (
+    <div className={s.insightRow}>
+      <div
+        className={s.insightBar}
+        style={{ '--accent': color }}
+      />
+      <div className={s.insightText}>{text}</div>
+    </div>
+  )
+}
 
-    return (
-        <div style={{ 
-            background: 'linear-gradient(145deg, rgba(15, 23, 42, 0.7) 0%, rgba(2, 6, 23, 0.9) 100%)', 
-            border: `1px solid ${isCritical ? theme : 'rgba(255,255,255,0.05)'}`, 
-            borderTop: `1px solid rgba(255,255,255,0.1)`,
-            borderRadius: '12px', padding: '14px 20px', display: 'flex', gap: '20px', position: 'relative',
-            overflow: 'hidden', 
-            boxShadow: isCritical ? `0 0 25px ${theme}33, inset 0 0 20px ${theme}11` : '0 8px 16px rgba(0,0,0,0.6)',
-            transition: 'all 0.3s ease-in-out',
-            alignItems: 'center',
-            backdropFilter: 'blur(10px)'
-        }}>
-            {/* Multi-layered Background Glow */}
-            <div style={{ position: 'absolute', top: '0', left: '0', width: '4px', height: '100%', background: theme, boxShadow: `0 0 15px ${theme}` }} />
-            <div style={{ position: 'absolute', top: '10%', left: '-10%', width: '100px', height: '100px', background: theme, filter: 'blur(45px)', opacity: 0.2 }} />
+function SensorHudCard({ label, value, theme, note, suffix = '', mode = 'risk' }) {
+  const numericValue = typeof value === 'number' && !Number.isNaN(value) ? value : null
+  const displayValue = metricDisplay(value, suffix)
+  const safeValue = metricProgress(numericValue, mode)
+  const badge = metricBadge(mode, numericValue, theme)
+  const isCritical = badge.critical
 
-            {/* Circular Premium Gauge */}
-            <div style={{ flex: '0 0 60px', height: '60px', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <svg width="60" height="60" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)', position: 'absolute', dropShadow: `0 0 5px ${theme}` }}>
-                    <circle cx="50" cy="50" r="44" fill="rgba(0,0,0,0.2)" stroke="rgba(255,255,255,0.05)" strokeWidth="8" />
-                    <circle cx="50" cy="50" r="44" fill="none" stroke={theme} strokeWidth="8" strokeDasharray={2 * Math.PI * 44} strokeDashoffset={2 * Math.PI * 44 * (1 - safeValue / 100)} strokeLinecap="round" style={{ transition: 'stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1)' }} />
-                </svg>
-                {/* Embedded Glowing Metric */}
-                <div style={{ 
-                    position: 'relative', display: 'flex', alignItems: 'baseline',
-                    color: '#fff', textShadow: `0 0 10px ${theme}, 0 0 20px ${theme}`, fontFamily: 'monospace'
-                }}>
-                    <span style={{ fontSize: '20px', fontWeight: '900', fontStyle: 'italic', lineHeight: '1' }}>{safeValue}</span>
-                </div>
-            </div>
-
-            {/* Core Info Area */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '6px' }}>
-                <div style={{ 
-                    fontSize: '16px', fontWeight: 'bold', letterSpacing: '2px', 
-                    background: `linear-gradient(90deg, #fff, ${theme})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-                    textShadow: '0 2px 4px rgba(0,0,0,0.4)', alignSelf: 'flex-start'
-                }}>
-                    {label}
-                </div>
-                
-                {/* Tech Progress Bar */}
-                <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', position: 'relative', overflow: 'hidden' }}>
-                    <div style={{ 
-                        position: 'absolute', top: 0, left: 0, height: '100%', width: `${safeValue}%`, 
-                        background: `linear-gradient(90deg, transparent, ${theme})`,
-                        boxShadow: `0 0 8px ${theme}`, transition: 'width 1.5s ease-out'
-                    }} />
-                </div>
-            </div>
-
-            {/* Elegant Status Badge */}
-            <div style={{ 
-                display: 'flex', alignItems: 'center', gap: '6px', 
-                padding: '4px 10px', borderRadius: '20px', 
-                background: isCritical ? `${theme}22` : 'rgba(255,255,255,0.03)',
-                border: `1px solid ${isCritical ? theme : 'rgba(255,255,255,0.1)'}`,
-                boxShadow: isCritical ? `0 0 10px ${theme}40` : 'none'
-            }}>
-                {isCritical && <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: theme, boxShadow: `0 0 8px ${theme}`, animation: 'blink 1s infinite' }} />}
-                <div style={{ fontSize: '10px', color: isCritical ? theme : '#94a3b8', fontWeight: '900', letterSpacing: '1px' }}>
-                    {isCritical ? 'ALERT' : 'NORM'}
-                </div>
-            </div>
+  return (
+    <div
+      className={`${s.metricCard} ${isCritical ? s.metricCardCritical : ''}`}
+      style={{ '--accent': theme }}
+    >
+      <div className={s.metricTop}>
+        <div className={s.metricCopy}>
+          <div className={s.metricLabel}>{label}</div>
+          <div className={s.metricNote}>{note || '实时监测'}</div>
         </div>
-    )
+
+        <div className={`${s.metricBadge} ${isCritical ? s.metricBadgeCritical : ''}`}>
+          {badge.label}
+        </div>
+      </div>
+
+      <div className={s.metricBottom}>
+        <div className={s.metricValue}>{displayValue}</div>
+        <div className={s.metricTrack}>
+          <div className={s.metricTrackBar} style={{ width: `${safeValue}%` }} />
+        </div>
+      </div>
+    </div>
+  )
 }

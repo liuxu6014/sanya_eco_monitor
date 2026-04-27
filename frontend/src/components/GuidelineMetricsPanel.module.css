@@ -1,0 +1,336 @@
+.wrap {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  color: #d9ecff;
+  overflow: auto;
+}
+
+.kpiRow,
+.heroGrid,
+.midGrid,
+.bottomGrid {
+  display: grid;
+  gap: 12px;
+  min-height: 0;
+}
+
+.kpiRow {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.heroGrid {
+  grid-template-columns: 1.06fr 0.94fr;
+}
+
+.midGrid {
+  grid-template-columns: 1fr 1fr;
+}
+
+.bottomGrid {
+  grid-template-columns: 1.05fr 0.95fr;
+}
+
+.sideStack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+
+.kpiCard,
+.panel {
+  border-radius: 12px;
+  backdrop-filter: blur(8px);
+}
+
+.kpiCard {
+  position: relative;
+  overflow: hidden;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, rgba(7, 24, 52, 0.96), rgba(5, 17, 36, 0.92));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+.kpiCard::after {
+  content: '';
+  position: absolute;
+  inset: auto -20px -20px auto;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  opacity: 0.14;
+  filter: blur(10px);
+}
+
+.cyan::after { background: #38bdf8; }
+.gold::after { background: #facc15; }
+.rose::after { background: #f472b6; }
+.green::after { background: #2dd4bf; }
+
+.kpiLabel {
+  font-size: 11px;
+  color: #8fb6da;
+  letter-spacing: 0.7px;
+}
+
+.kpiValue {
+  margin-top: 6px;
+  font-size: 28px;
+  line-height: 1.05;
+  font-weight: 900;
+  color: #f7fcff;
+}
+
+.kpiNote {
+  margin-top: 6px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #79b7f0;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid rgba(56, 189, 248, 0.12);
+  background: linear-gradient(180deg, rgba(4, 18, 44, 0.86), rgba(4, 14, 34, 0.92));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+  min-height: 0;
+}
+
+.panelHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #7dd3fc;
+  letter-spacing: 0.3px;
+}
+
+.subtitle {
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.55;
+  color: #7da5c7;
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 68px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  flex-shrink: 0;
+}
+
+.ok {
+  color: #b8ffdb;
+  background: rgba(34, 197, 94, 0.16);
+  border: 1px solid rgba(34, 197, 94, 0.28);
+}
+
+.warn {
+  color: #ffe39b;
+  background: rgba(250, 204, 21, 0.12);
+  border: 1px solid rgba(250, 204, 21, 0.24);
+}
+
+.neutral {
+  color: #c5ddf5;
+  background: rgba(148, 163, 184, 0.14);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+.chartArea {
+  flex: 1;
+  min-height: 220px;
+}
+
+.footLine {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  color: #8dc3e6;
+  font-size: 11px;
+}
+
+.metricStrip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.metricMini {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(8, 33, 77, 0.52);
+}
+
+.metricName {
+  font-size: 11px;
+  color: #f6fbff;
+  font-weight: 700;
+}
+
+.metricNumbers {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #8dc3e6;
+}
+
+.riskGrid {
+  display: grid;
+  grid-template-columns: 0.86fr 1.14fr;
+  gap: 12px;
+  align-items: stretch;
+  min-height: 0;
+}
+
+.riskGauge {
+  min-height: 220px;
+}
+
+.riskInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.riskCard,
+.supportCard,
+.foundationItem,
+.ruleItem,
+.closureItem {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(8, 33, 77, 0.56);
+}
+
+.riskLabel,
+.supportLabel {
+  font-size: 11px;
+  color: #88afd0;
+}
+
+.riskValue,
+.supportValue {
+  margin-top: 5px;
+  font-size: 18px;
+  font-weight: 800;
+  color: #f8fcff;
+}
+
+.riskText,
+.supportText,
+.foundationText,
+.closureText,
+.closureNeed,
+.ruleItem {
+  margin-top: 5px;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.riskText,
+.supportText,
+.foundationText,
+.closureText {
+  color: #c9def4;
+}
+
+.closureNeed {
+  color: #8ed7ff;
+}
+
+.storyBox {
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(11, 24, 49, 0.96), rgba(7, 18, 36, 0.92));
+  border: 1px solid rgba(244, 114, 182, 0.16);
+  font-size: 12px;
+  line-height: 1.8;
+  color: #e6f3ff;
+}
+
+.supportCards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.weatherStrip {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.weatherChip {
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(17, 42, 84, 0.68);
+  border: 1px solid rgba(125, 211, 252, 0.16);
+  color: #96dbff;
+  font-size: 11px;
+}
+
+.foundationWall,
+.ruleList,
+.closureList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.foundationTop,
+.closureHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.emptyBlock {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: rgba(217,236,255,0.45);
+  font-size: 13px;
+  letter-spacing: 1px;
+}
+
+@media (max-width: 1400px) {
+  .heroGrid,
+  .midGrid,
+  .bottomGrid,
+  .supportCards,
+  .kpiRow {
+    grid-template-columns: 1fr;
+  }
+
+  .riskGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .metricStrip {
+    grid-template-columns: 1fr;
+  }
+}

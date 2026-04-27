@@ -38,6 +38,14 @@
   flex: 1;
 }
 
+.tabPane {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  overflow: hidden;
+}
+
 /* Panel body overrides so flex children fill height */
 .col :global(.panel-body) {
   flex: 1;

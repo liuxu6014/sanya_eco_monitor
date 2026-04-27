@@ -1,8 +1,10 @@
 """地表径流监测系统数据采集 (WHXPH data-n latest record API)."""
 import logging
+import re
 from datetime import datetime
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from models import RunoffRecord, CollectLog
+from models import RunoffRecord, CollectLog, RainfallRecord
 from config import settings
 import httpx
 
@@ -34,6 +36,8 @@ RUNOFF_FIELD_MAP = {
     "径流":     "runoff",
 }
 
+SORTED_RUNOFF_KEYWORDS = sorted(RUNOFF_FIELD_MAP.items(), key=lambda item: len(item[0]), reverse=True)
+
 
 def _parse_float(val) -> float | None:
     try:
@@ -55,16 +59,34 @@ def _extract_fields(ele_lists: list[dict]) -> dict:
     """从 eleLists 提取 RunoffRecord 字段."""
     result = {}
     for item in ele_lists:
-        cn_name = item.get("eName", "")
-        field_name = RUNOFF_FIELD_MAP.get(cn_name)
+        cn_name = (item.get("eName", "") or "").strip()
+        normalized_name = re.sub(r"[（(].*?[）)]", "", cn_name).strip()
+        field_name = RUNOFF_FIELD_MAP.get(cn_name) or RUNOFF_FIELD_MAP.get(normalized_name)
         if not field_name:
-            for keyword, mapped_field in RUNOFF_FIELD_MAP.items():
-                if keyword in cn_name:
+            for keyword, mapped_field in SORTED_RUNOFF_KEYWORDS:
+                if keyword in cn_name or keyword in normalized_name:
                     field_name = mapped_field
                     break
         if field_name and field_name not in result:
             result[field_name] = _parse_float(item.get("eValue"))
     return result
+
+
+async def _has_collection_time(
+    db: AsyncSession,
+    model,
+    device_code: str,
+    collection_time: datetime,
+) -> bool:
+    result = await db.execute(
+        select(model.id)
+        .where(
+            model.device_code == device_code,
+            model.collection_time == collection_time,
+        )
+        .limit(1)
+    )
+    return result.scalar_one_or_none() is not None
 
 
 async def collect_runoff(db: AsyncSession) -> int:
@@ -98,14 +120,15 @@ async def collect_runoff(db: AsyncSession) -> int:
                 datetime.strptime(col_time_str, "%Y-%m-%d %H:%M:%S")
                 if col_time_str else datetime.now()
             )
-            fields = _extract_fields(ele_lists)
-            db.add(RunoffRecord(
-                device_code=code,
-                collection_time=col_time,
-                raw_data=data,
-                **fields,
-            ))
-            saved = 1
+            if not await _has_collection_time(db, RunoffRecord, code, col_time):
+                fields = _extract_fields(ele_lists)
+                db.add(RunoffRecord(
+                    device_code=code,
+                    collection_time=col_time,
+                    raw_data=data,
+                    **fields,
+                ))
+                saved = 1
         except Exception as e:
             logger.warning(f"collect_runoff [{name}] parse error: {e}")
 
@@ -142,15 +165,15 @@ async def collect_rain_gauges(db: AsyncSession) -> int:
                 datetime.strptime(col_time_str, "%Y-%m-%d %H:%M:%S")
                 if col_time_str else datetime.now()
             )
-            from models import RainfallRecord
-            rainfall = _extract_fields(ele_lists).get("rainfall")
-            db.add(RainfallRecord(
-                device_code=code,
-                collection_time=col_time,
-                rainfall=rainfall,
-                raw_data=data,
-            ))
-            total_saved += 1
+            if not await _has_collection_time(db, RainfallRecord, code, col_time):
+                rainfall = _extract_fields(ele_lists).get("rainfall")
+                db.add(RainfallRecord(
+                    device_code=code,
+                    collection_time=col_time,
+                    rainfall=rainfall,
+                    raw_data=data,
+                ))
+                total_saved += 1
         except Exception as e:
             logger.warning(f"collect_rain_gauges [{code}] parse error: {e}")
 

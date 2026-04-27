@@ -1,9 +1,11 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 import ReactECharts from 'echarts-for-react'
 import dayjs from 'dayjs'
 import s from './SporePanel.module.css'
+import ImagePreviewModal from './ImagePreviewModal.jsx'
 
 export default function SporePanel({ latest, trend }) {
+  const [previewOpen, setPreviewOpen] = useState(false)
   const rec = latest?.data || {}
   const td  = trend?.data || []
   
@@ -61,9 +63,6 @@ export default function SporePanel({ latest, trend }) {
           <div className={s.totalCard}>
             <div>
               <div className={s.label}>今日总量</div>
-              <div className={s.status}>
-                 <span className={s.dot} /> 实时监测
-              </div>
             </div>
             <div className={s.value}>{rec.total_count ?? '0'}</div>
           </div>
@@ -86,7 +85,12 @@ export default function SporePanel({ latest, trend }) {
         <div className={s.imageCard}>
            <div className={s.imgBox}>
              {rec.image_url ? (
-               <img src={rec.image_url} alt="Spore" className={s.pImg} />
+               <img
+                 src={rec.image_url}
+                 alt="Spore"
+                 className={s.pImg}
+                 onClick={() => setPreviewOpen(true)}
+               />
              ) : (
                <div className={s.pPlaceholder}>
                  <div className={s.scan} />
@@ -99,7 +103,7 @@ export default function SporePanel({ latest, trend }) {
 
       <div className={s.chartBox}>
          <div className={s.chartHeader}>
-           浓度趋势 (近7日动态)
+           浓度趋势
          </div>
          <div className={s.chart}>
            {td.length > 0 ? (
@@ -109,6 +113,13 @@ export default function SporePanel({ latest, trend }) {
            )}
          </div>
       </div>
+
+      <ImagePreviewModal
+        open={previewOpen}
+        src={rec.image_url}
+        alt="孢子图片预览"
+        onClose={() => setPreviewOpen(false)}
+      />
     </div>
   )
 }

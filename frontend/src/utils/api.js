@@ -1,4 +1,4 @@
-const BASE = (import.meta.env.VITE_API_BASE_URL || '') + '/api'
+const BASE = '/api'
 
 async function request(path, init = {}) {
   const res = await fetch(`${BASE}${path}`, {
@@ -55,16 +55,11 @@ export const api = {
   insectHeatmap: (days = 14) => get(`/insect/species-heatmap?days=${days}`),
   sporeLatest: () => get('/insect/spore/latest'),
   sporeTrend: (days = 7) => get(`/insect/spore/trend?days=${days}`),
-  weatherLatest: () => get('/sensor/weather/latest'),
-  weatherTrend: (hours = 24) => get(`/sensor/weather/trend?hours=${hours}`),
-  weatherDaily: (days = 30) => get(`/sensor/weather/daily?days=${days}`),
-  weatherWindRose: (days = 7) => get(`/sensor/weather/wind-rose?days=${days}`),
-  soilLatest: () => get('/sensor/soil/latest'),
-  soilTrend: (hours = 24) => get(`/sensor/soil/trend?hours=${hours}`),
-  soilDaily: (days = 30) => get(`/sensor/soil/daily?days=${days}`),
   waterQualityDaily: (days = 30) => get(`/sensor/water_quality/daily?days=${days}`),
   runoffDaily: (days = 30) => get(`/sensor/runoff/daily?days=${days}`),
   ecoIndex: () => get('/analysis/eco-index'),
+  guidelineMetrics: () => get('/analysis/guideline-metrics'),
+  analysisDashboard: () => get('/analysis/dashboard'),
   triggerCollect: () => post('/collect/trigger'),
   deleteReport: (id) => del(`/report/${id}`),
 }

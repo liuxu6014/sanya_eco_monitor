@@ -46,13 +46,13 @@
 
 ### 核心价值
 
-| 🎯 目标 | 📋 说明 |
-|---------|---------|
-| **实时感知** | 每 30 分钟自动采集气象、土壤、虫情、孢子等多维度数据 |
-| **可视呈现** | 深色科技大屏，GIS 地图 + ECharts 图表实时展示 |
+| 🎯 目标            | 📋 说明                                               |
+| ------------------ | ----------------------------------------------------- |
+| **实时感知** | 每 30 分钟自动采集气象、土壤、虫情、孢子等多维度数据  |
+| **可视呈现** | 深色科技大屏，GIS 地图 + ECharts 图表实时展示         |
 | **智能分析** | 预留 AI (Claude) 接口，可对监测数据进行风险评估与建议 |
 | **报告输出** | 自动聚合统计数据，支持 JSON / HTML / Excel 多格式导出 |
-| **设备管控** | 实时监控 7 类设备在线状态，超时自动告警 |
+| **设备管控** | 实时监控 7 类设备在线状态，超时自动告警               |
 
 ---
 
@@ -145,14 +145,14 @@
 
 ### 🔲 预留功能（已建模/待接入）
 
-| 模块 | 数据表 | 状态 |
-|------|--------|------|
-| 水质/面源污染监测 | `water_quality_records` | 已建表 ⏳ |
-| 雨量专用监测 | `rainfall_records` | 已建表 ⏳ |
-| 4G 雨量计 | — | 待接入 |
-| 地表径流监测 | — | 待接入 |
-| 测防仪数据 | — | API 已对接 (Code 配置完成) |
-| 苗情摄像机 | — | API 已对接 (Code 配置完成) |
+| 模块              | 数据表                    | 状态                       |
+| ----------------- | ------------------------- | -------------------------- |
+| 水质/面源污染监测 | `water_quality_records` | 已建表 ⏳                  |
+| 雨量专用监测      | `rainfall_records`      | 已建表 ⏳                  |
+| 4G 雨量计         | —                        | 待接入                     |
+| 地表径流监测      | —                        | 待接入                     |
+| 测防仪数据        | —                        | API 已对接 (Code 配置完成) |
+| 苗情摄像机        | —                        | API 已对接 (Code 配置完成) |
 
 ---
 
@@ -160,33 +160,33 @@
 
 ### 后端
 
-| 技术 | 版本 | 用途 |
-|------|------|------|
-| **Python** | ≥ 3.11 | 运行时 |
-| **FastAPI** | 0.115.0 | Web 框架，自动生成 OpenAPI 文档 |
-| **Uvicorn** | 0.30.0 | ASGI 服务器 |
-| **SQLAlchemy** | 2.0.35 | 异步 ORM，支持新式 `Mapped` 类型注解 |
-| **aiosqlite** | 0.20.0 | SQLite 异步驱动 |
-| **httpx** | 0.27.2 | 异步 HTTP 客户端 (采集器用) |
-| **APScheduler** | 3.10.4 | 定时任务调度器 |
-| **Pydantic Settings** | 2.5.2 | 环境变量与配置管理 |
-| **Pandas** | 2.2.3 | 数据分析 |
-| **Jinja2** | 3.1.4 | HTML 报告模板引擎 |
-| **openpyxl** | 3.1.5 | Excel 文件生成 |
-| **uv** | latest | 极速 Python 包管理器 |
+| 技术                        | 版本    | 用途                                   |
+| --------------------------- | ------- | -------------------------------------- |
+| **Python**            | ≥ 3.11 | 运行时                                 |
+| **FastAPI**           | 0.115.0 | Web 框架，自动生成 OpenAPI 文档        |
+| **Uvicorn**           | 0.30.0  | ASGI 服务器                            |
+| **SQLAlchemy**        | 2.0.35  | 异步 ORM，支持新式 `Mapped` 类型注解 |
+| **aiosqlite**         | 0.20.0  | SQLite 异步驱动                        |
+| **httpx**             | 0.27.2  | 异步 HTTP 客户端 (采集器用)            |
+| **APScheduler**       | 3.10.4  | 定时任务调度器                         |
+| **Pydantic Settings** | 2.5.2   | 环境变量与配置管理                     |
+| **Pandas**            | 2.2.3   | 数据分析                               |
+| **Jinja2**            | 3.1.4   | HTML 报告模板引擎                      |
+| **openpyxl**          | 3.1.5   | Excel 文件生成                         |
+| **uv**                | latest  | 极速 Python 包管理器                   |
 
 ### 前端
 
-| 技术 | 版本 | 用途 |
-|------|------|------|
-| **React** | 18.3.1 | UI 框架 |
-| **Vite** | 5.4.8 | 构建工具 + 开发服务器 |
-| **ECharts** | 5.5.1 | 数据可视化图表 |
-| **echarts-for-react** | 3.0.2 | ECharts React 集成 |
-| **Leaflet** | 1.9.4 | 地图引擎 |
-| **react-leaflet** | 4.2.1 | Leaflet React 集成 |
-| **Day.js** | 1.11.13 | 日期处理 |
-| **CSS Modules** | — | 组件级样式隔离 |
+| 技术                        | 版本    | 用途                  |
+| --------------------------- | ------- | --------------------- |
+| **React**             | 18.3.1  | UI 框架               |
+| **Vite**              | 5.4.8   | 构建工具 + 开发服务器 |
+| **ECharts**           | 5.5.1   | 数据可视化图表        |
+| **echarts-for-react** | 3.0.2   | ECharts React 集成    |
+| **Leaflet**           | 1.9.4   | 地图引擎              |
+| **react-leaflet**     | 4.2.1   | Leaflet React 集成    |
+| **Day.js**            | 1.11.13 | 日期处理              |
+| **CSS Modules**       | —      | 组件级样式隔离        |
 
 ---
 
@@ -265,13 +265,14 @@ sanya_eco_monitor/
 
 在启动项目之前，请确保您的计算机上已安装以下依赖项：
 
-| 依赖 | 最低版本 | 说明 |
-|------|---------|------|
-| **Python** | ≥ 3.11 | 后端运行时 |
-| **Node.js** | ≥ 18.x | 前端构建 |
-| **uv** | latest | Python 极速包管理器 |
+| 依赖              | 最低版本 | 说明                |
+| ----------------- | -------- | ------------------- |
+| **Python**  | ≥ 3.11  | 后端运行时          |
+| **Node.js** | ≥ 18.x  | 前端构建            |
+| **uv**      | latest   | Python 极速包管理器 |
 
 安装 `uv`：
+
 ```bash
 pip install uv
 # 或
@@ -342,6 +343,7 @@ bash start_frontend.sh
 ### 方式二：手动分步启动 (适用于所有终端)
 
 **启动后端 (Terminal 1)**
+
 ```bash
 cd backend
 
@@ -349,10 +351,11 @@ cd backend
 uv sync
 
 # 启动 FastAPI 服务
-uv run uvicorn main:app --host 0.0.0.0 --port 8001 --reload
+uv run uvicorn main:app --host 0.0.0.0 --port 8888 --reload
 ```
 
 **启动前端 (Terminal 2)**
+
 ```bash
 cd frontend
 
@@ -365,12 +368,12 @@ npm run dev
 
 ### 访问地址
 
-| 服务 | 地址 |
-|------|------|
-| 🖥 **前端大屏** | http://localhost:5175 |
-| 🔧 **后端 API** | http://localhost:8001 |
-| 📚 **Swagger 文档** | http://localhost:8001/docs |
-| 📘 **ReDoc 文档** | http://localhost:8001/redoc |
+| 服务                     | 地址                        |
+| ------------------------ | --------------------------- |
+| 🖥**前端大屏**     | http://localhost:5175       |
+| 🔧**后端 API**     | http://localhost:8001       |
+| 📚**Swagger 文档** | http://localhost:8001/docs  |
+| 📘**ReDoc 文档**   | http://localhost:8001/redoc |
 
 ---
 
@@ -378,69 +381,69 @@ npm run dev
 
 ### 综合概览
 
-| 方法 | 路径 | 说明 | 返回数据结构简述 |
-|------|------|------|----------------|
-| `GET` | `/api/summary/overview` | 大屏首屏所有关键指标一次性返回 | `{"data": {"weather": {...}, "soil": {...}, "insect": {...}, "spore": {...}, "insect_trend": [...], "collect_logs": [...], "runoff_stations": {...}, "water_quality": {...}, "rain_gauges": {...}}}` |
-| `GET` | `/api/summary/device-status` | 所有设备（虫情、孢子、气象、径流、水质等）在线状态 | `{"data": [{"name": "设备名", "code": "标识码", "status": "online/offline", "last_data": "ISO时间"}, ...]}` |
-| `GET` | `/api/health` | 健康检查 | `{"status": "ok", "title": "项目名称"}` |
+| 方法    | 路径                           | 说明                                               | 返回数据结构简述                                                                                                                                                                                       |
+| ------- | ------------------------------ | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `GET` | `/api/summary/overview`      | 大屏首屏所有关键指标一次性返回                     | `{"data": {"weather": {...}, "soil": {...}, "insect": {...}, "spore": {...}, "insect_trend": [...], "collect_logs": [...], "runoff_stations": {...}, "water_quality": {...}, "rain_gauges": {...}}}` |
+| `GET` | `/api/summary/device-status` | 所有设备（虫情、孢子、气象、径流、水质等）在线状态 | `{"data": [{"name": "设备名", "code": "标识码", "status": "online/offline", "last_data": "ISO时间"}, ...]}`                                                                                          |
+| `GET` | `/api/health`                | 健康检查                                           | `{"status": "ok", "title": "项目名称"}`                                                                                                                                                              |
 
 ### 虫情 / 孢子
 
-| 方法 | 路径 | 参数 | 说明 | 返回数据结构简述 |
-|------|------|------|------|----------------|
-| `GET` | `/api/insect/latest` | — | 最新虫情记录 | `{"data": {"collection_time": "...", "total_count": 120, "species_data": {"稻飞虱": 50...}, "image_url": "..."}}` |
-| `GET` | `/api/insect/trend` | `days=7` | 近 N 天虫情每日汇总趋势 | `{"data": [{"date": "2023-10-01", "total": 150, "species": {...}}, ...]}` |
-| `GET` | `/api/insect/species-stats`| `days=7` | 各虫种统计排行（主要用于饼图） | `{"data": [{"name": "二化螟", "value": 300}, ...]}` |
-| `GET` | `/api/insect/combined-trend`| `days=30` | 近 N 天虫情与孢子联合趋势（柱状+折线图用）| `{"data": [{"date": "2023-10-01", "insect": 150, "spore": 50}, ...]}` |
-| `GET` | `/api/insect/species-heatmap`| `days=14` | 近 N 天虫种热力图矩阵数据 | `{"data": {"dates": [...], "species": [...], "values": [[0,0,10],...]}}` |
-| `GET` | `/api/insect/spore/latest` | — | 最新孢子记录 | `{"data": {"collection_time": "...", "total_count": 50, "spore_data": {...}, "image_url": "..."}}` |
-| `GET` | `/api/insect/spore/trend` | `days=7` | 近 N 天孢子趋势 | `{"data": [{"date": "2023-10-01", "total": 45}, ...]}` |
+| 方法    | 路径                            | 参数        | 说明                                       | 返回数据结构简述                                                                                                    |
+| ------- | ------------------------------- | ----------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| `GET` | `/api/insect/latest`          | —          | 最新虫情记录                               | `{"data": {"collection_time": "...", "total_count": 120, "species_data": {"稻飞虱": 50...}, "image_url": "..."}}` |
+| `GET` | `/api/insect/trend`           | `days=7`  | 近 N 天虫情每日汇总趋势                    | `{"data": [{"date": "2023-10-01", "total": 150, "species": {...}}, ...]}`                                         |
+| `GET` | `/api/insect/species-stats`   | `days=7`  | 各虫种统计排行（主要用于饼图）             | `{"data": [{"name": "二化螟", "value": 300}, ...]}`                                                               |
+| `GET` | `/api/insect/combined-trend`  | `days=30` | 近 N 天虫情与孢子联合趋势（柱状+折线图用） | `{"data": [{"date": "2023-10-01", "insect": 150, "spore": 50}, ...]}`                                             |
+| `GET` | `/api/insect/species-heatmap` | `days=14` | 近 N 天虫种热力图矩阵数据                  | `{"data": {"dates": [...], "species": [...], "values": [[0,0,10],...]}}`                                          |
+| `GET` | `/api/insect/spore/latest`    | —          | 最新孢子记录                               | `{"data": {"collection_time": "...", "total_count": 50, "spore_data": {...}, "image_url": "..."}}`                |
+| `GET` | `/api/insect/spore/trend`     | `days=7`  | 近 N 天孢子趋势                            | `{"data": [{"date": "2023-10-01", "total": 45}, ...]}`                                                            |
 
 ### 传感器 (气象 / 墒情 / 径流 / 雨量 / 水质)
 
-| 方法 | 路径 | 参数 | 说明 | 返回数据结构简述 |
-|------|------|------|------|----------------|
-| `GET` | `/api/sensor/weather/latest` | — | 最新气象数据 | `{"data": {"temperature": 28.5, "humidity": 70, "wind_speed": 2.5, "wind_direction": "东南", "rainfall": 0, "pressure": 1010, "light": 30000}}` |
-| `GET` | `/api/sensor/weather/trend` | `hours=24` | 近 N 小时气象趋势（逐条记录）| `{"data": [{"time": "...", "temperature": 25, "humidity": 80, ...}, ...]}` |
-| `GET` | `/api/sensor/weather/daily` | `days=30` | 近 N 天逐日气象聚合（日均温湿度、日累计降雨）| `{"data": [{"date": "...", "avg_temp": 28.1, "avg_humidity": 75.2, "total_rainfall": 12.5}, ...]}` |
-| `GET` | `/api/sensor/weather/wind-rose` | `days=7` | 风向频率与平均风速（风玫瑰图用）| `{"data": [{"direction": "西北", "count": 10, "frequency": 15.5, "avg_speed": 3.2}, ...]}` |
-| `GET` | `/api/sensor/soil/latest` | — | 最新墒情数据 | `{"data": {"collection_time": "...", "moisture_10cm": 35.2, "moisture_20cm": 38.1, "moisture_40cm": 40.5, "temperature_10cm": 26.5}}` |
-| `GET` | `/api/sensor/soil/trend` | `hours=24` | 近 N 小时墒情趋势（逐条记录）| `{"data": [{"time": "...", "moisture_10cm": 35, ...}, ...]}` |
-| `GET` | `/api/sensor/soil/daily` | `days=30` | 近 N 天逐日墒情聚合（日均值）| `{"data": [{"date": "...", "moisture_10cm": 35.5, "moisture_20cm": 38.0, "moisture_40cm": 40.2}, ...]}` |
-| `GET` | `/api/sensor/rainfall/latest` | — | 最新单体雨量计数据 | `{"data": {"collection_time": "...", "rainfall": 12.5}}` |
-| `GET` | `/api/sensor/runoff/latest` | — | 最新单体径流监测站数据 | `{"data": {"collection_time": "...", "flow_rate": 1.5, "total_flow": 1500.5}}` |
+| 方法    | 路径                              | 参数         | 说明                                          | 返回数据结构简述                                                                                                                                  |
+| ------- | --------------------------------- | ------------ | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET` | `/api/sensor/weather/latest`    | —           | 最新气象数据                                  | `{"data": {"temperature": 28.5, "humidity": 70, "wind_speed": 2.5, "wind_direction": "东南", "rainfall": 0, "pressure": 1010, "light": 30000}}` |
+| `GET` | `/api/sensor/weather/trend`     | `hours=24` | 近 N 小时气象趋势（逐条记录）                 | `{"data": [{"time": "...", "temperature": 25, "humidity": 80, ...}, ...]}`                                                                      |
+| `GET` | `/api/sensor/weather/daily`     | `days=30`  | 近 N 天逐日气象聚合（日均温湿度、日累计降雨） | `{"data": [{"date": "...", "avg_temp": 28.1, "avg_humidity": 75.2, "total_rainfall": 12.5}, ...]}`                                              |
+| `GET` | `/api/sensor/weather/wind-rose` | `days=7`   | 风向频率与平均风速（风玫瑰图用）              | `{"data": [{"direction": "西北", "count": 10, "frequency": 15.5, "avg_speed": 3.2}, ...]}`                                                      |
+| `GET` | `/api/sensor/soil/latest`       | —           | 最新墒情数据                                  | `{"data": {"collection_time": "...", "moisture_10cm": 35.2, "moisture_20cm": 38.1, "moisture_40cm": 40.5, "temperature_10cm": 26.5}}`           |
+| `GET` | `/api/sensor/soil/trend`        | `hours=24` | 近 N 小时墒情趋势（逐条记录）                 | `{"data": [{"time": "...", "moisture_10cm": 35, ...}, ...]}`                                                                                    |
+| `GET` | `/api/sensor/soil/daily`        | `days=30`  | 近 N 天逐日墒情聚合（日均值）                 | `{"data": [{"date": "...", "moisture_10cm": 35.5, "moisture_20cm": 38.0, "moisture_40cm": 40.2}, ...]}`                                         |
+| `GET` | `/api/sensor/rainfall/latest`   | —           | 最新单体雨量计数据                            | `{"data": {"collection_time": "...", "rainfall": 12.5}}`                                                                                        |
+| `GET` | `/api/sensor/runoff/latest`     | —           | 最新单体径流监测站数据                        | `{"data": {"collection_time": "...", "flow_rate": 1.5, "total_flow": 1500.5}}`                                                                  |
 
 ### 综合分析 (AI 与生态指数)
 
-| 方法 | 路径 | 参数 | 说明 | 返回数据结构简述 |
-|------|------|------|------|----------------|
-| `GET` | `/api/analysis/eco-index` | — | 交叉多源数据计算得出的综合健康与风险指数 | `{"data": {"pest_risk": 45, "growth_suitability": 85, "irrigation_urgency": 20, "eco_health": 88, "alerts": [{"level": "warning", "msg": "...风"}], "meta": {...}}}` |
+| 方法    | 路径                        | 参数 | 说明                                     | 返回数据结构简述                                                                                                                                                       |
+| ------- | --------------------------- | ---- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET` | `/api/analysis/eco-index` | —   | 交叉多源数据计算得出的综合健康与风险指数 | `{"data": {"pest_risk": 45, "growth_suitability": 85, "irrigation_urgency": 20, "eco_health": 88, "alerts": [{"level": "warning", "msg": "...风"}], "meta": {...}}}` |
 
 ### 报告生成与管理
 
-| 方法 | 路径 | 参数 | 说明 | 返回数据结构简述 |
-|------|------|------|------|----------------|
-| `GET` | `/api/report/weekly` | `end?` | 周报 JSON 数据 | `{"data": {"period": {"start":"...","end":"..."}, "weather_summary": {...}, "insect_summary": {...}, ...}}` |
-| `GET` | `/api/report/monthly` | `end?` | 月报 JSON 数据 | `{"data": {"period": {"start":"...","end":"..."}, "weather_summary": {...}, "insect_summary": {...}, ...}}` |
-| `GET` | `/api/report/custom` | `start`, `end` | 自定周期 JSON 数据 | `{"data": {...}}` (结构同周/月报) |
-| `GET` | `/api/report/weekly/html` | `end?` | 周报 HTML 下载 | 返回 `text/html` 文件流 |
-| `GET` | `/api/report/monthly/html` | `end?` | 月报 HTML 下载 | 返回 `text/html` 文件流 |
-| `GET` | `/api/report/ai-analysis` | `end?` | AI 智能分析周报文案 | `{"data": {"analysis": "大模型返回的Markdown文案", "period": {...}}}` |
-| `GET` | `/api/report/list` | — | 获取已生成的报告文件列表 | `{"data": [{"id": 1, "title": "...", "report_type": "weekly", "has_html": true, "has_docx": true, ...}, ...]}` |
-| `POST`| `/api/report/generate` | `report_type`, `end?` | 后台触发生成指定类型（daily/weekly/m..）的报告 | `{"status": "ok", "message": "Report generated successfully."}` |
-| `DEL` | `/api/report/{report_id}` | — | 删除已生成报告 | `{"status": "ok"}` |
-| `GET` | `/api/report/download/{id}/{format}`| `{format}`=html/docx | 下载已生成的格式报告文件 | 返回指定文件的二进制流 |
+| 方法     | 路径                                   | 参数                      | 说明                                           | 返回数据结构简述                                                                                                 |
+| -------- | -------------------------------------- | ------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `GET`  | `/api/report/weekly`                 | `end?`                  | 周报 JSON 数据                                 | `{"data": {"period": {"start":"...","end":"..."}, "weather_summary": {...}, "insect_summary": {...}, ...}}`    |
+| `GET`  | `/api/report/monthly`                | `end?`                  | 月报 JSON 数据                                 | `{"data": {"period": {"start":"...","end":"..."}, "weather_summary": {...}, "insect_summary": {...}, ...}}`    |
+| `GET`  | `/api/report/custom`                 | `start`, `end`        | 自定周期 JSON 数据                             | `{"data": {...}}` (结构同周/月报)                                                                              |
+| `GET`  | `/api/report/weekly/html`            | `end?`                  | 周报 HTML 下载                                 | 返回 `text/html` 文件流                                                                                        |
+| `GET`  | `/api/report/monthly/html`           | `end?`                  | 月报 HTML 下载                                 | 返回 `text/html` 文件流                                                                                        |
+| `GET`  | `/api/report/ai-analysis`            | `end?`                  | AI 智能分析周报文案                            | `{"data": {"analysis": "大模型返回的Markdown文案", "period": {...}}}`                                          |
+| `GET`  | `/api/report/list`                   | —                        | 获取已生成的报告文件列表                       | `{"data": [{"id": 1, "title": "...", "report_type": "weekly", "has_html": true, "has_docx": true, ...}, ...]}` |
+| `POST` | `/api/report/generate`               | `report_type`, `end?` | 后台触发生成指定类型（daily/weekly/m..）的报告 | `{"status": "ok", "message": "Report generated successfully."}`                                                |
+| `DEL`  | `/api/report/{report_id}`            | —                        | 删除已生成报告                                 | `{"status": "ok"}`                                                                                             |
+| `GET`  | `/api/report/download/{id}/{format}` | `{format}`=html/docx    | 下载已生成的格式报告文件                       | 返回指定文件的二进制流                                                                                           |
 
 ### 系统操作
 
-| 方法 | 路径 | 说明 | 返回数据结构简述 |
-|------|------|------|----------------|
-| `POST` | `/api/collect/trigger` | 手动触发一次全量数据采集（调试用） | `{"status": "ok", "message": "采集完成"}` |
-| `GET` | `/api/debug/settings` | 返回后端实际请求配置的基础URL（调试用）| `{"PLATFORM_BASE_URL": "...", "SENSOR_BASE_URL": "..."}` |
+| 方法     | 路径                     | 说明                                    | 返回数据结构简述                                           |
+| -------- | ------------------------ | --------------------------------------- | ---------------------------------------------------------- |
+| `POST` | `/api/collect/trigger` | 手动触发一次全量数据采集（调试用）      | `{"status": "ok", "message": "采集完成"}`                |
+| `GET`  | `/api/debug/settings`  | 返回后端实际请求配置的基础URL（调试用） | `{"PLATFORM_BASE_URL": "...", "SENSOR_BASE_URL": "..."}` |
 
 ### 📄 接口真实数据返回示例
 
-为方便前端对接与二次开发，以下列出核心接口当前实际运行中拉取到的真实数据样例（<details>内可展开查看 JSON）：
+为方便前端对接与二次开发，以下列出核心接口当前实际运行中拉取到的真实数据样例（`<details>`内可展开查看 JSON）：
 
 <details>
 <summary><b>1. 综合概览数据 `/api/summary/overview`</b></summary>
@@ -488,6 +491,7 @@ npm run dev
   }
 }
 ```
+
 </details>
 
 <details>
@@ -511,6 +515,7 @@ npm run dev
   ]
 }
 ```
+
 </details>
 
 <details>
@@ -530,6 +535,7 @@ npm run dev
   }
 }
 ```
+
 </details>
 
 <details>
@@ -557,6 +563,7 @@ npm run dev
   }
 }
 ```
+
 </details>
 
 <details>
@@ -564,19 +571,20 @@ npm run dev
 
 对接的第三方硬件接口（以水质站 `16116030` 为例）真实拉取包含详细具体指标的源数据 `eleLists`。我们将其提炼并在系统展示的格式如下：
 
-| 监测参数 | 原生数据名 (`eName`) | 实时数值格式示例 | 数据单位 (`eUnit`) |
-| :--- | :--- | :--- | :--- |
-| **PH** | PH | 7.15 | *(无)* |
-| **电导率** | 电导率 | 0 | μS/cm |
-| **COD (化学需氧量)** | COD | 88.08 | mg/L |
-| **氨氮** | 氨氮 | 53.89 | mg/L |
-| **浊度** | 浊度 | 9.5 | NTU |
-| **溶解氧** | 溶解氧 | 6.20 | mg/L |
-| **水温** | 水温 | 27.3 | ℃ |
-| **总磷** | 总磷 | 0.201 | mg/L |
-| **总氮** | 总氮 | 32.767 | mg/L |
+| 监测参数                   | 原生数据名 (`eName`) | 实时数值格式示例 | 数据单位 (`eUnit`) |
+| :------------------------- | :--------------------- | :--------------- | :------------------- |
+| **PH**               | PH                     | 7.15             | *(无)*             |
+| **电导率**           | 电导率                 | 0                | μS/cm               |
+| **COD (化学需氧量)** | COD                    | 88.08            | mg/L                 |
+| **氨氮**             | 氨氮                   | 53.89            | mg/L                 |
+| **浊度**             | 浊度                   | 9.5              | NTU                  |
+| **溶解氧**           | 溶解氧                 | 6.20             | mg/L                 |
+| **水温**             | 水温                   | 27.3             | ℃                   |
+| **总磷**             | 总磷                   | 0.201            | mg/L                 |
+| **总氮**             | 总氮                   | 32.767           | mg/L                 |
 
 **三方源数据拉取示例 (`eleLists` 结构)：**
+
 ```json
 {
   "datetime": "2026-04-10 13:08:56",
@@ -590,6 +598,7 @@ npm run dev
   ]
 }
 ```
+
 </details>
 
 ---
@@ -645,15 +654,15 @@ npm run dev
 
 ### 预留数据表
 
-| 表名 | 说明 | 关键字段 |
-|------|------|---------|
+| 表名                      | 说明          | 关键字段                             |
+| ------------------------- | ------------- | ------------------------------------ |
 | `water_quality_records` | 水质/面源污染 | pH、溶解氧、电导率、浊度、氨氮、总磷 |
-| `rainfall_records` | 雨量专用 | 小时雨量、日雨量 |
+| `rainfall_records`      | 雨量专用      | 小时雨量、日雨量                     |
 
 ### 系统表
 
-| 表名 | 说明 |
-|------|------|
+| 表名             | 说明                                      |
+| ---------------- | ----------------------------------------- |
 | `collect_logs` | 数据采集日志 (任务名、状态、记录数、时间) |
 
 ---
@@ -695,19 +704,19 @@ npm run dev
 
 ### 聚合指标
 
-| 维度 | 计算指标 |
-|------|---------|
+| 维度           | 计算指标                                      |
+| -------------- | --------------------------------------------- |
 | **气象** | 平均温度、最高/最低温度、平均湿度、累计降雨量 |
-| **墒情** | 10cm/20cm/40cm 各层平均墒情 |
-| **虫情** | 捕获总数、虫种排行 (Top 10)、每日趋势 |
-| **孢子** | 捕获总数、每日趋势 |
+| **墒情** | 10cm/20cm/40cm 各层平均墒情                   |
+| **虫情** | 捕获总数、虫种排行 (Top 10)、每日趋势         |
+| **孢子** | 捕获总数、每日趋势                            |
 
 ### 导出格式
 
-| 格式 | 特点 |
-|------|------|
-| **JSON** | 结构化数据，适合前端展示与二次开发 |
-| **HTML** | 自包含深色科技风网页，无需外部依赖即可打开 |
+| 格式            | 特点                                                            |
+| --------------- | --------------------------------------------------------------- |
+| **JSON**  | 结构化数据，适合前端展示与二次开发                              |
+| **HTML**  | 自包含深色科技风网页，无需外部依赖即可打开                      |
 | **Excel** | 4 个 Sheet：综合汇总 / 虫情明细 / 气象明细 / 墒情明细，专业排版 |
 
 ---
@@ -747,16 +756,16 @@ npm run dev
 
 ### 核心功能模块
 
-| 模块 | 功能 | 技术方案 |
-|------|------|---------|
-| **数据总览区** | 总设备数、今日采集量、总记录数、在线率等 KPI 卡片 | ECharts 数字翻牌器 + CSS 动画 |
-| **GIS 空间分析** | 设备分布地图 + 气象数据热力图叠加 | Leaflet + 天地图 + 自定义图层 |
-| **气象趋势中心** | 温湿度/风速/降雨多指标叠加面积图，支持 7/30/90 天切换 | ECharts 折线/面积混合图 |
-| **虫情种群分析** | 害虫种群分布饼图 + Top N 排行榜 + 日/周对比 | ECharts 南丁格尔玫瑰图 |
-| **墒情矩阵视图** | 多层土壤含水量热力矩阵，色阶映射干旱/适宜/过湿 | ECharts 热力图 |
-| **孢子浓度曲线** | 孢子浓度趋势 + 阈值预警线 + 风险等级颜色映射 | ECharts 区域折线图 |
-| **采集健康度** | 数据采集成功率仪表盘 + 失败任务列表 | ECharts 仪表盘 + 表格 |
-| **实时告警中心** | 基于阈值的自动告警，滚动列表展示 | WebSocket / 轮询 + CSS 动画 |
+| 模块                   | 功能                                                  | 技术方案                      |
+| ---------------------- | ----------------------------------------------------- | ----------------------------- |
+| **数据总览区**   | 总设备数、今日采集量、总记录数、在线率等 KPI 卡片     | ECharts 数字翻牌器 + CSS 动画 |
+| **GIS 空间分析** | 设备分布地图 + 气象数据热力图叠加                     | Leaflet + 天地图 + 自定义图层 |
+| **气象趋势中心** | 温湿度/风速/降雨多指标叠加面积图，支持 7/30/90 天切换 | ECharts 折线/面积混合图       |
+| **虫情种群分析** | 害虫种群分布饼图 + Top N 排行榜 + 日/周对比           | ECharts 南丁格尔玫瑰图        |
+| **墒情矩阵视图** | 多层土壤含水量热力矩阵，色阶映射干旱/适宜/过湿        | ECharts 热力图                |
+| **孢子浓度曲线** | 孢子浓度趋势 + 阈值预警线 + 风险等级颜色映射          | ECharts 区域折线图            |
+| **采集健康度**   | 数据采集成功率仪表盘 + 失败任务列表                   | ECharts 仪表盘 + 表格         |
+| **实时告警中心** | 基于阈值的自动告警，滚动列表展示                      | WebSocket / 轮询 + CSS 动画   |
 
 ### 专属后端接口（需新增）
 
@@ -822,12 +831,12 @@ WS   /ws/dashboard/live                  # WebSocket 实时推送 (可选)
 
 #### 1. 描述性统计分析
 
-| 分析维度 | 统计指标 | 输出 |
-|---------|---------|------|
-| **气象** | 均值/极值/标准差/百分位数 | 趋势图 + 统计卡片 |
-| **墒情** | 各层平均/干旱天数/灌溉建议 | 色阶矩阵 + 建议文本 |
+| 分析维度       | 统计指标                          | 输出                |
+| -------------- | --------------------------------- | ------------------- |
+| **气象** | 均值/极值/标准差/百分位数         | 趋势图 + 统计卡片   |
+| **墒情** | 各层平均/干旱天数/灌溉建议        | 色阶矩阵 + 建议文本 |
 | **虫情** | 种群密度/增长率/优势种/多样性指数 | 排行榜 + 种群动态图 |
-| **孢子** | 浓度趋势/爆发预警阈值 | 风险等级仪表盘 |
+| **孢子** | 浓度趋势/爆发预警阈值             | 风险等级仪表盘      |
 
 #### 2. 趋势分析与预测
 
@@ -864,23 +873,23 @@ WS   /ws/dashboard/live                  # WebSocket 实时推送 (可选)
 
 ### 自动报告类型
 
-| 报告类型 | 频率 | 包含内容 |
-|---------|------|---------|
-| **日报 (Daily Brief)** | 每日凌晨 | 前日数据概况 + 异常标记 + 设备状态 |
-| **周报 (Weekly Report)** | 每周一 | 7 天聚合趋势 + 环比分析 + 风险评估 |
-| **月报 (Monthly Report)** | 每月 1 日 | 30 天深度分析 + 同比对比 + AI 智能建议 |
-| **专题报告 (Thematic)** | 按需触发 | 虫情爆发分析 / 干旱预警 / 极端天气影响评估 |
-| **告警报告 (Alert Report)** | 实时触发 | 异常事件详情 + 影响范围 + 应急建议 |
+| 报告类型                          | 频率      | 包含内容                                   |
+| --------------------------------- | --------- | ------------------------------------------ |
+| **日报 (Daily Brief)**      | 每日凌晨  | 前日数据概况 + 异常标记 + 设备状态         |
+| **周报 (Weekly Report)**    | 每周一    | 7 天聚合趋势 + 环比分析 + 风险评估         |
+| **月报 (Monthly Report)**   | 每月 1 日 | 30 天深度分析 + 同比对比 + AI 智能建议     |
+| **专题报告 (Thematic)**     | 按需触发  | 虫情爆发分析 / 干旱预警 / 极端天气影响评估 |
+| **告警报告 (Alert Report)** | 实时触发  | 异常事件详情 + 影响范围 + 应急建议         |
 
 ### 报告导出格式
 
-| 格式 | 特点 |
-|------|------|
-| **PDF** | 正式报告格式，含图表嵌入，可直接打印 |
-| **Word (DOCX)** | 可编辑格式，便于二次修改 |
-| **HTML** | 交互式网页报告，含可缩放图表 |
-| **Excel** | 原始数据 + 统计汇总，便于自定义分析 |
-| **Markdown** | 轻量级格式，适合归档与版本管理 |
+| 格式                  | 特点                                 |
+| --------------------- | ------------------------------------ |
+| **PDF**         | 正式报告格式，含图表嵌入，可直接打印 |
+| **Word (DOCX)** | 可编辑格式，便于二次修改             |
+| **HTML**        | 交互式网页报告，含可缩放图表         |
+| **Excel**       | 原始数据 + 统计汇总，便于自定义分析  |
+| **Markdown**    | 轻量级格式，适合归档与版本管理       |
 
 ### 自动化分发
 

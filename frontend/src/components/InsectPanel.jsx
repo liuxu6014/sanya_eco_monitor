@@ -1,9 +1,12 @@
+import { useState } from 'react'
 import ReactECharts from 'echarts-for-react'
+import ImagePreviewModal from './ImagePreviewModal.jsx'
 
 const COLORS = ['#ff7043','#ffaa00','#00d4ff','#00ff9d','#a855f7','#ff4757']
 const TOOLTIP = { backgroundColor:'#03112e', borderColor:'rgba(0,180,255,0.35)', textStyle:{color:'#c8e0f4',fontSize:11} }
 
 export default function InsectPanel({ latest, trend, species }) {
+  const [previewOpen, setPreviewOpen] = useState(false)
   const rec = latest?.data
   const td  = trend?.data  || []
   const sp  = species?.data || []
@@ -54,8 +57,10 @@ export default function InsectPanel({ latest, trend, species }) {
               height:'100%', 
               objectFit:'cover', 
               display:'block',
-              transition: 'transform 0.5s ease'
+              transition: 'transform 0.5s ease',
+              cursor: 'zoom-in'
             }} 
+            onClick={() => setPreviewOpen(true)}
             onMouseOver={e => e.currentTarget.style.transform = 'scale(1.05)'}
             onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
             onError={e=>{e.target.style.display='none'}} 
@@ -71,7 +76,7 @@ export default function InsectPanel({ latest, trend, species }) {
 
       {/* 7-day bar */}
       <div style={{ flexShrink:0, height:85 }}>
-        <div style={{ fontSize:10, color:'var(--text-muted)' }}>7日捕获趋势（只）</div>
+        <div style={{ fontSize:10, color:'var(--text-muted)' }}>捕获趋势（只）</div>
         {td.length > 0
           ? <ReactECharts option={barOpt} style={{ height:76 }} opts={{ renderer:'canvas' }} />
           : <Empty h={76} />}
@@ -88,6 +93,13 @@ export default function InsectPanel({ latest, trend, species }) {
             </div>
           : <Empty />}
       </div>
+
+      <ImagePreviewModal
+        open={previewOpen}
+        src={rec?.image_url}
+        alt="虫情图片预览"
+        onClose={() => setPreviewOpen(false)}
+      />
     </div>
   )
 }

@@ -1,5 +1,5 @@
 """
-全量历史数据回填脚本 - 按天分块拉取，避免单次请求数据过大。
+全量历史数据回填脚本 - 按天分块拉取虫情与孢子数据，避免单次请求数据过大。
 
 用法:
     cd backend
@@ -15,13 +15,12 @@ from sqlalchemy.orm import sessionmaker
 
 from database import engine, init_db
 from collectors.base import get_token
-from collectors.sensor import _build_time_range as _sensor_range_orig, _save_record
 from collectors.insect import (
     _extract_records, _parse_collection_time, _parse_species,
     _extract_image_url, _existing_collection_times
 )
 from models import (
-    InsectRecord, SporeRecord, WeatherRecord, SoilRecord, CollectLog
+    InsectRecord, SporeRecord
 )
 from config import settings
 import httpx
@@ -62,33 +61,6 @@ async def platform_get_range(path: str, code: str, start: datetime, end: datetim
         )
         resp.raise_for_status()
         return resp.json()
-
-
-async def backfill_sensor(db: AsyncSession, code: str, task: str,
-                           start_dt: datetime, end_dt: datetime, dry_run: bool):
-    """拉取气象/土壤传感器历史数据，按天分块。"""
-    total = 0
-    chunk_start = start_dt
-    while chunk_start < end_dt:
-        chunk_end = min(chunk_start + timedelta(days=1), end_dt)
-        if dry_run:
-            logger.info(f"[DRY] {task} [{code}] {_make_range(chunk_start, chunk_end)}")
-            chunk_start = chunk_end
-            continue
-        try:
-            data = await sensor_get_range(
-                "/http/monitor/getSensorByCode", code, chunk_start, chunk_end
-            )
-            records = (data.get("data") or {}).get("list") or []
-            for item in records:
-                await _save_record(db, item, code)
-            await db.commit()
-            logger.info(f"  {task} [{code}] {chunk_start.date()} → {len(records)} records")
-            total += len(records)
-        except Exception as e:
-            logger.warning(f"  {task} [{code}] {chunk_start.date()} ERROR: {e}")
-        chunk_start = chunk_end
-    return total
 
 
 async def backfill_insect_like(db: AsyncSession, code: str, model,
@@ -179,22 +151,12 @@ async def main():
     async with async_session() as db:
         results = {}
 
-        logger.info("\n--- [1/4] 气象站 ---")
-        results["weather"] = await backfill_sensor(
-            db, settings.WEATHER_CODE, "weather", start_dt, end_dt, args.dry_run
-        )
-
-        logger.info("\n--- [2/4] 土壤墒情 ---")
-        results["soil"] = await backfill_sensor(
-            db, settings.SOIL_CODE, "soil", start_dt, end_dt, args.dry_run
-        )
-
-        logger.info("\n--- [3/4] 虫情测报灯 ---")
+        logger.info("\n--- [1/2] 虫情测报灯 ---")
         results["insect"] = await backfill_insect_like(
             db, settings.INSECT_CODE, InsectRecord, "insect", start_dt, end_dt, args.dry_run
         )
 
-        logger.info("\n--- [4/4] 孢子捕捉仪 ---")
+        logger.info("\n--- [2/2] 孢子捕捉仪 ---")
         results["spore"] = await backfill_insect_like(
             db, settings.SPORE_CODE, SporeRecord, "spore", start_dt, end_dt, args.dry_run
         )

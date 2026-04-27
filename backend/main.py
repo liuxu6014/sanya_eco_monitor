@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from logging_setup import build_logging_config, configure_logging
 from auth import is_auth_enabled, is_valid_auth_cookie
 from database import init_db
 from scheduler import setup_scheduler, _run_all_collectors
@@ -16,10 +17,7 @@ from routers import (
 )
 from config import settings
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-)
+configure_logging()
 logger = logging.getLogger(__name__)
 
 
@@ -53,7 +51,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origin_regex=".*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -120,3 +118,15 @@ async def debug_settings():
         "SENSOR_BASE_URL": settings.SENSOR_BASE_URL,
         "PLATFORM_BASE_URL": settings.PLATFORM_BASE_URL,
     }
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(
+        app,
+        host="0.0.0.0",
+        port=8888,
+        access_log=True,
+        log_config=build_logging_config(),
+    )

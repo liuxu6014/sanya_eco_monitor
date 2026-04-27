@@ -1,79 +1,284 @@
 .page {
+  position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 14px 16px 16px;
+  gap: 18px;
+  padding: 18px 18px 20px;
   overflow-y: auto;
   min-height: 0;
-  background-image: 
-    linear-gradient(rgba(0, 180, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 180, 255, 0.03) 1px, transparent 1px);
-  background-size: 30px 30px;
+  background:
+    radial-gradient(circle at top left, rgba(56, 189, 248, 0.08), transparent 28%),
+    radial-gradient(circle at top right, rgba(249, 115, 22, 0.06), transparent 24%),
+    linear-gradient(180deg, rgba(2, 10, 28, 0.82), rgba(1, 7, 21, 0.96));
 }
 
-/* Scrollbar styling */
+.page::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(125, 211, 252, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(125, 211, 252, 0.03) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.82), transparent 96%);
+}
+
 .page::-webkit-scrollbar {
-  width: 4px;
+  width: 6px;
 }
+
 .page::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.18);
 }
+
 .page::-webkit-scrollbar-thumb {
-  background: rgba(0, 180, 255, 0.3);
-  border-radius: 2px;
+  background: rgba(56, 189, 248, 0.28);
+  border-radius: 999px;
 }
 
-.row {
+.pageIntro {
+  position: relative;
   display: flex;
-  gap: 14px;
-  min-height: 0;
-  height: 340px;
-  flex-shrink: 0;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+  padding: 4px 4px 0;
 }
 
-.rowStrategic {
+.pageIntroMain {
+  min-width: 0;
   display: flex;
-  gap: 14px;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pageEyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: #7dd3fc;
+  text-transform: uppercase;
+}
+
+.pageTitle {
+  font-size: 28px;
+  line-height: 1.18;
+  font-weight: 900;
+  color: #f8fbff;
+}
+
+.pageText {
+  max-width: 780px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #8fb6da;
+}
+
+.pageMeta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.metaChip {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(125, 211, 252, 0.16);
+  background: rgba(7, 21, 44, 0.78);
+  font-size: 12px;
+  font-weight: 700;
+  color: #d8efff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.dashboardGrid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 16px;
   min-height: 0;
-  height: 420px;
-  flex-shrink: 0;
 }
 
-.rowFull {
-  flex-shrink: 0;
-  height: 320px;
+.cardStrategic {
+  grid-column: span 8;
+  min-height: 660px;
 }
 
-.rowFull .card {
-  height: 100%;
+.cardWeather {
+  grid-column: span 4;
+  min-height: 660px;
+}
+
+.cardSummary {
+  grid-column: 1 / -1;
+  min-height: 860px;
+}
+
+.cardHalf {
+  grid-column: span 6;
+  min-height: 360px;
 }
 
 .card {
   position: relative;
-  background: rgba(3, 17, 46, 0.6);
-  border: 1px solid rgba(0, 180, 255, 0.18);
-  border-radius: 8px;
-  backdrop-filter: blur(8px);
+  overflow: hidden;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.03), transparent 34%),
+    linear-gradient(180deg, rgba(4, 18, 46, 0.84), rgba(2, 11, 28, 0.94));
+  border: 1px solid rgba(125, 211, 252, 0.14);
+  border-radius: 22px;
+  backdrop-filter: blur(14px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 18px 40px rgba(0, 0, 0, 0.22);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 16px;
+  right: 16px;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(56, 189, 248, 0.94), rgba(14, 165, 233, 0.14));
+  box-shadow: 0 0 18px rgba(56, 189, 248, 0.2);
+}
+
+.cardHeader {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px 18px 14px;
+  border-bottom: 1px solid rgba(125, 211, 252, 0.1);
+  background: linear-gradient(180deg, rgba(6, 20, 44, 0.7), rgba(6, 20, 44, 0.2));
+}
+
+.cardHeading {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.iconShell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid rgba(125, 211, 252, 0.16);
+  background: rgba(8, 22, 46, 0.82);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.cardCopy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cardEyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: #7fb9dc;
+  text-transform: uppercase;
 }
 
 .cardTitle {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 8px 12px 6px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--cyan);
-  letter-spacing: 0.5px;
-  border-bottom: 1px solid rgba(0, 180, 255, 0.1);
+  min-width: 0;
+  font-size: 18px;
+  line-height: 1.3;
+  font-weight: 800;
+  color: #f8fbff;
+}
+
+.cardBadge {
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  max-width: 240px;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(125, 211, 252, 0.16);
+  background: rgba(7, 21, 44, 0.82);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #dff4ff;
 }
 
 .cardBody {
+  position: relative;
+  z-index: 1;
   flex: 1;
   min-height: 0;
-  padding: 4px 8px 4px;
+  padding: 8px 10px 10px;
+}
+
+@media (max-width: 1540px) {
+  .cardStrategic {
+    grid-column: span 7;
+  }
+
+  .cardWeather {
+    grid-column: span 5;
+  }
+}
+
+@media (max-width: 1320px) {
+  .pageIntro {
+    flex-direction: column;
+  }
+
+  .pageMeta {
+    justify-content: flex-start;
+  }
+
+  .cardStrategic,
+  .cardWeather,
+  .cardHalf {
+    grid-column: span 12;
+    min-height: auto;
+  }
+}
+
+@media (max-width: 900px) {
+  .page {
+    padding: 16px 14px 18px;
+  }
+
+  .pageTitle {
+    font-size: 24px;
+  }
+
+  .cardHeader {
+    flex-direction: column;
+  }
+
+  .cardBadge {
+    max-width: none;
+  }
+
+  .cardStrategic,
+  .cardWeather,
+  .cardSummary,
+  .cardHalf {
+    min-height: auto;
+  }
 }

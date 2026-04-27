@@ -11,6 +11,7 @@ from datetime import date, datetime, timedelta
 import os
 import uuid
 import asyncio
+import logging
 from concurrent.futures import ThreadPoolExecutor
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -26,8 +27,10 @@ from services.chart_service import generate_all_charts
 from services.gemini_image_service import generate_report_images
 from services.docx_service import generate_docx_report
 from services.report_figures import build_figure_manifest
+from time_utils import cn_now_naive
 
 router = APIRouter(prefix="/api/report", tags=["报告生成"])
+logger = logging.getLogger(__name__)
 
 _service = ReportService()
 
@@ -40,15 +43,25 @@ _chart_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="chart")
 _REPORTS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "reports")
 os.makedirs(_REPORTS_DIR, exist_ok=True)
 
+
+def _build_download_response(path: str | None, filename: str, media_type: str):
+    if not path:
+        raise HTTPException(404, "Report file is not available")
+    if not os.path.exists(path):
+        logger.warning("Report file missing on disk: %s", path)
+        raise HTTPException(404, "Report file is missing")
+    return FileResponse(path, filename=filename, media_type=media_type)
+
+
 async def _gather_all(summary: dict) -> tuple[str, dict, dict, list[dict]]:
     """Generate charts/images first, then AI analysis from the final figure order.
 
     Returns:
         (ai_text, charts_dict, ai_images_dict, figure_manifest)
     """
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     chart_task = loop.run_in_executor(_chart_executor, generate_all_charts, summary)
-    img_task   = asyncio.ensure_future(generate_report_images(summary))
+    img_task = asyncio.create_task(generate_report_images(summary))
     charts, ai_images = await asyncio.gather(chart_task, img_task)
     figure_manifest = build_figure_manifest(summary, charts, ai_images)
     ai_text = await generate_ai_analysis(summary, figure_manifest=figure_manifest)
@@ -203,7 +216,13 @@ async def get_ai_analysis(
     end_date = _parse_date(end, "end") if end else None
     summary = await _service.get_week_summary(db, end_date=end_date)
     ai_text = await generate_ai_analysis(summary)
-    return {"status": "ok", "data": {"analysis": ai_text, "period": summary["period"]}}
+    return {
+        "status": "ok",
+        "data": {
+            "analysis": ai_text,
+            "period": summary["period"],
+        },
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -242,55 +261,65 @@ async def generate_managed_report(
         start_date = end_date - timedelta(days=29)
     else:
         raise HTTPException(400, "Unknown report_type. Use daily, weekly, or monthly.")
-        
-    summary = await _service.get_custom_summary(db, start_date, end_date)
-    ai_text, charts, ai_images, figure_manifest = await _gather_all(summary)
-    
-    # 1. HTML
-    html_content = ReportService.generate_html_report(
-        summary,
-        ai_analysis=ai_text,
-        charts=charts,
-        ai_images=ai_images,
-        figure_manifest=figure_manifest,
-    )
-    
+
     report_id = str(uuid.uuid4())[:8]
-    start_str = start_date.strftime("%Y%m%d")
-    end_str = end_date.strftime("%Y%m%d")
-    
-    type_name = {"daily": "日报", "weekly": "周报", "monthly": "月报"}.get(report_type, "报告")
-    title = f"三亚市天涯区生态监测{type_name} ({start_str}-{end_str})"
-    
     html_path = os.path.join(_REPORTS_DIR, f"{report_id}.html")
     docx_path = os.path.join(_REPORTS_DIR, f"{report_id}.docx")
-    
-    with open(html_path, "w", encoding="utf-8") as f:
-        f.write(html_content)
-        
-    # 2. DOCX
-    generate_docx_report(
-        summary,
-        ai_text,
-        charts,
-        ai_images,
-        docx_path,
-        figure_manifest=figure_manifest,
-    )
-    
-    # Save to DB
-    new_report = GeneratedReport(
-        report_type=report_type,
-        period_start=start_date.strftime("%Y-%m-%d"),
-        period_end=end_date.strftime("%Y-%m-%d"),
-        title=title,
-        html_path=html_path,
-        docx_path=docx_path
-    )
-    db.add(new_report)
-    await db.commit()
-    
-    return {"status": "ok", "message": "Report generated successfully."}
+
+    try:
+        summary = await _service.get_custom_summary(db, start_date, end_date)
+        ai_text, charts, ai_images, figure_manifest = await _gather_all(summary)
+
+        html_content = ReportService.generate_html_report(
+            summary,
+            ai_analysis=ai_text,
+            charts=charts,
+            ai_images=ai_images,
+            figure_manifest=figure_manifest,
+        )
+
+        start_str = start_date.strftime("%Y%m%d")
+        end_str = end_date.strftime("%Y%m%d")
+        type_name = {"daily": "日报", "weekly": "周报", "monthly": "月报"}.get(report_type, "报告")
+        title = f"三亚市天涯区生态监测{type_name} ({start_str}-{end_str})"
+
+        with open(html_path, "w", encoding="utf-8") as f:
+            f.write(html_content)
+
+        generate_docx_report(
+            summary,
+            ai_text,
+            charts,
+            ai_images,
+            docx_path,
+            figure_manifest=figure_manifest,
+        )
+
+        new_report = GeneratedReport(
+            report_type=report_type,
+            period_start=start_date.strftime("%Y-%m-%d"),
+            period_end=end_date.strftime("%Y-%m-%d"),
+            title=title,
+            html_path=html_path,
+            docx_path=docx_path,
+            created_at=cn_now_naive(),
+        )
+        db.add(new_report)
+        await db.commit()
+        return {"status": "ok", "message": "Report generated successfully."}
+    except HTTPException:
+        await db.rollback()
+        raise
+    except Exception as exc:
+        await db.rollback()
+        for path in (html_path, docx_path):
+            if os.path.exists(path):
+                try:
+                    os.remove(path)
+                except OSError:
+                    logger.warning("Failed to remove partial report file: %s", path)
+        logger.exception("generate_managed_report failed: report_type=%s end=%s", report_type, end_date)
+        raise HTTPException(status_code=500, detail=f"Report generation failed: {exc}") from exc
 
 @router.delete("/{report_id}", summary="删除文章")
 async def delete_report(report_id: int, db: AsyncSession = Depends(get_db)):
@@ -315,15 +344,15 @@ async def download_report(report_id: int, format: str = "html", db: AsyncSession
     if not report:
         raise HTTPException(404, "Report not found")
         
-    if format == "html" and report.html_path:
+    if format == "html":
         filename = f"{report.title}.html"
-        return FileResponse(report.html_path, filename=filename, media_type="text/html")
-    elif format == "docx" and report.docx_path:
+        return _build_download_response(report.html_path, filename, "text/html")
+    elif format == "docx":
         filename = f"{report.title}.docx"
-        return FileResponse(
-            report.docx_path, 
-            filename=filename, 
-            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        return _build_download_response(
+            report.docx_path,
+            filename,
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         )
     else:
-        raise HTTPException(400, "Format not supported or file missing")
+        raise HTTPException(400, "Format not supported")

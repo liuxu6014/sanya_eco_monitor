@@ -1,0 +1,1154 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px 20px 24px;
+  color: #dbeafe;
+}
+
+.normal {
+  --tone-border: rgba(56, 189, 248, 0.24);
+  --tone-pill: rgba(56, 189, 248, 0.16);
+  --tone-pill-text: #d7f0ff;
+  --tone-bar: linear-gradient(90deg, #38bdf8 0%, #2563eb 100%);
+  --tone-glow: rgba(56, 189, 248, 0.22);
+}
+
+.attention {
+  --tone-border: rgba(250, 204, 21, 0.34);
+  --tone-pill: rgba(250, 204, 21, 0.18);
+  --tone-pill-text: #fef3c7;
+  --tone-bar: linear-gradient(90deg, #facc15 0%, #f59e0b 100%);
+  --tone-glow: rgba(250, 204, 21, 0.2);
+}
+
+.severe {
+  --tone-border: rgba(251, 146, 60, 0.34);
+  --tone-pill: rgba(251, 146, 60, 0.2);
+  --tone-pill-text: #ffedd5;
+  --tone-bar: linear-gradient(90deg, #fb923c 0%, #ea580c 100%);
+  --tone-glow: rgba(249, 115, 22, 0.22);
+}
+
+.high {
+  --tone-border: rgba(244, 114, 182, 0.34);
+  --tone-pill: rgba(244, 114, 182, 0.18);
+  --tone-pill-text: #fce7f3;
+  --tone-bar: linear-gradient(90deg, #fb7185 0%, #db2777 100%);
+  --tone-glow: rgba(244, 114, 182, 0.2);
+}
+
+.critical {
+  --tone-border: rgba(239, 68, 68, 0.4);
+  --tone-pill: rgba(239, 68, 68, 0.2);
+  --tone-pill-text: #fee2e2;
+  --tone-bar: linear-gradient(90deg, #f87171 0%, #b91c1c 100%);
+  --tone-glow: rgba(239, 68, 68, 0.24);
+}
+
+.sectionEyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: #7dd3fc;
+  text-transform: uppercase;
+}
+
+.warningStage {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 24px;
+  border: 1px solid rgba(125, 211, 252, 0.14);
+  background:
+    radial-gradient(circle at top right, rgba(56, 189, 248, 0.08), transparent 34%),
+    linear-gradient(180deg, rgba(6, 20, 44, 0.95), rgba(4, 14, 32, 0.98));
+}
+
+.warningBoardHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.warningBoardTitle {
+  margin-top: 6px;
+  font-size: 24px;
+  line-height: 1.15;
+  font-weight: 900;
+  color: #f8fbff;
+}
+
+.warningBoardSub {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #8db4d5;
+}
+
+.warningCardGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.warningCard {
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.03), transparent 42%),
+    linear-gradient(180deg, rgba(8, 20, 42, 0.84), rgba(7, 17, 35, 0.9));
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+  transition:
+    transform 0.22s ease,
+    border-color 0.22s ease,
+    box-shadow 0.22s ease,
+    background 0.22s ease;
+}
+
+.warningCard::before {
+  content: '';
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  top: 0;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--tone-bar);
+  opacity: 0.92;
+}
+
+.warningCard:hover {
+  transform: translateY(-2px);
+  border-color: var(--tone-border);
+}
+
+.warningCardActive {
+  transform: translateY(-4px);
+  border-color: var(--tone-border);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.03),
+    0 16px 28px var(--tone-glow);
+  animation: activeCardFloat 4.2s ease-in-out infinite;
+}
+
+.warningCardGlow {
+  position: absolute;
+  top: -32px;
+  right: -10px;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: var(--tone-glow);
+  filter: blur(22px);
+  opacity: 0.42;
+  pointer-events: none;
+  animation: cardGlowPulse 4.4s ease-in-out infinite;
+}
+
+.warningCardActive .warningCardGlow {
+  opacity: 0.9;
+}
+
+.warningCardHead {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.warningCardMarkerWrap {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.warningCardMarker {
+  position: relative;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--tone-pill-text);
+}
+
+.warningCardActive .warningCardMarker::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 1px solid var(--tone-pill-text);
+  opacity: 0.4;
+  animation: ping 1.8s ease-out infinite;
+}
+
+.warningCardEyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  font-family: 'DengXian', 'Microsoft YaHei UI', 'Microsoft YaHei', 'PingFang SC', 'Noto Sans SC', sans-serif;
+  font-size: 13px;
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: #d7ecff;
+  white-space: nowrap;
+  font-synthesis: none;
+}
+
+.warningCardEyebrowGlyph {
+  flex: 0 0 1em;
+  width: 1em;
+  text-align: center;
+}
+
+.warningCardLevel {
+  flex-shrink: 0;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: var(--tone-pill);
+  color: var(--tone-pill-text);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  border: 1px solid var(--tone-border);
+}
+
+.warningCardTitle {
+  position: relative;
+  font-size: 26px;
+  line-height: 1.16;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.warningCardMetric {
+  position: relative;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #91b7d8;
+}
+
+.warningCardValueRow {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.warningCardValue {
+  font-size: 52px;
+  line-height: 1;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.warningCardScore {
+  font-size: 24px;
+  line-height: 1;
+  font-weight: 800;
+  color: var(--tone-pill-text);
+}
+
+.warningCardBand {
+  position: relative;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #a4c4e0;
+}
+
+.warningCardTrack {
+  position: relative;
+  height: 8px;
+  width: 100%;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.14);
+  overflow: hidden;
+}
+
+.warningCardTrackBar {
+  position: relative;
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--tone-bar);
+}
+
+.warningCardTrackBar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -28px;
+  width: 28px;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.34);
+  filter: blur(5px);
+  animation: trackScan 3s linear infinite;
+}
+
+.warningCardMetaGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: auto;
+}
+
+.warningCardMeta {
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.08);
+  background: rgba(7, 18, 38, 0.56);
+  display: grid;
+  gap: 4px;
+}
+
+.warningMetaLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8cb2d4;
+}
+
+.warningMetaText {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #eef6ff;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.focusCard {
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+  height: 100%;
+  padding: 18px;
+  border-radius: 24px;
+  border: 1px solid var(--tone-border);
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.04), transparent 36%),
+    linear-gradient(180deg, rgba(7, 22, 46, 0.96), rgba(4, 14, 32, 0.98));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 18px 34px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.focusAura {
+  position: absolute;
+  top: -72px;
+  right: -28px;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: var(--tone-glow);
+  filter: blur(28px);
+  pointer-events: none;
+  animation: focusPulse 4.2s ease-in-out infinite;
+}
+
+.focusTop {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.focusHeading {
+  min-width: 0;
+}
+
+.focusTitle {
+  margin-top: 8px;
+  font-size: 30px;
+  line-height: 1.16;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.focusMetric {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #91b7d8;
+}
+
+.focusBadgeWrap {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.focusBadge {
+  padding: 9px 13px;
+  border-radius: 999px;
+  background: var(--tone-pill);
+  color: var(--tone-pill-text);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.focusHeroRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(196px, 0.42fr);
+  gap: 12px;
+  align-items: stretch;
+}
+
+.focusValueBlock {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 2px 0;
+}
+
+.focusValue {
+  font-size: 62px;
+  line-height: 1;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.focusBand {
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #a7c9e7;
+}
+
+.focusSnapshot {
+  min-width: 0;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  background:
+    linear-gradient(180deg, rgba(12, 26, 54, 0.84), rgba(7, 18, 38, 0.64));
+  display: grid;
+  gap: 10px;
+}
+
+.focusSnapshotTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.focusSnapshotLabel {
+  font-size: 12px;
+  line-height: 1.3;
+  color: #92badb;
+}
+
+.focusSnapshotValue {
+  font-size: 36px;
+  line-height: 1;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.focusSnapshotMeta {
+  display: grid;
+  gap: 8px;
+}
+
+.focusSnapshotRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #90b5d7;
+}
+
+.focusSnapshotRow span:last-child {
+  font-weight: 800;
+  color: #f8fbff;
+}
+
+.beacon {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.beaconCore,
+.beaconRing,
+.beaconRingSoft {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+
+.beaconCore {
+  inset: 28px;
+  background: var(--tone-bar);
+  box-shadow: 0 0 28px var(--tone-glow);
+}
+
+.beaconRing {
+  inset: 10px;
+  border: 1px solid var(--tone-border);
+  animation: ringPulse 2.6s ease-out infinite;
+}
+
+.beaconRingSoft {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  animation: ringPulseSoft 3.2s ease-out infinite;
+}
+
+.focusMeter {
+  height: 10px;
+  width: 100%;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.16);
+  overflow: hidden;
+}
+
+.focusMeterBar {
+  position: relative;
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--tone-bar);
+}
+
+.focusMeterBar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -40px;
+  width: 40px;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.36);
+  filter: blur(8px);
+  animation: trackScan 2.8s linear infinite;
+}
+
+.focusInfoGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.infoCard {
+  min-width: 0;
+  padding: 13px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.08);
+  background: rgba(7, 18, 38, 0.58);
+}
+
+.infoLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: #86afd2;
+  text-transform: uppercase;
+}
+
+.infoText {
+  margin-top: 6px;
+  font-size: 14px;
+  line-height: 1.56;
+  color: #eef6ff;
+}
+
+.ruleBlock {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid rgba(148, 163, 184, 0.1);
+  display: grid;
+  gap: 10px;
+}
+
+.ruleLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #8db3d4;
+}
+
+.ruleGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.ruleChip {
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.08);
+  background: rgba(7, 18, 38, 0.56);
+  font-size: 13px;
+  line-height: 1.4;
+  color: #dcecff;
+}
+
+.signalPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  height: 100%;
+  padding: 16px;
+  border-radius: 24px;
+  border: 1px solid rgba(125, 211, 252, 0.14);
+  background:
+    radial-gradient(circle at top right, rgba(56, 189, 248, 0.08), transparent 34%),
+    linear-gradient(180deg, rgba(6, 20, 44, 0.95), rgba(4, 14, 32, 0.98));
+}
+
+.signalHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.panelTitle {
+  font-size: 21px;
+  font-weight: 800;
+  color: #f8fbff;
+}
+
+.panelSub {
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #85aed2;
+}
+
+.signalCount {
+  flex-shrink: 0;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(125, 211, 252, 0.16);
+  background: rgba(7, 21, 44, 0.82);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  color: #dff4ff;
+}
+
+.signalList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.signalItem {
+  position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+  padding: 13px 14px;
+  min-height: 132px;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  background: rgba(8, 20, 42, 0.72);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.signalItem:hover {
+  transform: translateY(-2px);
+  border-color: var(--tone-border);
+}
+
+.signalActive {
+  border-color: var(--tone-border);
+  background: rgba(10, 24, 52, 0.92);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
+.signalMarker {
+  position: relative;
+  width: 10px;
+  height: 10px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: var(--tone-pill-text);
+}
+
+.signalActive .signalMarker::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 1px solid var(--tone-pill-text);
+  opacity: 0.36;
+  animation: ping 1.8s ease-out infinite;
+}
+
+.signalBody {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.signalName {
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.25;
+  color: #ffffff;
+}
+
+.signalBand {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #89b2d4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.signalReadout {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.signalLevel {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--tone-pill);
+  color: var(--tone-pill-text);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.signalValue {
+  font-size: 24px;
+  line-height: 1;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.signalTrack {
+  grid-column: 1 / -1;
+  display: block;
+  height: 6px;
+  width: 100%;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.14);
+  overflow: hidden;
+  align-self: end;
+}
+
+.signalTrackBar {
+  position: relative;
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--tone-bar);
+}
+
+.signalTrackBar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -28px;
+  width: 28px;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.34);
+  filter: blur(5px);
+  animation: trackScan 3s linear infinite;
+}
+
+.overviewSection {
+  padding: 16px;
+  border-radius: 24px;
+  border: 1px solid rgba(125, 211, 252, 0.14);
+  background:
+    radial-gradient(circle at top right, rgba(56, 189, 248, 0.08), transparent 34%),
+    linear-gradient(180deg, rgba(6, 20, 44, 0.95), rgba(4, 14, 32, 0.98));
+}
+
+.overviewHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+}
+
+.overviewTitle {
+  margin-top: 6px;
+  font-size: 20px;
+  font-weight: 800;
+  color: #f8fbff;
+}
+
+.overviewGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+  align-items: start;
+}
+
+.overviewCard {
+  --accent: #38bdf8;
+  --accent-soft: rgba(56, 189, 248, 0.16);
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+  padding: 16px;
+  border-radius: 22px;
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.03), transparent 42%),
+    linear-gradient(180deg, rgba(8, 20, 42, 0.78), rgba(7, 17, 35, 0.84));
+}
+
+.overviewCard::before {
+  content: '';
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  top: 0;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 18px var(--accent-soft);
+}
+
+.weatherCard {
+  --accent: #38bdf8;
+  --accent-soft: rgba(56, 189, 248, 0.18);
+}
+
+.waterCard {
+  --accent: #2dd4bf;
+  --accent-soft: rgba(45, 212, 191, 0.18);
+}
+
+.runoffCard {
+  --accent: #f59e0b;
+  --accent-soft: rgba(245, 158, 11, 0.18);
+}
+
+.pestCard {
+  --accent: #f97316;
+  --accent-soft: rgba(249, 115, 22, 0.18);
+}
+
+.overviewCardHead {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.overviewCardTitle {
+  font-size: 18px;
+  font-weight: 800;
+  color: #f8fbff;
+}
+
+.overviewCardMeta {
+  margin-top: 5px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #8ab2d4;
+}
+
+.overviewPrimary {
+  flex-shrink: 0;
+  min-width: 110px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, rgba(7, 21, 44, 0.82));
+  text-align: right;
+}
+
+.overviewPrimaryLabel {
+  font-size: 11px;
+  line-height: 1.4;
+  color: #a7c9e7;
+}
+
+.overviewPrimaryValue {
+  margin-top: 6px;
+  font-size: 24px;
+  line-height: 1.05;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.overviewList {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.overviewListItem {
+  display: grid;
+  grid-template-columns: minmax(94px, 0.78fr) minmax(0, 1.22fr);
+  gap: 12px;
+  align-items: start;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.08);
+  background: rgba(6, 18, 40, 0.56);
+}
+
+.overviewListLabel {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #8bb6d8;
+}
+
+.overviewListValue {
+  font-size: 14px;
+  line-height: 1.6;
+  font-weight: 700;
+  color: #ffffff;
+  word-break: break-word;
+  text-align: right;
+}
+
+.overviewChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.overviewChip {
+  max-width: 100%;
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(125, 211, 252, 0.12);
+  background: rgba(7, 21, 44, 0.84);
+  font-size: 11px;
+  line-height: 1.5;
+  color: #d8efff;
+}
+
+@keyframes focusPulse {
+  0%,
+  100% {
+    opacity: 0.38;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.72;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes cardGlowPulse {
+  0%,
+  100% {
+    opacity: 0.38;
+    transform: scale(0.94);
+  }
+
+  50% {
+    opacity: 0.86;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes activeCardFloat {
+  0%,
+  100% {
+    transform: translateY(-4px);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes ringPulse {
+  0% {
+    opacity: 0.52;
+    transform: scale(0.82);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes ringPulseSoft {
+  0% {
+    opacity: 0.36;
+    transform: scale(0.72);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.2);
+  }
+}
+
+@keyframes trackScan {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-240px);
+  }
+}
+
+@keyframes ping {
+  0% {
+    transform: scale(0.76);
+    opacity: 0.56;
+  }
+
+  100% {
+    transform: scale(1.68);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 1480px) {
+  .warningCardGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1120px) {
+  .warningCardMetaGrid,
+  .signalList,
+  .ruleGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  .focusInfoGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .focusTop {
+    flex-direction: column;
+  }
+
+  .focusBadgeWrap {
+    align-items: flex-start;
+  }
+
+  .focusHeroRow {
+    grid-template-columns: 1fr;
+  }
+
+  .overviewCardHead {
+    grid-template-columns: 1fr;
+  }
+
+  .overviewPrimary {
+    text-align: left;
+  }
+
+  .beacon {
+    width: 52px;
+    height: 52px;
+  }
+}
+
+@media (max-width: 680px) {
+  .wrap {
+    padding: 16px 14px 22px;
+  }
+
+  .warningBoardHead {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .warningBoardTitle {
+    font-size: 22px;
+  }
+
+  .warningCardValueRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .warningCardValue {
+    font-size: 42px;
+  }
+
+  .signalItem {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .signalReadout {
+    grid-column: 2;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .signalTrack {
+    grid-column: 1 / -1;
+  }
+
+  .focusValue {
+    font-size: 48px;
+  }
+
+  .overviewGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .overviewListItem {
+    grid-template-columns: 1fr;
+  }
+
+  .overviewListValue {
+    text-align: left;
+  }
+
+  .focusTitle {
+    font-size: 24px;
+  }
+}

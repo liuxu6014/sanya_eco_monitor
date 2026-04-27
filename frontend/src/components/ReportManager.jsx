@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import s from './ReportManager.module.css'
 
-const API_BASE = (import.meta.env.VITE_API_BASE_URL || '') + '/api'
+const API_BASE = '/api'
 
 const REPORT_TYPE_LABELS = {
   daily: '生态日报',
@@ -25,6 +25,7 @@ export default function ReportManager() {
   const [pageSize, setPageSize] = useState(10)
   const [elapsedTime, setElapsedTime] = useState(0)
   const [estimatedTotal, setEstimatedTotal] = useState(30)
+  const [currentTaskLabel, setCurrentTaskLabel] = useState('')
 
   useEffect(() => {
     fetchReports()
@@ -41,17 +42,19 @@ export default function ReportManager() {
       timer = setInterval(() => {
         setElapsedTime((prev) => prev + 1)
       }, 1000)
-    } else {
-      clearInterval(timer)
     }
-    return () => clearInterval(timer)
+    return () => {
+      if (timer) {
+        clearInterval(timer)
+      }
+    }
   }, [generating])
 
-  const fetchReports = async () => {
+  async function fetchReports() {
     setLoading(true)
     try {
       const res = await fetch(`${API_BASE}/report/list`, { credentials: 'include' })
-      const json = await res.json()
+      const json = await parseResponse(res)
       if (json.data) {
         setReports(json.data)
       }
@@ -62,26 +65,26 @@ export default function ReportManager() {
     }
   }
 
-  const handleGenerate = async () => {
+  async function handleGenerate() {
     const reportTypes = filterType === 'all' ? ['daily', 'weekly', 'monthly'] : [filterType]
-    
-    // Estimate: Daily ~150s, Weekly ~180s, Monthly ~240s
-    let est = 0
-    if (reportTypes.includes('daily')) est += 150
-    if (reportTypes.includes('weekly')) est += 180
-    if (reportTypes.includes('monthly')) est += 240
-    setEstimatedTotal(est)
-    
+
+    let estimate = 0
+    if (reportTypes.includes('daily')) estimate += 150
+    if (reportTypes.includes('weekly')) estimate += 180
+    if (reportTypes.includes('monthly')) estimate += 240
+
+    setEstimatedTotal(estimate || 30)
     setGenerating(true)
     setCurrentPage(1)
 
     try {
       for (const reportType of reportTypes) {
+        setCurrentTaskLabel(REPORT_TYPE_LABELS[reportType] || reportType)
         const res = await fetch(`${API_BASE}/report/generate?report_type=${reportType}`, {
           method: 'POST',
           credentials: 'include',
         })
-        const json = await res.json()
+        const json = await parseResponse(res)
         if (json.status !== 'ok') {
           throw new Error(json.detail || `${REPORT_TYPE_LABELS[reportType]}生成失败`)
         }
@@ -89,26 +92,30 @@ export default function ReportManager() {
       await fetchReports()
     } catch (error) {
       console.error(error)
-      alert(`生成失败: ${error.message || '请求出错'}`)
+      window.alert(`生成失败：${error.message || '请求出错'}`)
     } finally {
       setGenerating(false)
+      setCurrentTaskLabel('')
     }
   }
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('确定要删除这篇报告吗？')) {
+  async function handleDelete(id) {
+    if (!window.confirm('确认删除这份报告吗？')) {
       return
     }
 
     try {
-      await fetch(`${API_BASE}/report/${id}`, { method: 'DELETE', credentials: 'include' })
+      await fetch(`${API_BASE}/report/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      })
       await fetchReports()
     } catch (error) {
       console.error(error)
     }
   }
 
-  const handleDownload = (id, format) => {
+  function handleDownload(id, format) {
     window.open(`${API_BASE}/report/download/${id}/${format}`, '_blank')
   }
 
@@ -123,53 +130,48 @@ export default function ReportManager() {
   const currentReports = filteredReports.slice((currentPage - 1) * pageSize, currentPage * pageSize)
   const currentFilterLabel = REPORT_FILTER_OPTIONS.find((item) => item.value === filterType)?.label || '全部报告'
   const generateButtonText = generating
-    ? filterType === 'all'
-      ? '正在生成全部报告...'
-      : `正在生成${currentFilterLabel}...`
-    : '生成报告'
+    ? `正在生成${currentTaskLabel || currentFilterLabel}...`
+    : filterType === 'all'
+      ? '生成全部报告'
+      : `生成${currentFilterLabel}`
+
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 3600 * 1000)
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 3600 * 1000)
+  const latestReportDate = filteredReports.length > 0 ? filteredReports[0].created_at.split(' ')[0] : '暂无'
 
   return (
     <div className={s.container}>
-      {generating && (
+      {generating ? (
         <div className={s.overlay}>
-          <div className={s.loaderContent}>
-            <div className={s.cubeWrap}>
-              <div className={s.cube}>
-                <div className={s.side}></div>
-                <div className={s.side}></div>
-                <div className={s.side}></div>
-                <div className={s.side}></div>
-                <div className={s.side}></div>
-                <div className={s.side}></div>
-              </div>
-            </div>
-            <div className={s.loaderTitle}>
-              正在构建分析报告
-              <span className={s.dotAnim}>...</span>
-            </div>
-            <div className={s.loaderDesc}>
-              AI 专家模型正在分析多源生态数据
+          <div className={s.overlayPanel}>
+            <div className={s.loaderOrb} />
+            <div className={s.overlayTitle}>正在生成分析报告</div>
+            <div className={s.overlaySubtitle}>
+              当前任务：{currentTaskLabel || currentFilterLabel}
               <br />
-              请稍候，{filterType === 'all' ? '正在生成全套报告' : `正在生成${REPORT_TYPE_LABELS[filterType]}`}
+              日报按单日、周报按最近 7 天、月报按最近 30 天自动切换统计范围。
             </div>
-            <div className={s.timerBox}>
-               <div className={s.timerValue}>{elapsedTime}s</div>
-               <div className={s.timerLabel}>已耗时 / 预估 {estimatedTotal}s</div>
+            <div className={s.timerRow}>
+              <div className={s.timerValue}>{elapsedTime}s</div>
+              <div className={s.timerText}>已耗时 / 预计 {estimatedTotal}s</div>
             </div>
-            <div className={s.progressBar}>
-              <div 
-                className={s.progressFill} 
+            <div className={s.progressTrack}>
+              <div
+                className={s.progressFill}
                 style={{ width: `${Math.min(100, (elapsedTime / estimatedTotal) * 100)}%` }}
               />
             </div>
           </div>
         </div>
-      )}
+      ) : null}
 
       <div className={s.header}>
-        <div className={s.title}>报告生成与管理</div>
+        <div>
+          <div className={s.title}>报告生成与管理</div>
+          <div className={s.subtitle}>
+            报告数据会随周期口径自动切换：日报读取单日，周报读取最近 7 天，月报读取最近 30 天。
+          </div>
+        </div>
 
         <div className={s.controls}>
           <label className={s.filterGroup}>
@@ -205,77 +207,23 @@ export default function ReportManager() {
         </div>
       </div>
 
-      <div className={s.statsContainer}>
-        <div className={s.statCard}>
-          <div className={s.statHeader}>
-            <div className={s.statLabel}>{currentFilterLabel}数量</div>
-            <div className={s.statIcon}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-                <line x1="16" y1="13" x2="8" y2="13" />
-                <line x1="16" y1="17" x2="8" y2="17" />
-              </svg>
-            </div>
-          </div>
-          <div className={s.statValue}>
-            {filteredReports.length}
-            <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--text-muted)', marginLeft: 4 }}>份</span>
-          </div>
-        </div>
-
-        <div className={s.statCard}>
-          <div className={s.statHeader}>
-            <div className={s.statLabel}>近 7 天生成数量</div>
-            <div className={s.statIcon}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                <line x1="16" y1="2" x2="16" y2="6" />
-                <line x1="8" y1="2" x2="8" y2="6" />
-                <line x1="3" y1="10" x2="21" y2="10" />
-              </svg>
-            </div>
-          </div>
-          <div className={s.statValue}>
-            {filteredReports.filter((report) => new Date(report.created_at.replace(' ', 'T')) > sevenDaysAgo).length}
-            <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--text-muted)', marginLeft: 4 }}>份</span>
-          </div>
-        </div>
-
-        <div className={s.statCard}>
-          <div className={s.statHeader}>
-            <div className={s.statLabel}>近 30 天生成数量</div>
-            <div className={s.statIcon}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
-                <path d="M22 12A10 10 0 0 0 12 2v10z" />
-              </svg>
-            </div>
-          </div>
-          <div className={s.statValue}>
-            {filteredReports.filter((report) => new Date(report.created_at.replace(' ', 'T')) > thirtyDaysAgo).length}
-            <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--text-muted)', marginLeft: 4 }}>份</span>
-          </div>
-        </div>
-
-        <div className={s.statCard}>
-          <div className={s.statHeader}>
-            <div className={s.statLabel}>最近一次生成</div>
-            <div className={s.statIcon}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
-            </div>
-          </div>
-          <div className={s.statValue} style={{ fontSize: '18px' }}>
-            {filteredReports.length > 0 ? filteredReports[0].created_at.split(' ')[0] : '暂无数据'}
-          </div>
-        </div>
+      <div className={s.statsGrid}>
+        <StatCard label={`${currentFilterLabel}数量`} value={filteredReports.length} meta="当前筛选结果" />
+        <StatCard
+          label="近 7 天生成"
+          value={filteredReports.filter((report) => new Date(report.created_at.replace(' ', 'T')) > sevenDaysAgo).length}
+          meta="最近一周新增"
+        />
+        <StatCard
+          label="近 30 天生成"
+          value={filteredReports.filter((report) => new Date(report.created_at.replace(' ', 'T')) > thirtyDaysAgo).length}
+          meta="最近一月新增"
+        />
+        <StatCard label="最近一次生成" value={latestReportDate} meta="按创建时间排序" large />
       </div>
 
-      <div className={s.tableWrap}>
-        <div className={s.tableContainer}>
+      <div className={s.tableShell}>
+        <div className={s.tableWrap}>
           <table className={s.table}>
             <thead>
               <tr>
@@ -284,47 +232,47 @@ export default function ReportManager() {
                 <th>统计周期</th>
                 <th>类型</th>
                 <th>生成时间</th>
-                <th className={s.tr}>操作</th>
+                <th className={s.actionsCol}>操作</th>
               </tr>
             </thead>
             <tbody>
-              {loading && reports.length === 0 && (
+              {loading && reports.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className={s.empty}>加载数据中...</td>
+                  <td colSpan="6" className={s.empty}>正在加载报告列表...</td>
                 </tr>
-              )}
+              ) : null}
 
-              {!loading && filteredReports.length === 0 && (
+              {!loading && filteredReports.length === 0 ? (
                 <tr>
                   <td colSpan="6" className={s.empty}>
-                    当前筛选下暂无报告，请点击上方“生成报告”。
+                    当前筛选条件下暂无报告，请点击上方按钮生成。
                   </td>
                 </tr>
-              )}
+              ) : null}
 
               {currentReports.map((report) => (
                 <tr key={report.id}>
                   <td className={s.idCol}>{report.id}</td>
                   <td className={s.titleCol}>{report.title}</td>
-                  <td className={s.dateCol}>{report.period_start} ~ {report.period_end}</td>
+                  <td className={s.periodCol}>{report.period_start} - {report.period_end}</td>
                   <td className={s.typeCol}>
                     <span className={`${s.tag} ${s[report.report_type]}`}>
                       {REPORT_TYPE_LABELS[report.report_type] || report.report_type}
                     </span>
                   </td>
                   <td className={s.timeCol}>{report.created_at}</td>
-                  <td className={s.tr}>
+                  <td className={s.actionsCol}>
                     <div className={s.actions}>
-                      {report.has_html && (
-                        <button className={s.btnDownloadHtml} onClick={() => handleDownload(report.id, 'html')}>
-                          HTML 版
+                      {report.has_html ? (
+                        <button className={s.btnHtml} onClick={() => handleDownload(report.id, 'html')}>
+                          HTML
                         </button>
-                      )}
-                      {report.has_docx && (
-                        <button className={s.btnDownloadDocx} onClick={() => handleDownload(report.id, 'docx')}>
-                          Word 版
+                      ) : null}
+                      {report.has_docx ? (
+                        <button className={s.btnDocx} onClick={() => handleDownload(report.id, 'docx')}>
+                          Word
                         </button>
-                      )}
+                      ) : null}
                       <button className={s.btnDelete} onClick={() => handleDelete(report.id)}>
                         删除
                       </button>
@@ -337,10 +285,10 @@ export default function ReportManager() {
         </div>
       </div>
 
-      {filteredReports.length > 0 && (
+      {filteredReports.length > 0 ? (
         <div className={s.pagination}>
           <div className={s.pageSizer}>
-            <span className={s.pageSizerLabel}>每页显示</span>
+            <span className={s.pageLabel}>每页显示</span>
             <select
               value={pageSize}
               onChange={(event) => {
@@ -366,7 +314,50 @@ export default function ReportManager() {
             </button>
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   )
+}
+
+function StatCard({ label, value, meta, large = false }) {
+  return (
+    <div className={s.statCard}>
+      <div className={s.statLabel}>{label}</div>
+      <div className={`${s.statValue} ${large ? s.largeValue : ''}`}>{value}</div>
+      <div className={s.statMeta}>{meta}</div>
+    </div>
+  )
+}
+
+async function parseResponse(res) {
+  const contentType = res.headers.get('content-type') || ''
+  const bodyText = await res.text()
+  let data = null
+
+  if (bodyText) {
+    if (contentType.includes('application/json')) {
+      data = JSON.parse(bodyText)
+    } else {
+      try {
+        data = JSON.parse(bodyText)
+      } catch {
+        data = null
+      }
+    }
+  }
+
+  if (!res.ok) {
+    const detail =
+      data?.detail ||
+      data?.message ||
+      bodyText ||
+      `HTTP ${res.status}`
+    throw new Error(detail)
+  }
+
+  if (data !== null) {
+    return data
+  }
+
+  return { status: 'ok' }
 }

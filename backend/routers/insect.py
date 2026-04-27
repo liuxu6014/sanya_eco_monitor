@@ -8,6 +8,16 @@ from models import InsectRecord, SporeRecord
 router = APIRouter(prefix="/api/insect", tags=["虫情"])
 
 
+async def _latest_non_empty_image(db: AsyncSession, model) -> str | None:
+    result = await db.execute(
+        select(model.image_url)
+        .where(model.image_url.is_not(None), model.image_url != "")
+        .order_by(desc(model.collection_time))
+        .limit(1)
+    )
+    return result.scalar_one_or_none()
+
+
 @router.get("/latest")
 async def get_latest_insect(db: AsyncSession = Depends(get_db)):
     """最新一条虫情记录"""
@@ -17,12 +27,13 @@ async def get_latest_insect(db: AsyncSession = Depends(get_db)):
     record = result.scalar_one_or_none()
     if not record:
         return {"data": None}
+    image_url = record.image_url or await _latest_non_empty_image(db, InsectRecord)
     return {
         "data": {
             "collection_time": record.collection_time.isoformat(),
             "total_count": record.total_count,
             "species_data": record.species_data,
-            "image_url": record.image_url,
+            "image_url": image_url,
         }
     }
 
@@ -86,12 +97,13 @@ async def get_latest_spore(db: AsyncSession = Depends(get_db)):
     record = result.scalar_one_or_none()
     if not record:
         return {"data": None}
+    image_url = record.image_url or await _latest_non_empty_image(db, SporeRecord)
     return {
         "data": {
             "collection_time": record.collection_time.isoformat(),
             "total_count": record.total_count,
             "spore_data": record.spore_data,
-            "image_url": record.image_url,
+            "image_url": image_url,
         }
     }
 
