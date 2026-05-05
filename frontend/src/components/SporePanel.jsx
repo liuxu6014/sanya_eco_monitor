@@ -8,6 +8,7 @@ export default function SporePanel({ latest, trend }) {
   const [previewOpen, setPreviewOpen] = useState(false)
   const rec = latest?.data || {}
   const td  = trend?.data || []
+  const receivedAt = formatCaptureTime(rec.collection_time)
   
   const sporeItems = Object.entries(rec.spore_data || {})
     .sort((a,b) => b[1] - a[1])
@@ -85,12 +86,15 @@ export default function SporePanel({ latest, trend }) {
         <div className={s.imageCard}>
            <div className={s.imgBox}>
              {rec.image_url ? (
-               <img
-                 src={rec.image_url}
-                 alt="Spore"
-                 className={s.pImg}
-                 onClick={() => setPreviewOpen(true)}
-               />
+               <>
+                 <img
+                   src={rec.image_url}
+                   alt="Spore"
+                   className={s.pImg}
+                   onClick={() => setPreviewOpen(true)}
+                 />
+                 <div className={s.receivedBadge}>{receivedAt}</div>
+               </>
              ) : (
                <div className={s.pPlaceholder}>
                  <div className={s.scan} />
@@ -122,4 +126,10 @@ export default function SporePanel({ latest, trend }) {
       />
     </div>
   )
+}
+
+function formatCaptureTime(value) {
+  if (!value) return '接收时间 --'
+  const parsed = dayjs(value)
+  return parsed.isValid() ? `接收 ${parsed.format('MM-DD HH:mm')}` : '接收时间 --'
 }

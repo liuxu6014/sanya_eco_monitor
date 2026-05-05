@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import ReactECharts from 'echarts-for-react'
+import dayjs from 'dayjs'
 import ImagePreviewModal from './ImagePreviewModal.jsx'
 
 const COLORS = ['#ff7043','#ffaa00','#00d4ff','#00ff9d','#a855f7','#ff4757']
@@ -10,6 +11,7 @@ export default function InsectPanel({ latest, trend, species }) {
   const rec = latest?.data
   const td  = trend?.data  || []
   const sp  = species?.data || []
+  const receivedAt = formatCaptureTime(rec?.collection_time)
 
   const barOpt = {
     backgroundColor: 'transparent',
@@ -65,12 +67,12 @@ export default function InsectPanel({ latest, trend, species }) {
             onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
             onError={e=>{e.target.style.display='none'}} 
           />
-          <div style={{ 
-            position: 'absolute', top: 4, right: 4, 
-            background: 'rgba(0,0,0,0.6)', padding: '2px 6px', 
+          <div style={{
+            position: 'absolute', top: 4, right: 4,
+            background: 'rgba(0,0,0,0.68)', padding: '2px 6px',
             borderRadius: 4, fontSize: 9, color: '#fff',
-            backdropFilter: 'blur(4px)', border: '1px solid rgba(255,255,255,0.1)'
-          }}>实时图像</div>
+            backdropFilter: 'blur(4px)', border: '1px solid rgba(255,255,255,0.12)'
+          }}>{receivedAt}</div>
         </div>
       )}
 
@@ -102,6 +104,12 @@ export default function InsectPanel({ latest, trend, species }) {
       />
     </div>
   )
+}
+
+function formatCaptureTime(value) {
+  if (!value) return '接收时间 --'
+  const parsed = dayjs(value)
+  return parsed.isValid() ? `接收 ${parsed.format('MM-DD HH:mm')}` : '接收时间 --'
 }
 
 function Empty({ h }) {
