@@ -1,0 +1,516 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/App.jsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=894c6ec3"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+var _s = $RefreshSig$(), _s2 = $RefreshSig$();
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=894c6ec3"; const useCallback = __vite__cjsImport3_react["useCallback"]; const useEffect = __vite__cjsImport3_react["useEffect"]; const useState = __vite__cjsImport3_react["useState"];
+import Header from "/src/components/Header.jsx";
+import DeviceStatusPanel from "/src/components/DeviceStatusPanel.jsx";
+import RainGaugePanel from "/src/components/RainGaugePanel.jsx";
+import InsectPanel from "/src/components/InsectPanel.jsx";
+import SporePanel from "/src/components/SporePanel.jsx";
+import MapCenter from "/src/components/MapCenter.jsx";
+import RunoffPanel from "/src/components/RunoffPanel.jsx";
+import WaterPanel from "/src/components/WaterPanel.jsx";
+import AnalyticsPage from "/src/components/AnalyticsPage.jsx";
+import ReportManager from "/src/components/ReportManager.jsx";
+import AutoResizer from "/src/components/AutoResizer.jsx";
+import LoginGate from "/src/components/LoginGate.jsx";
+import { usePolling } from "/src/hooks/usePolling.js";
+import { api } from "/src/utils/api.js";
+import { clearRequestCache } from "/src/utils/requestCache.js";
+import s from "/src/App.module.css";
+const IconWeather = () => /* @__PURE__ */ jsxDEV("svg", { width: "18", height: "18", viewBox: "0 0 24 24", fill: "none", stroke: "#38bdf8", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsxDEV("path", { d: "M17.5 19A4.5 4.5 0 0 0 18 10c-.8-4.4-5.8-6-9-2.5A5.5 5.5 0 0 0 3.5 12C1.5 12.5 1 15.5 2.5 17c1.5 1.5 3 2 4.5 2h10.5z" }, void 0, false, {
+  fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+  lineNumber: 38,
+  columnNumber: 165
+}, this) }, void 0, false, {
+  fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+  lineNumber: 38,
+  columnNumber: 27
+}, this);
+_c = IconWeather;
+const IconPulse = () => /* @__PURE__ */ jsxDEV("svg", { width: "18", height: "18", viewBox: "0 0 24 24", fill: "none", stroke: "#4ade80", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsxDEV("polyline", { points: "22 12 18 12 15 21 9 3 6 12 2 12" }, void 0, false, {
+  fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+  lineNumber: 39,
+  columnNumber: 163
+}, this) }, void 0, false, {
+  fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+  lineNumber: 39,
+  columnNumber: 25
+}, this);
+_c2 = IconPulse;
+const IconRunoff = () => /* @__PURE__ */ jsxDEV("svg", { width: "18", height: "18", viewBox: "0 0 24 24", fill: "none", stroke: "#2563eb", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
+  /* @__PURE__ */ jsxDEV("path", { d: "M21 8v6a5 5 0 0 1-5 5H8a5 5 0 0 1-5-5V8" }, void 0, false, {
+    fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+    lineNumber: 40,
+    columnNumber: 164
+  }, this),
+  /* @__PURE__ */ jsxDEV("path", { d: "M3 13l4-4 4 4 4-4 6 6" }, void 0, false, {
+    fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+    lineNumber: 40,
+    columnNumber: 216
+  }, this)
+] }, void 0, true, {
+  fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+  lineNumber: 40,
+  columnNumber: 26
+}, this);
+_c3 = IconRunoff;
+const IconWater = () => /* @__PURE__ */ jsxDEV("svg", { width: "18", height: "18", viewBox: "0 0 24 24", fill: "none", stroke: "#facc15", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
+  /* @__PURE__ */ jsxDEV("path", { d: "M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-7.5c-.5 3.5-2 5.9-4 7.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z" }, void 0, false, {
+    fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+    lineNumber: 41,
+    columnNumber: 163
+  }, this),
+  /* @__PURE__ */ jsxDEV("path", { d: "M9 15a3 3 0 0 0 3 3" }, void 0, false, {
+    fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+    lineNumber: 41,
+    columnNumber: 277
+  }, this)
+] }, void 0, true, {
+  fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+  lineNumber: 41,
+  columnNumber: 25
+}, this);
+_c4 = IconWater;
+const IconInsect = () => /* @__PURE__ */ jsxDEV("svg", { width: "18", height: "18", viewBox: "0 0 24 24", fill: "none", stroke: "#ef4444", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
+  /* @__PURE__ */ jsxDEV("path", { d: "M12 2A4 4 0 0 0 8 6v2h8V6a4 4 0 0 0-4-4z" }, void 0, false, {
+    fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+    lineNumber: 42,
+    columnNumber: 164
+  }, this),
+  /* @__PURE__ */ jsxDEV("path", { d: "M6 10h12v7a6 6 0 0 1-12 0v-7z" }, void 0, false, {
+    fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+    lineNumber: 42,
+    columnNumber: 217
+  }, this),
+  /* @__PURE__ */ jsxDEV("path", { d: "M4 14l3-3" }, void 0, false, {
+    fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+    lineNumber: 42,
+    columnNumber: 259
+  }, this),
+  /* @__PURE__ */ jsxDEV("path", { d: "M20 14l-3-3" }, void 0, false, {
+    fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+    lineNumber: 42,
+    columnNumber: 281
+  }, this),
+  /* @__PURE__ */ jsxDEV("path", { d: "M4 18l3-3" }, void 0, false, {
+    fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+    lineNumber: 42,
+    columnNumber: 305
+  }, this),
+  /* @__PURE__ */ jsxDEV("path", { d: "M20 18l-3-3" }, void 0, false, {
+    fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+    lineNumber: 42,
+    columnNumber: 327
+  }, this),
+  /* @__PURE__ */ jsxDEV("path", { d: "M22 6l-3 3" }, void 0, false, {
+    fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+    lineNumber: 42,
+    columnNumber: 351
+  }, this),
+  /* @__PURE__ */ jsxDEV("path", { d: "M2 6l3 3" }, void 0, false, {
+    fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+    lineNumber: 42,
+    columnNumber: 374
+  }, this),
+  /* @__PURE__ */ jsxDEV("path", { d: "M12 22v-5" }, void 0, false, {
+    fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+    lineNumber: 42,
+    columnNumber: 395
+  }, this)
+] }, void 0, true, {
+  fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+  lineNumber: 42,
+  columnNumber: 26
+}, this);
+_c5 = IconInsect;
+const IconSpore = () => /* @__PURE__ */ jsxDEV("svg", { width: "18", height: "18", viewBox: "0 0 24 24", fill: "none", stroke: "#d946ef", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
+  /* @__PURE__ */ jsxDEV("path", { d: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" }, void 0, false, {
+    fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+    lineNumber: 43,
+    columnNumber: 163
+  }, this),
+  /* @__PURE__ */ jsxDEV("path", { d: "M12 8v4" }, void 0, false, {
+    fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+    lineNumber: 43,
+    columnNumber: 242
+  }, this),
+  /* @__PURE__ */ jsxDEV("path", { d: "M12 16h.01" }, void 0, false, {
+    fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+    lineNumber: 43,
+    columnNumber: 262
+  }, this),
+  /* @__PURE__ */ jsxDEV("path", { d: "M7 11h.01" }, void 0, false, {
+    fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+    lineNumber: 43,
+    columnNumber: 285
+  }, this),
+  /* @__PURE__ */ jsxDEV("path", { d: "M17 11h.01" }, void 0, false, {
+    fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+    lineNumber: 43,
+    columnNumber: 307
+  }, this),
+  /* @__PURE__ */ jsxDEV("path", { d: "M9 15h.01" }, void 0, false, {
+    fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+    lineNumber: 43,
+    columnNumber: 330
+  }, this),
+  /* @__PURE__ */ jsxDEV("path", { d: "M15 15h.01" }, void 0, false, {
+    fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+    lineNumber: 43,
+    columnNumber: 352
+  }, this)
+] }, void 0, true, {
+  fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+  lineNumber: 43,
+  columnNumber: 25
+}, this);
+_c6 = IconSpore;
+const POLL = 3e4;
+function Panel({ title, extra, icon, children, style }) {
+  return /* @__PURE__ */ jsxDEV("div", { className: "panel", style, children: [
+    /* @__PURE__ */ jsxDEV("span", { className: "panel-tr" }, void 0, false, {
+      fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+      lineNumber: 50,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("span", { className: "panel-bl" }, void 0, false, {
+      fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+      lineNumber: 51,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: "panel-title", children: [
+      /* @__PURE__ */ jsxDEV("span", { className: "stripe" }, void 0, false, {
+        fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+        lineNumber: 53,
+        columnNumber: 9
+      }, this),
+      icon && /* @__PURE__ */ jsxDEV("span", { children: icon }, void 0, false, {
+        fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+        lineNumber: 54,
+        columnNumber: 18
+      }, this),
+      title,
+      extra && /* @__PURE__ */ jsxDEV("span", { className: "extra", children: extra }, void 0, false, {
+        fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+        lineNumber: 56,
+        columnNumber: 19
+      }, this)
+    ] }, void 0, true, {
+      fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+      lineNumber: 52,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: "panel-body", children }, void 0, false, {
+      fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+      lineNumber: 58,
+      columnNumber: 7
+    }, this)
+  ] }, void 0, true, {
+    fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+    lineNumber: 49,
+    columnNumber: 5
+  }, this);
+}
+_c7 = Panel;
+function DashboardApp() {
+  _s();
+  const [activeTab, setActiveTab] = useState("overview");
+  const [mountedTabs, setMountedTabs] = useState({
+    overview: true,
+    analytics: false,
+    reports: false
+  });
+  const pollingOptions = useCallback((cacheKey) => ({
+    cacheKey,
+    persist: true,
+    staleMs: POLL
+  }), []);
+  const overview = usePolling(useCallback(() => api.overview(), []), POLL, pollingOptions("overview"));
+  const devices = usePolling(useCallback(() => api.deviceStatus(), []), POLL, pollingOptions("device-status"));
+  const insectLatest = usePolling(useCallback(() => api.insectLatest(), []), POLL, pollingOptions("insect-latest"));
+  const insectTrend = usePolling(useCallback(() => api.insectTrend(7), []), POLL, pollingOptions("insect-trend-7d"));
+  const insectSpecies = usePolling(useCallback(() => api.insectSpecies(7), []), POLL, pollingOptions("insect-species-7d"));
+  const sporeLatest = usePolling(useCallback(() => api.sporeLatest(), []), POLL, pollingOptions("spore-latest"));
+  const sporeTrend = usePolling(useCallback(() => api.sporeTrend(7), []), POLL, pollingOptions("spore-trend-7d"));
+  const ecoIndex = usePolling(useCallback(() => api.ecoIndex(), []), POLL, pollingOptions("eco-index"));
+  useEffect(() => {
+    setMountedTabs(
+      (current) => current[activeTab] ? current : { ...current, [activeTab]: true }
+    );
+  }, [activeTab]);
+  const handleTrigger = async () => {
+    try {
+      await api.triggerCollect();
+      clearRequestCache("analysis-dashboard");
+      setTimeout(() => {
+        [
+          overview,
+          devices,
+          insectLatest,
+          insectTrend,
+          insectSpecies,
+          sporeLatest,
+          sporeTrend,
+          ecoIndex
+        ].forEach((hook) => hook.refetch());
+      }, 3e3);
+    } catch {
+    }
+  };
+  return /* @__PURE__ */ jsxDEV(AutoResizer, { children: /* @__PURE__ */ jsxDEV("div", { className: s.app, children: [
+    /* @__PURE__ */ jsxDEV(Header, { onTriggerCollect: handleTrigger, activeTab, onTabChange: setActiveTab }, void 0, false, {
+      fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+      lineNumber: 114,
+      columnNumber: 9
+    }, this),
+    mountedTabs.analytics && /* @__PURE__ */ jsxDEV(
+      "div",
+      {
+        className: s.tabPane,
+        style: { display: activeTab === "analytics" ? "flex" : "none" },
+        children: /* @__PURE__ */ jsxDEV(AnalyticsPage, { active: activeTab === "analytics" }, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+          lineNumber: 121,
+          columnNumber: 13
+        }, this)
+      },
+      void 0,
+      false,
+      {
+        fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+        lineNumber: 117,
+        columnNumber: 9
+      },
+      this
+    ),
+    mountedTabs.reports && /* @__PURE__ */ jsxDEV(
+      "div",
+      {
+        className: s.tabPane,
+        style: { display: activeTab === "reports" ? "flex" : "none" },
+        children: /* @__PURE__ */ jsxDEV(ReportManager, {}, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+          lineNumber: 129,
+          columnNumber: 13
+        }, this)
+      },
+      void 0,
+      false,
+      {
+        fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+        lineNumber: 125,
+        columnNumber: 9
+      },
+      this
+    ),
+    /* @__PURE__ */ jsxDEV("div", { className: s.body, style: { display: activeTab === "overview" ? void 0 : "none" }, children: [
+      /* @__PURE__ */ jsxDEV("div", { className: s.col, children: [
+        /* @__PURE__ */ jsxDEV(Panel, { title: "设备物联网络状态", icon: /* @__PURE__ */ jsxDEV(IconPulse, {}, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+          lineNumber: 135,
+          columnNumber: 43
+        }, this), style: { flex: "1.4" }, children: /* @__PURE__ */ jsxDEV(DeviceStatusPanel, { devices: devices.data }, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+          lineNumber: 136,
+          columnNumber: 15
+        }, this) }, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+          lineNumber: 135,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV(Panel, { title: "区域降雨", icon: /* @__PURE__ */ jsxDEV(IconWeather, {}, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+          lineNumber: 139,
+          columnNumber: 39
+        }, this), style: { flex: "1" }, children: /* @__PURE__ */ jsxDEV(RainGaugePanel, { rainData: overview.data?.data?.rain_gauges }, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+          lineNumber: 140,
+          columnNumber: 15
+        }, this) }, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+          lineNumber: 139,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV(Panel, { title: "水土流失与径流", icon: /* @__PURE__ */ jsxDEV(IconRunoff, {}, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+          lineNumber: 143,
+          columnNumber: 42
+        }, this), style: { flex: "1" }, children: /* @__PURE__ */ jsxDEV(RunoffPanel, { runoffStations: overview.data?.data?.runoff_stations }, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+          lineNumber: 144,
+          columnNumber: 15
+        }, this) }, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+          lineNumber: 143,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+        lineNumber: 134,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: s.mapWrap, children: /* @__PURE__ */ jsxDEV(MapCenter, { overview: overview.data?.data }, void 0, false, {
+        fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+        lineNumber: 149,
+        columnNumber: 13
+      }, this) }, void 0, false, {
+        fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+        lineNumber: 148,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: s.col, children: [
+        /* @__PURE__ */ jsxDEV(Panel, { title: "面源水质污染负荷", icon: /* @__PURE__ */ jsxDEV(IconWater, {}, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+          lineNumber: 153,
+          columnNumber: 43
+        }, this), style: { flex: "1.2" }, children: /* @__PURE__ */ jsxDEV(WaterPanel, { water: overview.data?.data?.water_quality }, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+          lineNumber: 154,
+          columnNumber: 15
+        }, this) }, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+          lineNumber: 153,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV(Panel, { title: "虫情预警", icon: /* @__PURE__ */ jsxDEV(IconInsect, {}, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+          lineNumber: 157,
+          columnNumber: 39
+        }, this), style: { flex: "2.2" }, children: /* @__PURE__ */ jsxDEV(InsectPanel, { latest: insectLatest.data, trend: insectTrend.data, species: insectSpecies.data }, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+          lineNumber: 158,
+          columnNumber: 15
+        }, this) }, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+          lineNumber: 157,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV(Panel, { title: "空气孢子捕捉分析", icon: /* @__PURE__ */ jsxDEV(IconSpore, {}, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+          lineNumber: 161,
+          columnNumber: 43
+        }, this), style: { flex: "0.8" }, children: /* @__PURE__ */ jsxDEV(SporePanel, { latest: sporeLatest.data, trend: sporeTrend.data }, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+          lineNumber: 162,
+          columnNumber: 15
+        }, this) }, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+          lineNumber: 161,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+        lineNumber: 152,
+        columnNumber: 11
+      }, this)
+    ] }, void 0, true, {
+      fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+      lineNumber: 133,
+      columnNumber: 9
+    }, this)
+  ] }, void 0, true, {
+    fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+    lineNumber: 113,
+    columnNumber: 7
+  }, this) }, void 0, false, {
+    fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+    lineNumber: 112,
+    columnNumber: 5
+  }, this);
+}
+_s(DashboardApp, "R/A/DYjcODi2CY6GbaaJTNyXaBw=", false, function() {
+  return [usePolling, usePolling, usePolling, usePolling, usePolling, usePolling, usePolling, usePolling];
+});
+_c8 = DashboardApp;
+export default function App() {
+  _s2();
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authenticated, setAuthenticated] = useState(false);
+  const checkAuth = useCallback(async () => {
+    try {
+      const result = await api.authStatus();
+      setAuthenticated(Boolean(result?.authenticated));
+    } catch {
+      setAuthenticated(false);
+    } finally {
+      setAuthLoading(false);
+    }
+  }, []);
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      setAuthenticated(false);
+      setAuthLoading(false);
+    };
+    window.addEventListener("auth:unauthorized", handleUnauthorized);
+    return () => window.removeEventListener("auth:unauthorized", handleUnauthorized);
+  }, []);
+  if (authLoading) {
+    return /* @__PURE__ */ jsxDEV("div", { className: s.app, style: { display: "grid", placeItems: "center" }, children: /* @__PURE__ */ jsxDEV("div", { style: { color: "#dce8ff", fontSize: 16 }, children: "正在校验访问权限..." }, void 0, false, {
+      fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+      lineNumber: 203,
+      columnNumber: 9
+    }, this) }, void 0, false, {
+      fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+      lineNumber: 202,
+      columnNumber: 7
+    }, this);
+  }
+  if (!authenticated) {
+    return /* @__PURE__ */ jsxDEV(LoginGate, { onSuccess: () => setAuthenticated(true) }, void 0, false, {
+      fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+      lineNumber: 209,
+      columnNumber: 12
+    }, this);
+  }
+  return /* @__PURE__ */ jsxDEV(DashboardApp, {}, void 0, false, {
+    fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx",
+    lineNumber: 212,
+    columnNumber: 10
+  }, this);
+}
+_s2(App, "XRnIyvm8oUaaABitNuSkbW/gmks=");
+_c9 = App;
+var _c, _c2, _c3, _c4, _c5, _c6, _c7, _c8, _c9;
+$RefreshReg$(_c, "IconWeather");
+$RefreshReg$(_c2, "IconPulse");
+$RefreshReg$(_c3, "IconRunoff");
+$RefreshReg$(_c4, "IconWater");
+$RefreshReg$(_c5, "IconInsect");
+$RefreshReg$(_c6, "IconSpore");
+$RefreshReg$(_c7, "Panel");
+$RefreshReg$(_c8, "DashboardApp");
+$RefreshReg$(_c9, "App");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("D:/A_CODEBASE/sanya_eco_monitor/frontend/src/App.jsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,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QUFBMEQsS0FBQUM7QUFBQSxhQUFBN0UsSUFBQTtBQUFBLGFBQUFFLEtBQUE7QUFBQSxhQUFBRSxLQUFBO0FBQUEsYUFBQUUsS0FBQTtBQUFBLGFBQUFFLEtBQUE7QUFBQSxhQUFBRSxLQUFBO0FBQUEsYUFBQVEsS0FBQTtBQUFBLGFBQUEwRCxLQUFBO0FBQUEsYUFBQUMsS0FBQSIsIm5hbWVzIjpbInVzZUNhbGxiYWNrIiwidXNlRWZmZWN0IiwidXNlU3RhdGUiLCJIZWFkZXIiLCJEZXZpY2VTdGF0dXNQYW5lbCIsIlJhaW5HYXVnZVBhbmVsIiwiSW5zZWN0UGFuZWwiLCJTcG9yZVBhbmVsIiwiTWFwQ2VudGVyIiwiUnVub2ZmUGFuZWwiLCJXYXRlclBhbmVsIiwiQW5hbHl0aWNzUGFnZSIsIlJlcG9ydE1hbmFnZXIiLCJBdXRvUmVzaXplciIsIkxvZ2luR2F0ZSIsInVzZVBvbGxpbmciLCJhcGkiLCJjbGVhclJlcXVlc3RDYWNoZSIsInMiLCJJY29uV2VhdGhlciIsIl9jIiwiSWNvblB1bHNlIiwiX2MyIiwiSWNvblJ1bm9mZiIsIl9jMyIsIkljb25XYXRlciIsIl9jNCIsIkljb25JbnNlY3QiLCJfYzUiLCJJY29uU3BvcmUiLCJfYzYiLCJQT0xMIiwiUGFuZWwiLCJ0aXRsZSIsImV4dHJhIiwiaWNvbiIsImNoaWxkcmVuIiwic3R5bGUiLCJfYzciLCJEYXNoYm9hcmRBcHAiLCJfcyIsImFjdGl2ZVRhYiIsInNldEFjdGl2ZVRhYiIsIm1vdW50ZWRUYWJzIiwic2V0TW91bnRlZFRhYnMiLCJvdmVydmlldyIsImFuYWx5dGljcyIsInJlcG9ydHMiLCJwb2xsaW5nT3B0aW9ucyIsImNhY2hlS2V5IiwicGVyc2lzdCIsInN0YWxlTXMiLCJkZXZpY2VzIiwiZGV2aWNlU3RhdHVzIiwiaW5zZWN0TGF0ZXN0IiwiaW5zZWN0VHJlbmQiLCJpbnNlY3RTcGVjaWVzIiwic3BvcmVMYXRlc3QiLCJzcG9yZVRyZW5kIiwiZWNvSW5kZXgiLCJjdXJyZW50IiwiaGFuZGxlVHJpZ2dlciIsInRyaWdnZXJDb2xsZWN0Iiwic2V0VGltZW91dCIsImZvckVhY2giLCJob29rIiwicmVmZXRjaCIsImFwcCIsInRhYlBhbmUiLCJkaXNwbGF5IiwiYm9keSIsInVuZGVmaW5lZCIsImNvbCIsImZsZXgiLCJkYXRhIiwicmFpbl9nYXVnZXMiLCJydW5vZmZfc3RhdGlvbnMiLCJtYXBXcmFwIiwid2F0ZXJfcXVhbGl0eSIsIkFwcCIsIl9zMiIsImF1dGhMb2FkaW5nIiwic2V0QXV0aExvYWRpbmciLCJhdXRoZW50aWNhdGVkIiwic2V0QXV0aGVudGljYXRlZCIsImNoZWNrQXV0aCIsInJlc3VsdCIsImF1dGhTdGF0dXMiLCJCb29sZWFuIiwiaGFuZGxlVW5hdXRob3JpemVkIiwid2luZG93IiwiYWRkRXZlbnRMaXN0ZW5lciIsInJlbW92ZUV2ZW50TGlzdGVuZXIiLCJwbGFjZUl0ZW1zIiwiY29sb3IiLCJmb250U2l6ZSIsIl9jOCIsIl9jOSJdLCJpZ25vcmVMaXN0IjpbXSwic291cmNlcyI6WyJBcHAuanN4Il0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7IHVzZUNhbGxiYWNrLCB1c2VFZmZlY3QsIHVzZVN0YXRlIH0gZnJvbSAncmVhY3QnXHJcbmltcG9ydCBIZWFkZXIgZnJvbSAnLi9jb21wb25lbnRzL0hlYWRlci5qc3gnXHJcbmltcG9ydCBEZXZpY2VTdGF0dXNQYW5lbCBmcm9tICcuL2NvbXBvbmVudHMvRGV2aWNlU3RhdHVzUGFuZWwuanN4J1xyXG5pbXBvcnQgUmFpbkdhdWdlUGFuZWwgZnJvbSAnLi9jb21wb25lbnRzL1JhaW5HYXVnZVBhbmVsLmpzeCdcclxuaW1wb3J0IEluc2VjdFBhbmVsIGZyb20gJy4vY29tcG9uZW50cy9JbnNlY3RQYW5lbC5qc3gnXHJcbmltcG9ydCBTcG9yZVBhbmVsIGZyb20gJy4vY29tcG9uZW50cy9TcG9yZVBhbmVsLmpzeCdcclxuaW1wb3J0IE1hcENlbnRlciBmcm9tICcuL2NvbXBvbmVudHMvTWFwQ2VudGVyLmpzeCdcclxuaW1wb3J0IFJ1bm9mZlBhbmVsIGZyb20gJy4vY29tcG9uZW50cy9SdW5vZmZQYW5lbC5qc3gnXHJcbmltcG9ydCBXYXRlclBhbmVsIGZyb20gJy4vY29tcG9uZW50cy9XYXRlclBhbmVsLmpzeCdcclxuaW1wb3J0IEFuYWx5dGljc1BhZ2UgZnJvbSAnLi9jb21wb25lbnRzL0FuYWx5dGljc1BhZ2UuanN4J1xyXG5pbXBvcnQgUmVwb3J0TWFuYWdlciBmcm9tICcuL2NvbXBvbmVudHMvUmVwb3J0TWFuYWdlci5qc3gnXHJcbmltcG9ydCBBdXRvUmVzaXplciBmcm9tICcuL2NvbXBvbmVudHMvQXV0b1Jlc2l6ZXIuanN4J1xyXG5pbXBvcnQgTG9naW5HYXRlIGZyb20gJy4vY29tcG9uZW50cy9Mb2dpbkdhdGUuanN4J1xuaW1wb3J0IHsgdXNlUG9sbGluZyB9IGZyb20gJy4vaG9va3MvdXNlUG9sbGluZy5qcydcbmltcG9ydCB7IGFwaSB9IGZyb20gJy4vdXRpbHMvYXBpLmpzJ1xuaW1wb3J0IHsgY2xlYXJSZXF1ZXN0Q2FjaGUgfSBmcm9tICcuL3V0aWxzL3JlcXVlc3RDYWNoZS5qcydcbmltcG9ydCBzIGZyb20gJy4vQXBwLm1vZHVsZS5jc3MnXG5cclxuY29uc3QgSWNvbldlYXRoZXIgPSAoKSA9PiA8c3ZnIHdpZHRoPVwiMThcIiBoZWlnaHQ9XCIxOFwiIHZpZXdCb3g9XCIwIDAgMjQgMjRcIiBmaWxsPVwibm9uZVwiIHN0cm9rZT1cIiMzOGJkZjhcIiBzdHJva2VXaWR0aD1cIjJcIiBzdHJva2VMaW5lY2FwPVwicm91bmRcIiBzdHJva2VMaW5lam9pbj1cInJvdW5kXCI+PHBhdGggZD1cIk0xNy41IDE5QTQuNSA0LjUgMCAwIDAgMTggMTBjLS44LTQuNC01LjgtNi05LTIuNUE1LjUgNS41IDAgMCAwIDMuNSAxMkMxLjUgMTIuNSAxIDE1LjUgMi41IDE3YzEuNSAxLjUgMyAyIDQuNSAyaDEwLjV6XCIgLz48L3N2Zz5cclxuY29uc3QgSWNvblB1bHNlID0gKCkgPT4gPHN2ZyB3aWR0aD1cIjE4XCIgaGVpZ2h0PVwiMThcIiB2aWV3Qm94PVwiMCAwIDI0IDI0XCIgZmlsbD1cIm5vbmVcIiBzdHJva2U9XCIjNGFkZTgwXCIgc3Ryb2tlV2lkdGg9XCIyXCIgc3Ryb2tlTGluZWNhcD1cInJvdW5kXCIgc3Ryb2tlTGluZWpvaW49XCJyb3VuZFwiPjxwb2x5bGluZSBwb2ludHM9XCIyMiAxMiAxOCAxMiAxNSAyMSA5IDMgNiAxMiAyIDEyXCIgLz48L3N2Zz47XHJcbmNvbnN0IEljb25SdW5vZmYgPSAoKSA9PiA8c3ZnIHdpZHRoPVwiMThcIiBoZWlnaHQ9XCIxOFwiIHZpZXdCb3g9XCIwIDAgMjQgMjRcIiBmaWxsPVwibm9uZVwiIHN0cm9rZT1cIiMyNTYzZWJcIiBzdHJva2VXaWR0aD1cIjJcIiBzdHJva2VMaW5lY2FwPVwicm91bmRcIiBzdHJva2VMaW5lam9pbj1cInJvdW5kXCI+PHBhdGggZD1cIk0yMSA4djZhNSA1IDAgMCAxLTUgNUg4YTUgNSAwIDAgMS01LTVWOFwiIC8+PHBhdGggZD1cIk0zIDEzbDQtNCA0IDQgNC00IDYgNlwiIC8+PC9zdmc+XHJcbmNvbnN0IEljb25XYXRlciA9ICgpID0+IDxzdmcgd2lkdGg9XCIxOFwiIGhlaWdodD1cIjE4XCIgdmlld0JveD1cIjAgMCAyNCAyNFwiIGZpbGw9XCJub25lXCIgc3Ryb2tlPVwiI2ZhY2MxNVwiIHN0cm9rZVdpZHRoPVwiMlwiIHN0cm9rZUxpbmVjYXA9XCJyb3VuZFwiIHN0cm9rZUxpbmVqb2luPVwicm91bmRcIj48cGF0aCBkPVwiTTEyIDIyYTcgNyAwIDAgMCA3LTdjMC0yLTEtMy45LTMtNS41cy0zLjUtNC00LTcuNWMtLjUgMy41LTIgNS45LTQgNy41QzYgMTEuMSA1IDEzIDUgMTVhNyA3IDAgMCAwIDcgN3pcIiAvPjxwYXRoIGQ9XCJNOSAxNWEzIDMgMCAwIDAgMyAzXCIgLz48L3N2Zz5cclxuY29uc3QgSWNvbkluc2VjdCA9ICgpID0+IDxzdmcgd2lkdGg9XCIxOFwiIGhlaWdodD1cIjE4XCIgdmlld0JveD1cIjAgMCAyNCAyNFwiIGZpbGw9XCJub25lXCIgc3Ryb2tlPVwiI2VmNDQ0NFwiIHN0cm9rZVdpZHRoPVwiMlwiIHN0cm9rZUxpbmVjYXA9XCJyb3VuZFwiIHN0cm9rZUxpbmVqb2luPVwicm91bmRcIj48cGF0aCBkPVwiTTEyIDJBNCA0IDAgMCAwIDggNnYyaDhWNmE0IDQgMCAwIDAtNC00elwiIC8+PHBhdGggZD1cIk02IDEwaDEydjdhNiA2IDAgMCAxLTEyIDB2LTd6XCIgLz48cGF0aCBkPVwiTTQgMTRsMy0zXCIgLz48cGF0aCBkPVwiTTIwIDE0bC0zLTNcIiAvPjxwYXRoIGQ9XCJNNCAxOGwzLTNcIiAvPjxwYXRoIGQ9XCJNMjAgMThsLTMtM1wiIC8+PHBhdGggZD1cIk0yMiA2bC0zIDNcIiAvPjxwYXRoIGQ9XCJNMiA2bDMgM1wiIC8+PHBhdGggZD1cIk0xMiAyMnYtNVwiIC8+PC9zdmc+XHJcbmNvbnN0IEljb25TcG9yZSA9ICgpID0+IDxzdmcgd2lkdGg9XCIxOFwiIGhlaWdodD1cIjE4XCIgdmlld0JveD1cIjAgMCAyNCAyNFwiIGZpbGw9XCJub25lXCIgc3Ryb2tlPVwiI2Q5NDZlZlwiIHN0cm9rZVdpZHRoPVwiMlwiIHN0cm9rZUxpbmVjYXA9XCJyb3VuZFwiIHN0cm9rZUxpbmVqb2luPVwicm91bmRcIj48cGF0aCBkPVwiTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMxNy41MiAyIDEyIDJ6XCIgLz48cGF0aCBkPVwiTTEyIDh2NFwiIC8+PHBhdGggZD1cIk0xMiAxNmguMDFcIiAvPjxwYXRoIGQ9XCJNNyAxMWguMDFcIiAvPjxwYXRoIGQ9XCJNMTcgMTFoLjAxXCIgLz48cGF0aCBkPVwiTTkgMTVoLjAxXCIgLz48cGF0aCBkPVwiTTE1IDE1aC4wMVwiIC8+PC9zdmc+XHJcblxyXG5jb25zdCBQT0xMID0gMzBfMDAwXHJcblxyXG5mdW5jdGlvbiBQYW5lbCh7IHRpdGxlLCBleHRyYSwgaWNvbiwgY2hpbGRyZW4sIHN0eWxlIH0pIHtcclxuICByZXR1cm4gKFxyXG4gICAgPGRpdiBjbGFzc05hbWU9XCJwYW5lbFwiIHN0eWxlPXtzdHlsZX0+XHJcbiAgICAgIDxzcGFuIGNsYXNzTmFtZT1cInBhbmVsLXRyXCIgLz5cclxuICAgICAgPHNwYW4gY2xhc3NOYW1lPVwicGFuZWwtYmxcIiAvPlxyXG4gICAgICA8ZGl2IGNsYXNzTmFtZT1cInBhbmVsLXRpdGxlXCI+XHJcbiAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwic3RyaXBlXCIgLz5cclxuICAgICAgICB7aWNvbiAmJiA8c3Bhbj57aWNvbn08L3NwYW4+fVxyXG4gICAgICAgIHt0aXRsZX1cclxuICAgICAgICB7ZXh0cmEgJiYgPHNwYW4gY2xhc3NOYW1lPVwiZXh0cmFcIj57ZXh0cmF9PC9zcGFuPn1cclxuICAgICAgPC9kaXY+XHJcbiAgICAgIDxkaXYgY2xhc3NOYW1lPVwicGFuZWwtYm9keVwiPntjaGlsZHJlbn08L2Rpdj5cclxuICAgIDwvZGl2PlxyXG4gIClcclxufVxyXG5cclxuZnVuY3Rpb24gRGFzaGJvYXJkQXBwKCkge1xuICBjb25zdCBbYWN0aXZlVGFiLCBzZXRBY3RpdmVUYWJdID0gdXNlU3RhdGUoJ292ZXJ2aWV3JylcbiAgY29uc3QgW21vdW50ZWRUYWJzLCBzZXRNb3VudGVkVGFic10gPSB1c2VTdGF0ZSh7XG4gICAgb3ZlcnZpZXc6IHRydWUsXG4gICAgYW5hbHl0aWNzOiBmYWxzZSxcbiAgICByZXBvcnRzOiBmYWxzZSxcbiAgfSlcbiAgY29uc3QgcG9sbGluZ09wdGlvbnMgPSB1c2VDYWxsYmFjaygoY2FjaGVLZXkpID0+ICh7XG4gICAgY2FjaGVLZXksXG4gICAgcGVyc2lzdDogdHJ1ZSxcbiAgICBzdGFsZU1zOiBQT0xMLFxuICB9KSwgW10pXG4gIGNvbnN0IG92ZXJ2aWV3ID0gdXNlUG9sbGluZyh1c2VDYWxsYmFjaygoKSA9PiBhcGkub3ZlcnZpZXcoKSwgW10pLCBQT0xMLCBwb2xsaW5nT3B0aW9ucygnb3ZlcnZpZXcnKSlcbiAgY29uc3QgZGV2aWNlcyA9IHVzZVBvbGxpbmcodXNlQ2FsbGJhY2soKCkgPT4gYXBpLmRldmljZVN0YXR1cygpLCBbXSksIFBPTEwsIHBvbGxpbmdPcHRpb25zKCdkZXZpY2Utc3RhdHVzJykpXG4gIGNvbnN0IGluc2VjdExhdGVzdCA9IHVzZVBvbGxpbmcodXNlQ2FsbGJhY2soKCkgPT4gYXBpLmluc2VjdExhdGVzdCgpLCBbXSksIFBPTEwsIHBvbGxpbmdPcHRpb25zKCdpbnNlY3QtbGF0ZXN0JykpXG4gIGNvbnN0IGluc2VjdFRyZW5kID0gdXNlUG9sbGluZyh1c2VDYWxsYmFjaygoKSA9PiBhcGkuaW5zZWN0VHJlbmQoNyksIFtdKSwgUE9MTCwgcG9sbGluZ09wdGlvbnMoJ2luc2VjdC10cmVuZC03ZCcpKVxuICBjb25zdCBpbnNlY3RTcGVjaWVzID0gdXNlUG9sbGluZyh1c2VDYWxsYmFjaygoKSA9PiBhcGkuaW5zZWN0U3BlY2llcyg3KSwgW10pLCBQT0xMLCBwb2xsaW5nT3B0aW9ucygnaW5zZWN0LXNwZWNpZXMtN2QnKSlcbiAgY29uc3Qgc3BvcmVMYXRlc3QgPSB1c2VQb2xsaW5nKHVzZUNhbGxiYWNrKCgpID0+IGFwaS5zcG9yZUxhdGVzdCgpLCBbXSksIFBPTEwsIHBvbGxpbmdPcHRpb25zKCdzcG9yZS1sYXRlc3QnKSlcbiAgY29uc3Qgc3BvcmVUcmVuZCA9IHVzZVBvbGxpbmcodXNlQ2FsbGJhY2soKCkgPT4gYXBpLnNwb3JlVHJlbmQoNyksIFtdKSwgUE9MTCwgcG9sbGluZ09wdGlvbnMoJ3Nwb3JlLXRyZW5kLTdkJykpXG4gIGNvbnN0IGVjb0luZGV4ID0gdXNlUG9sbGluZyh1c2VDYWxsYmFjaygoKSA9PiBhcGkuZWNvSW5kZXgoKSwgW10pLCBQT0xMLCBwb2xsaW5nT3B0aW9ucygnZWNvLWluZGV4JykpXG5cbiAgdXNlRWZmZWN0KCgpID0+IHtcbiAgICBzZXRNb3VudGVkVGFicygoY3VycmVudCkgPT4gKFxuICAgICAgY3VycmVudFthY3RpdmVUYWJdXG4gICAgICAgID8gY3VycmVudFxuICAgICAgICA6IHsgLi4uY3VycmVudCwgW2FjdGl2ZVRhYl06IHRydWUgfVxuICAgICkpXG4gIH0sIFthY3RpdmVUYWJdKVxuXG4gIGNvbnN0IGhhbmRsZVRyaWdnZXIgPSBhc3luYyAoKSA9PiB7XG4gICAgdHJ5IHtcbiAgICAgIGF3YWl0IGFwaS50cmlnZ2VyQ29sbGVjdCgpXG4gICAgICBjbGVhclJlcXVlc3RDYWNoZSgnYW5hbHlzaXMtZGFzaGJvYXJkJylcbiAgICAgIHNldFRpbWVvdXQoKCkgPT4ge1xuICAgICAgICBbXG4gICAgICAgICAgb3ZlcnZpZXcsXHJcbiAgICAgICAgICBkZXZpY2VzLFxyXG4gICAgICAgICAgaW5zZWN0TGF0ZXN0LFxyXG4gICAgICAgICAgaW5zZWN0VHJlbmQsXHJcbiAgICAgICAgICBpbnNlY3RTcGVjaWVzLFxyXG4gICAgICAgICAgc3BvcmVMYXRlc3QsXHJcbiAgICAgICAgICBzcG9yZVRyZW5kLFxyXG4gICAgICAgICAgZWNvSW5kZXgsXHJcbiAgICAgICAgXS5mb3JFYWNoKChob29rKSA9PiBob29rLnJlZmV0Y2goKSlcclxuICAgICAgfSwgMzAwMClcclxuICAgIH0gY2F0Y2gge31cclxuICB9XHJcblxyXG4gIHJldHVybiAoXHJcbiAgICA8QXV0b1Jlc2l6ZXI+XHJcbiAgICAgIDxkaXYgY2xhc3NOYW1lPXtzLmFwcH0+XHJcbiAgICAgICAgPEhlYWRlciBvblRyaWdnZXJDb2xsZWN0PXtoYW5kbGVUcmlnZ2VyfSBhY3RpdmVUYWI9e2FjdGl2ZVRhYn0gb25UYWJDaGFuZ2U9e3NldEFjdGl2ZVRhYn0gLz5cblxuICAgICAgICB7bW91bnRlZFRhYnMuYW5hbHl0aWNzICYmIChcbiAgICAgICAgICA8ZGl2XG4gICAgICAgICAgICBjbGFzc05hbWU9e3MudGFiUGFuZX1cbiAgICAgICAgICAgIHN0eWxlPXt7IGRpc3BsYXk6IGFjdGl2ZVRhYiA9PT0gJ2FuYWx5dGljcycgPyAnZmxleCcgOiAnbm9uZScgfX1cbiAgICAgICAgICA+XG4gICAgICAgICAgICA8QW5hbHl0aWNzUGFnZSBhY3RpdmU9e2FjdGl2ZVRhYiA9PT0gJ2FuYWx5dGljcyd9IC8+XG4gICAgICAgICAgPC9kaXY+XG4gICAgICAgICl9XG4gICAgICAgIHttb3VudGVkVGFicy5yZXBvcnRzICYmIChcbiAgICAgICAgICA8ZGl2XG4gICAgICAgICAgICBjbGFzc05hbWU9e3MudGFiUGFuZX1cbiAgICAgICAgICAgIHN0eWxlPXt7IGRpc3BsYXk6IGFjdGl2ZVRhYiA9PT0gJ3JlcG9ydHMnID8gJ2ZsZXgnIDogJ25vbmUnIH19XG4gICAgICAgICAgPlxuICAgICAgICAgICAgPFJlcG9ydE1hbmFnZXIgLz5cbiAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgKX1cblxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT17cy5ib2R5fSBzdHlsZT17eyBkaXNwbGF5OiBhY3RpdmVUYWIgPT09ICdvdmVydmlldycgPyB1bmRlZmluZWQgOiAnbm9uZScgfX0+XG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9e3MuY29sfT5cclxuICAgICAgICAgICAgPFBhbmVsIHRpdGxlPVwi6K6+5aSH54mp6IGU572R57uc54q25oCBXCIgaWNvbj17PEljb25QdWxzZSAvPn0gc3R5bGU9e3sgZmxleDogJzEuNCcgfX0+XG4gICAgICAgICAgICAgIDxEZXZpY2VTdGF0dXNQYW5lbCBkZXZpY2VzPXtkZXZpY2VzLmRhdGF9IC8+XG4gICAgICAgICAgICA8L1BhbmVsPlxuXG4gICAgICAgICAgICA8UGFuZWwgdGl0bGU9XCLljLrln5/pmY3pm6hcIiBpY29uPXs8SWNvbldlYXRoZXIgLz59IHN0eWxlPXt7IGZsZXg6ICcxJyB9fT5cbiAgICAgICAgICAgICAgPFJhaW5HYXVnZVBhbmVsIHJhaW5EYXRhPXtvdmVydmlldy5kYXRhPy5kYXRhPy5yYWluX2dhdWdlc30gLz5cbiAgICAgICAgICAgIDwvUGFuZWw+XG5cbiAgICAgICAgICAgIDxQYW5lbCB0aXRsZT1cIuawtOWcn+a1geWkseS4juW+hOa1gVwiIGljb249ezxJY29uUnVub2ZmIC8+fSBzdHlsZT17eyBmbGV4OiAnMScgfX0+XG4gICAgICAgICAgICAgIDxSdW5vZmZQYW5lbCBydW5vZmZTdGF0aW9ucz17b3ZlcnZpZXcuZGF0YT8uZGF0YT8ucnVub2ZmX3N0YXRpb25zfSAvPlxuICAgICAgICAgICAgPC9QYW5lbD5cbiAgICAgICAgICA8L2Rpdj5cclxuXHJcbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT17cy5tYXBXcmFwfT5cclxuICAgICAgICAgICAgPE1hcENlbnRlciBvdmVydmlldz17b3ZlcnZpZXcuZGF0YT8uZGF0YX0gLz5cclxuICAgICAgICAgIDwvZGl2PlxyXG5cclxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPXtzLmNvbH0+XHJcbiAgICAgICAgICAgIDxQYW5lbCB0aXRsZT1cIumdoua6kOawtOi0qOaxoeafk+i0n+iNt1wiIGljb249ezxJY29uV2F0ZXIgLz59IHN0eWxlPXt7IGZsZXg6ICcxLjInIH19PlxuICAgICAgICAgICAgICA8V2F0ZXJQYW5lbCB3YXRlcj17b3ZlcnZpZXcuZGF0YT8uZGF0YT8ud2F0ZXJfcXVhbGl0eX0gLz5cbiAgICAgICAgICAgIDwvUGFuZWw+XG5cbiAgICAgICAgICAgIDxQYW5lbCB0aXRsZT1cIuiZq+aDhemihOitplwiIGljb249ezxJY29uSW5zZWN0IC8+fSBzdHlsZT17eyBmbGV4OiAnMi4yJyB9fT5cbiAgICAgICAgICAgICAgPEluc2VjdFBhbmVsIGxhdGVzdD17aW5zZWN0TGF0ZXN0LmRhdGF9IHRyZW5kPXtpbnNlY3RUcmVuZC5kYXRhfSBzcGVjaWVzPXtpbnNlY3RTcGVjaWVzLmRhdGF9IC8+XG4gICAgICAgICAgICA8L1BhbmVsPlxuXG4gICAgICAgICAgICA8UGFuZWwgdGl0bGU9XCLnqbrmsJTlraLlrZDmjZXmjYnliIbmnpBcIiBpY29uPXs8SWNvblNwb3JlIC8+fSBzdHlsZT17eyBmbGV4OiAnMC44JyB9fT5cbiAgICAgICAgICAgICAgPFNwb3JlUGFuZWwgbGF0ZXN0PXtzcG9yZUxhdGVzdC5kYXRhfSB0cmVuZD17c3BvcmVUcmVuZC5kYXRhfSAvPlxuICAgICAgICAgICAgPC9QYW5lbD5cbiAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICA8L2Rpdj5cclxuICAgICAgPC9kaXY+XHJcbiAgICA8L0F1dG9SZXNpemVyPlxyXG4gIClcclxufVxyXG5cclxuZXhwb3J0IGRlZmF1bHQgZnVuY3Rpb24gQXBwKCkge1xyXG4gIGNvbnN0IFthdXRoTG9hZGluZywgc2V0QXV0aExvYWRpbmddID0gdXNlU3RhdGUodHJ1ZSlcclxuICBjb25zdCBbYXV0aGVudGljYXRlZCwgc2V0QXV0aGVudGljYXRlZF0gPSB1c2VTdGF0ZShmYWxzZSlcclxuXHJcbiAgY29uc3QgY2hlY2tBdXRoID0gdXNlQ2FsbGJhY2soYXN5bmMgKCkgPT4ge1xyXG4gICAgdHJ5IHtcclxuICAgICAgY29uc3QgcmVzdWx0ID0gYXdhaXQgYXBpLmF1dGhTdGF0dXMoKVxyXG4gICAgICBzZXRBdXRoZW50aWNhdGVkKEJvb2xlYW4ocmVzdWx0Py5hdXRoZW50aWNhdGVkKSlcclxuICAgIH0gY2F0Y2gge1xyXG4gICAgICBzZXRBdXRoZW50aWNhdGVkKGZhbHNlKVxyXG4gICAgfSBmaW5hbGx5IHtcclxuICAgICAgc2V0QXV0aExvYWRpbmcoZmFsc2UpXHJcbiAgICB9XHJcbiAgfSwgW10pXHJcblxyXG4gIHVzZUVmZmVjdCgoKSA9PiB7XHJcbiAgICBjaGVja0F1dGgoKVxyXG4gIH0sIFtjaGVja0F1dGhdKVxyXG5cclxuICB1c2VFZmZlY3QoKCkgPT4ge1xyXG4gICAgY29uc3QgaGFuZGxlVW5hdXRob3JpemVkID0gKCkgPT4ge1xyXG4gICAgICBzZXRBdXRoZW50aWNhdGVkKGZhbHNlKVxyXG4gICAgICBzZXRBdXRoTG9hZGluZyhmYWxzZSlcclxuICAgIH1cclxuXHJcbiAgICB3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcignYXV0aDp1bmF1dGhvcml6ZWQnLCBoYW5kbGVVbmF1dGhvcml6ZWQpXHJcbiAgICByZXR1cm4gKCkgPT4gd2luZG93LnJlbW92ZUV2ZW50TGlzdGVuZXIoJ2F1dGg6dW5hdXRob3JpemVkJywgaGFuZGxlVW5hdXRob3JpemVkKVxyXG4gIH0sIFtdKVxyXG5cclxuICBpZiAoYXV0aExvYWRpbmcpIHtcclxuICAgIHJldHVybiAoXHJcbiAgICAgIDxkaXYgY2xhc3NOYW1lPXtzLmFwcH0gc3R5bGU9e3sgZGlzcGxheTogJ2dyaWQnLCBwbGFjZUl0ZW1zOiAnY2VudGVyJyB9fT5cclxuICAgICAgICA8ZGl2IHN0eWxlPXt7IGNvbG9yOiAnI2RjZThmZicsIGZvbnRTaXplOiAxNiB9fT7mraPlnKjmoKHpqozorr/pl67mnYPpmZAuLi48L2Rpdj5cclxuICAgICAgPC9kaXY+XHJcbiAgICApXHJcbiAgfVxyXG5cclxuICBpZiAoIWF1dGhlbnRpY2F0ZWQpIHtcclxuICAgIHJldHVybiA8TG9naW5HYXRlIG9uU3VjY2Vzcz17KCkgPT4gc2V0QXV0aGVudGljYXRlZCh0cnVlKX0gLz5cclxuICB9XHJcblxyXG4gIHJldHVybiA8RGFzaGJvYXJkQXBwIC8+XHJcbn1cclxuIl0sImZpbGUiOiJEOi9BX0NPREVCQVNFL3NhbnlhX2Vjb19tb25pdG9yL2Zyb250ZW5kL3NyYy9BcHAuanN4In0=

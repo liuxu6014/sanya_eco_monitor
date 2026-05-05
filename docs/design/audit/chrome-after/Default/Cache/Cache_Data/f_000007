@@ -1,0 +1,315 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/Header.jsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=894c6ec3"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+var _s = $RefreshSig$(), _s2 = $RefreshSig$();
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=894c6ec3"; const useEffect = __vite__cjsImport3_react["useEffect"]; const useState = __vite__cjsImport3_react["useState"];
+import __vite__cjsImport4_dayjs from "/node_modules/.vite/deps/dayjs.js?v=894c6ec3"; const dayjs = __vite__cjsImport4_dayjs.__esModule ? __vite__cjsImport4_dayjs.default : __vite__cjsImport4_dayjs;
+import s from "/src/components/Header.module.css";
+export default function Header({ onTriggerCollect, activeTab, onTabChange }) {
+  _s();
+  const [time, setTime] = useState(dayjs());
+  useEffect(() => {
+    const timer = setInterval(() => setTime(dayjs()), 1e3);
+    return () => clearInterval(timer);
+  }, []);
+  const weekDay = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"][time.day()];
+  return /* @__PURE__ */ jsxDEV("header", { className: s.header, children: [
+    /* @__PURE__ */ jsxDEV("div", { className: s.scanLine }, void 0, false, {
+      fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx",
+      lineNumber: 36,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: s.side, children: [
+      /* @__PURE__ */ jsxDEV("div", { className: s.location, children: [
+        /* @__PURE__ */ jsxDEV("span", { className: s.locDot }, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx",
+          lineNumber: 40,
+          columnNumber: 11
+        }, this),
+        "三亚市·天涯区"
+      ] }, void 0, true, {
+        fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx",
+        lineNumber: 39,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: s.date, children: [
+        time.format("YYYY年M月D日"),
+        " ",
+        weekDay
+      ] }, void 0, true, {
+        fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx",
+        lineNumber: 43,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, true, {
+      fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx",
+      lineNumber: 38,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: s.center, children: [
+      /* @__PURE__ */ jsxDEV("div", { className: s.decoLeft, children: [
+        /* @__PURE__ */ jsxDEV("span", { className: s.arrowA }, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx",
+          lineNumber: 50,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("span", { className: s.arrowB }, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx",
+          lineNumber: 51,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("span", { className: s.hLine }, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx",
+          lineNumber: 52,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx",
+        lineNumber: 49,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: s.titleBlock, children: [
+        /* @__PURE__ */ jsxDEV("div", { className: s.title, children: "三亚市天涯区橡胶林近自然化改造和农田提升监测平台" }, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx",
+          lineNumber: 55,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: s.subtitle, children: "SANYA · TIANYA RUBBER FOREST NATURALIZATION REFORM & FARMLAND ENHANCEMENT MONITORING PLATFORM" }, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx",
+          lineNumber: 56,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx",
+        lineNumber: 54,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: s.decoRight, children: [
+        /* @__PURE__ */ jsxDEV("span", { className: s.hLine }, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx",
+          lineNumber: 59,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("span", { className: s.arrowB, style: { transform: "scaleX(-1)" } }, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx",
+          lineNumber: 60,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("span", { className: s.arrowA, style: { transform: "scaleX(-1)" } }, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx",
+          lineNumber: 61,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx",
+        lineNumber: 58,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, true, {
+      fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx",
+      lineNumber: 48,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: `${s.side} ${s.actionsSide}`, children: [
+      /* @__PURE__ */ jsxDEV("div", { className: s.clock, children: time.format("HH:mm:ss") }, void 0, false, {
+        fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx",
+        lineNumber: 66,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: s.navActions, children: [
+        /* @__PURE__ */ jsxDEV(
+          "button",
+          {
+            className: `${s.btn} ${activeTab === "overview" ? s.active : ""}`,
+            onClick: () => onTabChange("overview"),
+            children: "总览"
+          },
+          void 0,
+          false,
+          {
+            fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx",
+            lineNumber: 68,
+            columnNumber: 11
+          },
+          this
+        ),
+        /* @__PURE__ */ jsxDEV(
+          "button",
+          {
+            className: `${s.btn} ${activeTab === "analytics" ? s.active : ""}`,
+            onClick: () => onTabChange("analytics"),
+            children: "数据分析"
+          },
+          void 0,
+          false,
+          {
+            fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx",
+            lineNumber: 74,
+            columnNumber: 11
+          },
+          this
+        ),
+        /* @__PURE__ */ jsxDEV(
+          "button",
+          {
+            className: `${s.btn} ${activeTab === "reports" ? s.active : ""}`,
+            onClick: () => onTabChange("reports"),
+            children: "报告管理"
+          },
+          void 0,
+          false,
+          {
+            fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx",
+            lineNumber: 80,
+            columnNumber: 11
+          },
+          this
+        ),
+        /* @__PURE__ */ jsxDEV("button", { className: s.btn, onClick: onTriggerCollect, children: "刷新" }, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx",
+          lineNumber: 86,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV(FullscreenButton, {}, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx",
+          lineNumber: 89,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx",
+        lineNumber: 67,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, true, {
+      fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx",
+      lineNumber: 65,
+      columnNumber: 7
+    }, this)
+  ] }, void 0, true, {
+    fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx",
+    lineNumber: 35,
+    columnNumber: 5
+  }, this);
+}
+_s(Header, "lrw1zVOBXTKsrU6smu+u2WoEMt4=");
+_c = Header;
+function FullscreenButton() {
+  _s2();
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  useEffect(() => {
+    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", handler);
+    return () => document.removeEventListener("fullscreenchange", handler);
+  }, []);
+  const toggle = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {
+      });
+    } else {
+      document.exitFullscreen().catch(() => {
+      });
+    }
+  };
+  return /* @__PURE__ */ jsxDEV(
+    "button",
+    {
+      className: s.btn,
+      onClick: toggle,
+      title: isFullscreen ? "退出全屏" : "进入全屏",
+      style: { padding: "6px 10px" },
+      children: isFullscreen ? /* @__PURE__ */ jsxDEV("svg", { width: "14", height: "14", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
+        /* @__PURE__ */ jsxDEV("path", { d: "M8 3v3a2 2 0 0 1-2 2H3" }, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx",
+          lineNumber: 122,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("path", { d: "M21 8h-3a2 2 0 0 1-2-2V3" }, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx",
+          lineNumber: 123,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("path", { d: "M3 16h3a2 2 0 0 1 2 2v3" }, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx",
+          lineNumber: 124,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("path", { d: "M16 21v-3a2 2 0 0 1 2-2h3" }, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx",
+          lineNumber: 125,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx",
+        lineNumber: 121,
+        columnNumber: 7
+      }, this) : /* @__PURE__ */ jsxDEV("svg", { width: "14", height: "14", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
+        /* @__PURE__ */ jsxDEV("path", { d: "M3 7V3h4" }, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx",
+          lineNumber: 129,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("path", { d: "M21 7V3h-4" }, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx",
+          lineNumber: 130,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("path", { d: "M3 17v4h4" }, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx",
+          lineNumber: 131,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("path", { d: "M21 17v4h-4" }, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx",
+          lineNumber: 132,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx",
+        lineNumber: 128,
+        columnNumber: 7
+      }, this)
+    },
+    void 0,
+    false,
+    {
+      fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx",
+      lineNumber: 114,
+      columnNumber: 5
+    },
+    this
+  );
+}
+_s2(FullscreenButton, "bbrde04c+cD2/wxWG6d9pzH92bA=");
+_c2 = FullscreenButton;
+var _c, _c2;
+$RefreshReg$(_c, "Header");
+$RefreshReg$(_c2, "FullscreenButton");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/Header.jsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,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LFFBQ2xDLHVCQUFDLFVBQUssR0FBRSw2QkFBUjtBQUFBO0FBQUE7QUFBQTtBQUFBLGVBQWlDO0FBQUEsUUFDakMsdUJBQUMsVUFBSyxHQUFFLCtCQUFSO0FBQUE7QUFBQTtBQUFBO0FBQUEsZUFBbUM7QUFBQSxXQUpyQztBQUFBO0FBQUE7QUFBQTtBQUFBLGFBS0EsSUFFQSx1QkFBQyxTQUFJLE9BQU0sTUFBSyxRQUFPLE1BQUssU0FBUSxhQUFZLE1BQUssUUFBTyxRQUFPLGdCQUFlLGFBQVksS0FBSSxlQUFjLFNBQVEsZ0JBQWUsU0FDckk7QUFBQSwrQkFBQyxVQUFLLEdBQUUsY0FBUjtBQUFBO0FBQUE7QUFBQTtBQUFBLGVBQWtCO0FBQUEsUUFDbEIsdUJBQUMsVUFBSyxHQUFFLGdCQUFSO0FBQUE7QUFBQTtBQUFBO0FBQUEsZUFBb0I7QUFBQSxRQUNwQix1QkFBQyxVQUFLLEdBQUUsZUFBUjtBQUFBO0FBQUE7QUFBQTtBQUFBLGVBQW1CO0FBQUEsUUFDbkIsdUJBQUMsVUFBSyxHQUFFLGlCQUFSO0FBQUE7QUFBQTtBQUFBO0FBQUEsZUFBcUI7QUFBQSxXQUp2QjtBQUFBO0FBQUE7QUFBQTtBQUFBLGFBS0E7QUFBQTtBQUFBLElBbkJKO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQSxFQXFCQTtBQUVKO0FBQUNELElBekNRRCxrQkFBZ0I7QUFBQSxNQUFoQkE7QUFBZ0IsSUFBQWUsSUFBQUM7QUFBQSxhQUFBRCxJQUFBO0FBQUEsYUFBQUMsS0FBQSIsIm5hbWVzIjpbInVzZUVmZmVjdCIsInVzZVN0YXRlIiwiZGF5anMiLCJzIiwiSGVhZGVyIiwib25UcmlnZ2VyQ29sbGVjdCIsImFjdGl2ZVRhYiIsIm9uVGFiQ2hhbmdlIiwiX3MiLCJ0aW1lIiwic2V0VGltZSIsInRpbWVyIiwic2V0SW50ZXJ2YWwiLCJjbGVhckludGVydmFsIiwid2Vla0RheSIsImRheSIsImhlYWRlciIsInNjYW5MaW5lIiwic2lkZSIsImxvY2F0aW9uIiwibG9jRG90IiwiZGF0ZSIsImZvcm1hdCIsImNlbnRlciIsImRlY29MZWZ0IiwiYXJyb3dBIiwiYXJyb3dCIiwiaExpbmUiLCJ0aXRsZUJsb2NrIiwidGl0bGUiLCJzdWJ0aXRsZSIsImRlY29SaWdodCIsInRyYW5zZm9ybSIsImFjdGlvbnNTaWRlIiwiY2xvY2siLCJuYXZBY3Rpb25zIiwiYnRuIiwiYWN0aXZlIiwiRnVsbHNjcmVlbkJ1dHRvbiIsIl9zMiIsImlzRnVsbHNjcmVlbiIsInNldElzRnVsbHNjcmVlbiIsImhhbmRsZXIiLCJkb2N1bWVudCIsImZ1bGxzY3JlZW5FbGVtZW50IiwiYWRkRXZlbnRMaXN0ZW5lciIsInJlbW92ZUV2ZW50TGlzdGVuZXIiLCJ0b2dnbGUiLCJkb2N1bWVudEVsZW1lbnQiLCJyZXF1ZXN0RnVsbHNjcmVlbiIsImNhdGNoIiwiZXhpdEZ1bGxzY3JlZW4iLCJwYWRkaW5nIiwiX2MiLCJfYzIiXSwiaWdub3JlTGlzdCI6W10sInNvdXJjZXMiOlsiSGVhZGVyLmpzeCJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyB1c2VFZmZlY3QsIHVzZVN0YXRlIH0gZnJvbSAncmVhY3QnXHJcbmltcG9ydCBkYXlqcyBmcm9tICdkYXlqcydcclxuaW1wb3J0IHMgZnJvbSAnLi9IZWFkZXIubW9kdWxlLmNzcydcclxuXHJcbmV4cG9ydCBkZWZhdWx0IGZ1bmN0aW9uIEhlYWRlcih7IG9uVHJpZ2dlckNvbGxlY3QsIGFjdGl2ZVRhYiwgb25UYWJDaGFuZ2UgfSkge1xyXG4gIGNvbnN0IFt0aW1lLCBzZXRUaW1lXSA9IHVzZVN0YXRlKGRheWpzKCkpXHJcblxyXG4gIHVzZUVmZmVjdCgoKSA9PiB7XHJcbiAgICBjb25zdCB0aW1lciA9IHNldEludGVydmFsKCgpID0+IHNldFRpbWUoZGF5anMoKSksIDEwMDApXHJcbiAgICByZXR1cm4gKCkgPT4gY2xlYXJJbnRlcnZhbCh0aW1lcilcclxuICB9LCBbXSlcclxuXHJcbiAgY29uc3Qgd2Vla0RheSA9IFsn5ZGo5pelJywgJ+WRqOS4gCcsICflkajkuownLCAn5ZGo5LiJJywgJ+WRqOWbmycsICflkajkupQnLCAn5ZGo5YWtJ11bdGltZS5kYXkoKV1cclxuXHJcbiAgcmV0dXJuIChcbiAgICA8aGVhZGVyIGNsYXNzTmFtZT17cy5oZWFkZXJ9PlxuICAgICAgPGRpdiBjbGFzc05hbWU9e3Muc2NhbkxpbmV9IC8+XG5cclxuICAgICAgPGRpdiBjbGFzc05hbWU9e3Muc2lkZX0+XHJcbiAgICAgICAgPGRpdiBjbGFzc05hbWU9e3MubG9jYXRpb259PlxyXG4gICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPXtzLmxvY0RvdH0gLz5cclxuICAgICAgICAgIOS4ieS6muW4gsK35aSp5rav5Yy6XHJcbiAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgPGRpdiBjbGFzc05hbWU9e3MuZGF0ZX0+XHJcbiAgICAgICAgICB7dGltZS5mb3JtYXQoJ1lZWVnlubRN5pyIROaXpScpfSB7d2Vla0RheX1cclxuICAgICAgICA8L2Rpdj5cclxuICAgICAgPC9kaXY+XHJcblxyXG4gICAgICA8ZGl2IGNsYXNzTmFtZT17cy5jZW50ZXJ9PlxyXG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPXtzLmRlY29MZWZ0fT5cclxuICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT17cy5hcnJvd0F9IC8+XHJcbiAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9e3MuYXJyb3dCfSAvPlxyXG4gICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPXtzLmhMaW5lfSAvPlxyXG4gICAgICAgIDwvZGl2PlxyXG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPXtzLnRpdGxlQmxvY2t9PlxyXG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9e3MudGl0bGV9PuS4ieS6muW4guWkqea2r+WMuuapoeiDtuael+i/keiHqueEtuWMluaUuemAoOWSjOWGnOeUsOaPkOWNh+ebkea1i+W5s+WPsDwvZGl2PlxyXG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9e3Muc3VidGl0bGV9PlNBTllBIMK3IFRJQU5ZQSBSVUJCRVIgRk9SRVNUIE5BVFVSQUxJWkFUSU9OIFJFRk9STSAmIEZBUk1MQU5EIEVOSEFOQ0VNRU5UIE1PTklUT1JJTkcgUExBVEZPUk08L2Rpdj5cclxuICAgICAgICA8L2Rpdj5cclxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT17cy5kZWNvUmlnaHR9PlxyXG4gICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPXtzLmhMaW5lfSAvPlxyXG4gICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPXtzLmFycm93Qn0gc3R5bGU9e3sgdHJhbnNmb3JtOiAnc2NhbGVYKC0xKScgfX0gLz5cclxuICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT17cy5hcnJvd0F9IHN0eWxlPXt7IHRyYW5zZm9ybTogJ3NjYWxlWCgtMSknIH19IC8+XHJcbiAgICAgICAgPC9kaXY+XHJcbiAgICAgIDwvZGl2PlxyXG5cclxuICAgICAgPGRpdiBjbGFzc05hbWU9e2Ake3Muc2lkZX0gJHtzLmFjdGlvbnNTaWRlfWB9PlxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT17cy5jbG9ja30+e3RpbWUuZm9ybWF0KCdISDptbTpzcycpfTwvZGl2PlxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT17cy5uYXZBY3Rpb25zfT5cbiAgICAgICAgICA8YnV0dG9uXG4gICAgICAgICAgICBjbGFzc05hbWU9e2Ake3MuYnRufSAke2FjdGl2ZVRhYiA9PT0gJ292ZXJ2aWV3JyA/IHMuYWN0aXZlIDogJyd9YH1cbiAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IG9uVGFiQ2hhbmdlKCdvdmVydmlldycpfVxuICAgICAgICAgID5cbiAgICAgICAgICAgIOaAu+iniFxuICAgICAgICAgIDwvYnV0dG9uPlxuICAgICAgICAgIDxidXR0b25cbiAgICAgICAgICAgIGNsYXNzTmFtZT17YCR7cy5idG59ICR7YWN0aXZlVGFiID09PSAnYW5hbHl0aWNzJyA/IHMuYWN0aXZlIDogJyd9YH1cbiAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IG9uVGFiQ2hhbmdlKCdhbmFseXRpY3MnKX1cbiAgICAgICAgICA+XG4gICAgICAgICAgICDmlbDmja7liIbmnpBcbiAgICAgICAgICA8L2J1dHRvbj5cbiAgICAgICAgICA8YnV0dG9uXG4gICAgICAgICAgICBjbGFzc05hbWU9e2Ake3MuYnRufSAke2FjdGl2ZVRhYiA9PT0gJ3JlcG9ydHMnID8gcy5hY3RpdmUgOiAnJ31gfVxuICAgICAgICAgICAgb25DbGljaz17KCkgPT4gb25UYWJDaGFuZ2UoJ3JlcG9ydHMnKX1cbiAgICAgICAgICA+XG4gICAgICAgICAgICDmiqXlkYrnrqHnkIZcclxuICAgICAgICAgIDwvYnV0dG9uPlxyXG4gICAgICAgICAgPGJ1dHRvbiBjbGFzc05hbWU9e3MuYnRufSBvbkNsaWNrPXtvblRyaWdnZXJDb2xsZWN0fT5cclxuICAgICAgICAgICAg5Yi35pawXHJcbiAgICAgICAgICA8L2J1dHRvbj5cclxuICAgICAgICAgIDxGdWxsc2NyZWVuQnV0dG9uIC8+XHJcbiAgICAgICAgPC9kaXY+XHJcbiAgICAgIDwvZGl2PlxyXG4gICAgPC9oZWFkZXI+XHJcbiAgKVxyXG59XHJcblxyXG5mdW5jdGlvbiBGdWxsc2NyZWVuQnV0dG9uKCkge1xyXG4gIGNvbnN0IFtpc0Z1bGxzY3JlZW4sIHNldElzRnVsbHNjcmVlbl0gPSB1c2VTdGF0ZShmYWxzZSlcclxuXHJcbiAgdXNlRWZmZWN0KCgpID0+IHtcclxuICAgIGNvbnN0IGhhbmRsZXIgPSAoKSA9PiBzZXRJc0Z1bGxzY3JlZW4oISFkb2N1bWVudC5mdWxsc2NyZWVuRWxlbWVudClcclxuICAgIGRvY3VtZW50LmFkZEV2ZW50TGlzdGVuZXIoJ2Z1bGxzY3JlZW5jaGFuZ2UnLCBoYW5kbGVyKVxyXG4gICAgcmV0dXJuICgpID0+IGRvY3VtZW50LnJlbW92ZUV2ZW50TGlzdGVuZXIoJ2Z1bGxzY3JlZW5jaGFuZ2UnLCBoYW5kbGVyKVxyXG4gIH0sIFtdKVxyXG5cclxuICBjb25zdCB0b2dnbGUgPSAoKSA9PiB7XHJcbiAgICBpZiAoIWRvY3VtZW50LmZ1bGxzY3JlZW5FbGVtZW50KSB7XHJcbiAgICAgIGRvY3VtZW50LmRvY3VtZW50RWxlbWVudC5yZXF1ZXN0RnVsbHNjcmVlbigpLmNhdGNoKCgpID0+IHt9KVxyXG4gICAgfSBlbHNlIHtcclxuICAgICAgZG9jdW1lbnQuZXhpdEZ1bGxzY3JlZW4oKS5jYXRjaCgoKSA9PiB7fSlcclxuICAgIH1cclxuICB9XHJcblxyXG4gIHJldHVybiAoXHJcbiAgICA8YnV0dG9uXG4gICAgICBjbGFzc05hbWU9e3MuYnRufVxuICAgICAgb25DbGljaz17dG9nZ2xlfVxuICAgICAgdGl0bGU9e2lzRnVsbHNjcmVlbiA/ICfpgIDlh7rlhajlsY8nIDogJ+i/m+WFpeWFqOWxjyd9XG4gICAgICBzdHlsZT17eyBwYWRkaW5nOiAnNnB4IDEwcHgnIH19XG4gICAgPlxuICAgICAge2lzRnVsbHNjcmVlbiA/IChcclxuICAgICAgICA8c3ZnIHdpZHRoPVwiMTRcIiBoZWlnaHQ9XCIxNFwiIHZpZXdCb3g9XCIwIDAgMjQgMjRcIiBmaWxsPVwibm9uZVwiIHN0cm9rZT1cImN1cnJlbnRDb2xvclwiIHN0cm9rZVdpZHRoPVwiMlwiIHN0cm9rZUxpbmVjYXA9XCJyb3VuZFwiIHN0cm9rZUxpbmVqb2luPVwicm91bmRcIj5cclxuICAgICAgICAgIDxwYXRoIGQ9XCJNOCAzdjNhMiAyIDAgMCAxLTIgMkgzXCIvPlxyXG4gICAgICAgICAgPHBhdGggZD1cIk0yMSA4aC0zYTIgMiAwIDAgMS0yLTJWM1wiLz5cclxuICAgICAgICAgIDxwYXRoIGQ9XCJNMyAxNmgzYTIgMiAwIDAgMSAyIDJ2M1wiLz5cclxuICAgICAgICAgIDxwYXRoIGQ9XCJNMTYgMjF2LTNhMiAyIDAgMCAxIDItMmgzXCIvPlxyXG4gICAgICAgIDwvc3ZnPlxyXG4gICAgICApIDogKFxyXG4gICAgICAgIDxzdmcgd2lkdGg9XCIxNFwiIGhlaWdodD1cIjE0XCIgdmlld0JveD1cIjAgMCAyNCAyNFwiIGZpbGw9XCJub25lXCIgc3Ryb2tlPVwiY3VycmVudENvbG9yXCIgc3Ryb2tlV2lkdGg9XCIyXCIgc3Ryb2tlTGluZWNhcD1cInJvdW5kXCIgc3Ryb2tlTGluZWpvaW49XCJyb3VuZFwiPlxyXG4gICAgICAgICAgPHBhdGggZD1cIk0zIDdWM2g0XCIvPlxyXG4gICAgICAgICAgPHBhdGggZD1cIk0yMSA3VjNoLTRcIi8+XHJcbiAgICAgICAgICA8cGF0aCBkPVwiTTMgMTd2NGg0XCIvPlxyXG4gICAgICAgICAgPHBhdGggZD1cIk0yMSAxN3Y0aC00XCIvPlxyXG4gICAgICAgIDwvc3ZnPlxyXG4gICAgICApfVxyXG4gICAgPC9idXR0b24+XHJcbiAgKVxyXG59XHJcbiJdLCJmaWxlIjoiRDovQV9DT0RFQkFTRS9zYW55YV9lY29fbW9uaXRvci9mcm9udGVuZC9zcmMvY29tcG9uZW50cy9IZWFkZXIuanN4In0=

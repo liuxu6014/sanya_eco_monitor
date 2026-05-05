@@ -1,0 +1,349 @@
+{
+  "version": "2.6",
+  "children": [
+    {
+      "type": "frame",
+      "id": "AUDIT01",
+      "name": "00 基于现有平台的优化原则",
+      "x": -2020,
+      "y": 0,
+      "width": 1920,
+      "height": 1080,
+      "clip": true,
+      "layout": "none",
+      "fill": "#030814",
+      "children": [
+        { "type": "text", "id": "AUDT01", "x": 64, "y": 56, "content": "三亚市天涯区橡胶林近自然化改造和农田提升监测平台 - UI 优化 v2", "fontFamily": "Microsoft YaHei", "fontSize": 42, "fontWeight": "800", "fill": "#EAFBFF" },
+        { "type": "text", "id": "AUDT02", "x": 66, "y": 124, "content": "这版不是重做成另一套系统，而是在现有平台上做高级化：保留 Header / Tab / 三栏态势地图 / 分析仪表盘 / 报告表格 / 登录验证的真实结构。", "fontFamily": "Microsoft YaHei", "fontSize": 20, "fontWeight": "500", "fill": "#8FC8E8" },
+        { "type": "frame", "id": "AUDC01", "name": "design rules", "x": 64, "y": 210, "width": 560, "height": 690, "layout": "vertical", "gap": 18, "padding": 28, "cornerRadius": 10, "fill": "#071629", "stroke": { "fill": "#123A5B", "thickness": 1 }, "children": [
+          { "type": "text", "id": "AUDR01", "content": "优化原则", "fontFamily": "Microsoft YaHei", "fontSize": 28, "fontWeight": "800", "fill": "#76E4F7" },
+          { "type": "text", "id": "AUDR02", "content": "1. 保留现有业务：设备物联网络、区域降雨、水土流失与径流、面源水质污染负荷、虫情预警、空气孢子捕捉分析。", "fontFamily": "Microsoft YaHei", "fontSize": 18, "lineHeight": 1.65, "textGrowth": "fixed-width", "width": 500, "fill": "#D6ECFF" },
+          { "type": "text", "id": "AUDR03", "content": "2. 保留卫星地图为视觉核心，减少泛化装饰，把设备标签、连线和底部统计做成更清晰的操作层。", "fontFamily": "Microsoft YaHei", "fontSize": 18, "lineHeight": 1.65, "textGrowth": "fixed-width", "width": 500, "fill": "#D6ECFF" },
+          { "type": "text", "id": "AUDR04", "content": "3. 深色大屏继续使用，但降低过强霓虹和厚重阴影，让数据密度更稳、阅读更轻。", "fontFamily": "Microsoft YaHei", "fontSize": 18, "lineHeight": 1.65, "textGrowth": "fixed-width", "width": 500, "fill": "#D6ECFF" },
+          { "type": "text", "id": "AUDR05", "content": "4. 报告管理不改成营销页，保留筛选、生成、统计卡、表格、分页、下载/删除操作。", "fontFamily": "Microsoft YaHei", "fontSize": 18, "lineHeight": 1.65, "textGrowth": "fixed-width", "width": 500, "fill": "#D6ECFF" },
+          { "type": "text", "id": "AUDR06", "content": "5. 登录页沿用安全接入语义，增强品牌首屏和表单层级，不引入无关地图插画。", "fontFamily": "Microsoft YaHei", "fontSize": 18, "lineHeight": 1.65, "textGrowth": "fixed-width", "width": 500, "fill": "#D6ECFF" }
+        ] },
+        { "type": "frame", "id": "AUDC02", "name": "current screenshots index", "x": 660, "y": 210, "width": 1196, "height": 690, "layout": "none", "cornerRadius": 10, "fill": "#06111F", "stroke": { "fill": "#123A5B", "thickness": 1 }, "children": [
+          { "type": "text", "id": "AUDS01", "x": 28, "y": 28, "content": "已按真实页面截图审查", "fontFamily": "Microsoft YaHei", "fontSize": 28, "fontWeight": "800", "fill": "#EAFBFF" },
+          { "type": "text", "id": "AUDS02", "x": 30, "y": 80, "content": "参考截图保存在 docs/design/audit：current-overview.png、current-analytics.png、current-reports.png。", "fontFamily": "Microsoft YaHei", "fontSize": 18, "fill": "#8FC8E8" },
+          { "type": "rectangle", "id": "AUDP01", "x": 30, "y": 140, "width": 350, "height": 210, "cornerRadius": 8, "fill": "#0B2134", "stroke": { "fill": "#1E6472", "thickness": 1 } },
+          { "type": "text", "id": "AUDP01T", "x": 54, "y": 164, "content": "总览页现状", "fontFamily": "Microsoft YaHei", "fontSize": 22, "fontWeight": "800", "fill": "#76E4F7" },
+          { "type": "text", "id": "AUDP01D", "x": 54, "y": 210, "content": "优点：业务完整、地图真实。\n问题：左右栏压迫、标题过亮、卡片边界重复、底部统计弱。", "fontFamily": "Microsoft YaHei", "fontSize": 16, "lineHeight": 1.65, "textGrowth": "fixed-width", "width": 296, "fill": "#D6ECFF" },
+          { "type": "rectangle", "id": "AUDP02", "x": 422, "y": 140, "width": 350, "height": 210, "cornerRadius": 8, "fill": "#0B2134", "stroke": { "fill": "#1E6472", "thickness": 1 } },
+          { "type": "text", "id": "AUDP02T", "x": 446, "y": 164, "content": "数据分析页现状", "fontFamily": "Microsoft YaHei", "fontSize": 22, "fontWeight": "800", "fill": "#76E4F7" },
+          { "type": "text", "id": "AUDP02D", "x": 446, "y": 210, "content": "优点：内容价值高。\n问题：首屏信息过满、KPI 和结论争抢视觉，滚动页缺少分区导航。", "fontFamily": "Microsoft YaHei", "fontSize": 16, "lineHeight": 1.65, "textGrowth": "fixed-width", "width": 296, "fill": "#D6ECFF" },
+          { "type": "rectangle", "id": "AUDP03", "x": 814, "y": 140, "width": 350, "height": 210, "cornerRadius": 8, "fill": "#0B2134", "stroke": { "fill": "#1E6472", "thickness": 1 } },
+          { "type": "text", "id": "AUDP03T", "x": 838, "y": 164, "content": "报告管理页现状", "fontFamily": "Microsoft YaHei", "fontSize": 22, "fontWeight": "800", "fill": "#76E4F7" },
+          { "type": "text", "id": "AUDP03D", "x": 838, "y": 210, "content": "优点：功能完整。\n问题：表格层级偏平、操作按钮拥挤，生成控件与标题关系较散。", "fontFamily": "Microsoft YaHei", "fontSize": 16, "lineHeight": 1.65, "textGrowth": "fixed-width", "width": 296, "fill": "#D6ECFF" },
+          { "type": "frame", "id": "AUDTOKENS", "x": 30, "y": 420, "width": 1134, "height": 214, "layout": "none", "cornerRadius": 8, "fill": "#081827", "stroke": { "fill": "#1E6472", "thickness": 1 }, "children": [
+            { "type": "text", "id": "TOKT", "x": 24, "y": 22, "content": "设计 Token：更克制的大屏深色体系", "fontFamily": "Microsoft YaHei", "fontSize": 22, "fontWeight": "800", "fill": "#EAFBFF" },
+            { "type": "rectangle", "id": "TOK1", "x": 28, "y": 78, "width": 120, "height": 58, "cornerRadius": 6, "fill": "#020611" },
+            { "type": "rectangle", "id": "TOK2", "x": 168, "y": 78, "width": 120, "height": 58, "cornerRadius": 6, "fill": "#071629" },
+            { "type": "rectangle", "id": "TOK3", "x": 308, "y": 78, "width": 120, "height": 58, "cornerRadius": 6, "fill": "#00D4FF" },
+            { "type": "rectangle", "id": "TOK4", "x": 448, "y": 78, "width": 120, "height": 58, "cornerRadius": 6, "fill": "#00FF9D" },
+            { "type": "rectangle", "id": "TOK5", "x": 588, "y": 78, "width": 120, "height": 58, "cornerRadius": 6, "fill": "#FFAA00" },
+            { "type": "rectangle", "id": "TOK6", "x": 728, "y": 78, "width": 120, "height": 58, "cornerRadius": 6, "fill": "#FF4757" },
+            { "type": "text", "id": "TOKTXT", "x": 28, "y": 156, "content": "圆角 8-12px / 标题 30-36px / 卡片标题 15-18px / 数据数字 tabular / 分割线低透明 / 交互按钮保留现有位置", "fontFamily": "Microsoft YaHei", "fontSize": 16, "fill": "#9DC9E8" }
+          ] }
+        ] }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "OVV2",
+      "name": "01 总览态势屏 - 基于现有平台优化",
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 1080,
+      "clip": true,
+      "layout": "none",
+      "fill": "#020611",
+      "children": [
+        { "type": "rectangle", "id": "OVBG", "x": 0, "y": 0, "width": 1920, "height": 1080, "fill": { "type": "gradient", "enabled": true, "gradientType": "radial", "center": { "x": 0.5, "y": 0.15 }, "size": { "width": 1.1, "height": 1 }, "colors": [ { "color": "#0B2C46", "position": 0 }, { "color": "#020611", "position": 0.58 }, { "color": "#01030A", "position": 1 } ] } },
+        { "type": "frame", "id": "OVHEAD", "x": 0, "y": 0, "width": 1920, "height": 72, "layout": "none", "fill": "#03101FCC", "stroke": { "fill": "#0B6B8A", "thickness": { "bottom": 1 } }, "children": [
+          { "type": "text", "id": "OVLOC", "x": 24, "y": 15, "content": "● 三亚市·天涯区", "fontFamily": "Microsoft YaHei", "fontSize": 14, "fontWeight": "800", "fill": "#00FF9D" },
+          { "type": "text", "id": "OVDATE", "x": 33, "y": 40, "content": "2026年4月27日 周一", "fontFamily": "Microsoft YaHei", "fontSize": 12, "fill": "#7DD3FC" },
+          { "type": "text", "id": "OVTITLE", "x": 500, "y": 12, "content": "三亚市天涯区橡胶林近自然化改造和农田提升监测平台", "fontFamily": "Microsoft YaHei", "fontSize": 31, "fontWeight": "900", "fill": "#DFF8FF" },
+          { "type": "text", "id": "OVSUB", "x": 656, "y": 50, "content": "SANYA · TIANYA RUBBER FOREST NATURALIZATION REFORM & FARMLAND ENHANCEMENT MONITORING PLATFORM", "fontFamily": "Inter", "fontSize": 9, "fontWeight": "600", "fill": "#4FC3F7" },
+          { "type": "text", "id": "OVTIME", "x": 1784, "y": 8, "content": "15:11:36", "fontFamily": "Inter", "fontSize": 24, "fontWeight": "500", "fill": "#00D4FF" },
+          { "type": "rectangle", "id": "OVTAB1", "x": 1550, "y": 34, "width": 58, "height": 30, "cornerRadius": 6, "fill": "#0B6B8A", "stroke": { "fill": "#38BDF8", "thickness": 1 } },
+          { "type": "text", "id": "OVTAB1T", "x": 1566, "y": 41, "content": "总览", "fontFamily": "Microsoft YaHei", "fontSize": 13, "fontWeight": "800", "fill": "#FFFFFF" },
+          { "type": "rectangle", "id": "OVTAB2", "x": 1616, "y": 34, "width": 84, "height": 30, "cornerRadius": 6, "fill": "#062037", "stroke": { "fill": "#0B6B8A", "thickness": 1 } },
+          { "type": "text", "id": "OVTAB2T", "x": 1630, "y": 41, "content": "数据分析", "fontFamily": "Microsoft YaHei", "fontSize": 13, "fontWeight": "700", "fill": "#BFEFFF" },
+          { "type": "rectangle", "id": "OVTAB3", "x": 1708, "y": 34, "width": 84, "height": 30, "cornerRadius": 6, "fill": "#062037", "stroke": { "fill": "#0B6B8A", "thickness": 1 } },
+          { "type": "text", "id": "OVTAB3T", "x": 1722, "y": 41, "content": "报告管理", "fontFamily": "Microsoft YaHei", "fontSize": 13, "fontWeight": "700", "fill": "#BFEFFF" }
+        ] },
+        { "type": "frame", "id": "OVLEFT", "x": 8, "y": 82, "width": 346, "height": 988, "layout": "vertical", "gap": 8, "fill": "#00000000", "children": [
+          { "type": "frame", "id": "OVL1", "width": "fill_container", "height": 360, "layout": "vertical", "gap": 10, "padding": 16, "cornerRadius": 10, "fill": "#061426E6", "stroke": { "fill": "#10496B", "thickness": 1 }, "children": [
+            { "type": "text", "id": "OVL1T", "content": "设备物联网络状态", "fontFamily": "Microsoft YaHei", "fontSize": 17, "fontWeight": "800", "fill": "#EAFBFF" },
+            { "type": "text", "id": "OVL1S", "content": "12 在线设备 / 0 状态异常未结", "fontFamily": "Microsoft YaHei", "fontSize": 13, "fill": "#7DD3FC" },
+            { "type": "rectangle", "id": "OVL1ROW1", "width": 314, "height": 48, "cornerRadius": 6, "fill": "#0B1729", "stroke": { "fill": "#1B3150", "thickness": 1 } },
+            { "type": "text", "id": "OVL1R1T", "x": 26, "y": 83, "content": "4G雨量计1号                           ONLINE", "fontFamily": "Microsoft YaHei", "fontSize": 13, "fontWeight": "700", "fill": "#DCEBFF" },
+            { "type": "rectangle", "id": "OVL1ROW2", "width": 314, "height": 48, "cornerRadius": 6, "fill": "#0B1729", "stroke": { "fill": "#1B3150", "thickness": 1 } },
+            { "type": "text", "id": "OVL1R2T", "x": 26, "y": 141, "content": "橡胶林径流监测系统1号             ONLINE", "fontFamily": "Microsoft YaHei", "fontSize": 13, "fontWeight": "700", "fill": "#DCEBFF" },
+            { "type": "rectangle", "id": "OVL1ROW3", "width": 314, "height": 48, "cornerRadius": 6, "fill": "#0B1729", "stroke": { "fill": "#1B3150", "thickness": 1 } },
+            { "type": "text", "id": "OVL1R3T", "x": 26, "y": 199, "content": "智能虫情测报灯                       ONLINE", "fontFamily": "Microsoft YaHei", "fontSize": 13, "fontWeight": "700", "fill": "#DCEBFF" }
+          ] },
+          { "type": "frame", "id": "OVL2", "width": "fill_container", "height": 262, "layout": "vertical", "gap": 10, "padding": 16, "cornerRadius": 10, "fill": "#061426E6", "stroke": { "fill": "#10496B", "thickness": 1 }, "children": [
+            { "type": "text", "id": "OVL2T", "content": "区域降雨", "fontFamily": "Microsoft YaHei", "fontSize": 17, "fontWeight": "800", "fill": "#EAFBFF" },
+            { "type": "text", "id": "OVL2R1", "content": "花果林站 (4G)     0.0 mm     实时降雨", "fontFamily": "Microsoft YaHei", "fontSize": 14, "fill": "#D6ECFF" },
+            { "type": "text", "id": "OVL2R2", "content": "橡胶林站 (4G)     0.0 mm     实时降雨", "fontFamily": "Microsoft YaHei", "fontSize": 14, "fill": "#D6ECFF" },
+            { "type": "text", "id": "OVL2R3", "content": "次生林站 (4G)     0.0 mm     实时降雨", "fontFamily": "Microsoft YaHei", "fontSize": 14, "fill": "#D6ECFF" },
+            { "type": "rectangle", "id": "OVL2BAR", "width": 314, "height": 58, "cornerRadius": 6, "fill": "#0B1729", "stroke": { "fill": "#1B3150", "thickness": 1 } },
+            { "type": "text", "id": "OVL2BART", "x": 26, "y": 176, "content": "近7天累计降水 33.6 mm / 最大日降水 30 mm", "fontFamily": "Microsoft YaHei", "fontSize": 13, "fill": "#8FC8E8" }
+          ] },
+          { "type": "frame", "id": "OVL3", "width": "fill_container", "height": 348, "layout": "vertical", "gap": 10, "padding": 16, "cornerRadius": 10, "fill": "#061426E6", "stroke": { "fill": "#10496B", "thickness": 1 }, "children": [
+            { "type": "text", "id": "OVL3T", "content": "水土流失与径流", "fontFamily": "Microsoft YaHei", "fontSize": 17, "fontWeight": "800", "fill": "#EAFBFF" },
+            { "type": "rectangle", "id": "OVL3TAB", "width": 314, "height": 34, "cornerRadius": 6, "fill": "#0B1729", "stroke": { "fill": "#1B3150", "thickness": 1 } },
+            { "type": "text", "id": "OVL3TABT", "x": 24, "y": 59, "content": "花果林1监测点 | 橡胶林1监测点 | 次生林监测点", "fontFamily": "Microsoft YaHei", "fontSize": 11, "fill": "#7DD3FC" },
+            { "type": "text", "id": "OVL3M1", "content": "当前流速     0.00 m/s", "fontFamily": "Microsoft YaHei", "fontSize": 15, "fill": "#D6ECFF" },
+            { "type": "text", "id": "OVL3M2", "content": "瞬时流量     0.00 m3/s", "fontFamily": "Microsoft YaHei", "fontSize": 15, "fill": "#D6ECFF" },
+            { "type": "text", "id": "OVL3M3", "content": "累计流量     0.10 m3", "fontFamily": "Microsoft YaHei", "fontSize": 15, "fill": "#D6ECFF" },
+            { "type": "text", "id": "OVL3M4", "content": "水位 / 含沙量 / 液位压力 / 降雨量", "fontFamily": "Microsoft YaHei", "fontSize": 13, "fill": "#8FC8E8" }
+          ] }
+        ] },
+        { "type": "frame", "id": "OVMAP", "x": 362, "y": 82, "width": 1182, "height": 988, "layout": "none", "cornerRadius": 4, "fill": "#102A25", "stroke": { "fill": "#114C68", "thickness": 1 }, "children": [
+          { "type": "rectangle", "id": "OVMAPBG", "x": 0, "y": 0, "width": 1182, "height": 988, "fill": { "type": "gradient", "enabled": true, "gradientType": "linear", "rotation": 35, "colors": [ { "color": "#143A2E", "position": 0 }, { "color": "#203B22", "position": 0.44 }, { "color": "#092034", "position": 1 } ] } },
+          { "type": "line", "id": "OVROAD1", "x": 10, "y": 690, "width": 1120, "height": -64, "stroke": { "fill": "#FBBF24", "thickness": 7 } },
+          { "type": "line", "id": "OVROAD2", "x": 80, "y": 182, "width": 20, "height": 522, "stroke": { "fill": "#FBBF24", "thickness": 5 } },
+          { "type": "line", "id": "OVGRID1", "x": 350, "y": 0, "width": 0, "height": 988, "stroke": { "fill": "#07162980", "thickness": 1 } },
+          { "type": "line", "id": "OVGRID2", "x": 0, "y": 612, "width": 1182, "height": 0, "stroke": { "fill": "#07162980", "thickness": 1 } },
+          { "type": "ellipse", "id": "OVP1", "x": 520, "y": 415, "width": 16, "height": 16, "fill": "#FF4081", "stroke": { "fill": "#FF408166", "thickness": 8 } },
+          { "type": "ellipse", "id": "OVP2", "x": 625, "y": 490, "width": 16, "height": 16, "fill": "#FF6D00", "stroke": { "fill": "#FF6D0066", "thickness": 8 } },
+          { "type": "ellipse", "id": "OVP3", "x": 650, "y": 414, "width": 16, "height": 16, "fill": "#2979FF", "stroke": { "fill": "#2979FF66", "thickness": 8 } },
+          { "type": "ellipse", "id": "OVP4", "x": 672, "y": 476, "width": 16, "height": 16, "fill": "#AEEA00", "stroke": { "fill": "#AEEA0066", "thickness": 8 } },
+          { "type": "ellipse", "id": "OVP5", "x": 332, "y": 532, "width": 16, "height": 16, "fill": "#D500F9", "stroke": { "fill": "#D500F966", "thickness": 8 } },
+          { "type": "line", "id": "OVLINK1", "x": 528, "y": 423, "width": -230, "height": -90, "stroke": { "fill": "#FF4081", "thickness": 1 } },
+          { "type": "line", "id": "OVLINK2", "x": 633, "y": 498, "width": -120, "height": -142, "stroke": { "fill": "#FF6D00", "thickness": 1 } },
+          { "type": "line", "id": "OVLINK3", "x": 658, "y": 422, "width": 80, "height": -96, "stroke": { "fill": "#1DE9B6", "thickness": 1 } },
+          { "type": "frame", "id": "OVTAG1", "x": 168, "y": 292, "width": 210, "height": 48, "layout": "none", "cornerRadius": 6, "fill": "#090F20E6", "stroke": { "fill": "#FF4081", "thickness": 1 }, "children": [
+            { "type": "text", "id": "OVTAG1T", "x": 10, "y": 8, "content": "智能虫情测报灯", "fontFamily": "Microsoft YaHei", "fontSize": 13, "fontWeight": "800", "fill": "#FF5C8A" },
+            { "type": "text", "id": "OVTAG1D", "x": 10, "y": 28, "content": "昨日捕获：125 只", "fontFamily": "Microsoft YaHei", "fontSize": 11, "fill": "#EAFBFF" }
+          ] },
+          { "type": "frame", "id": "OVTAG2", "x": 430, "y": 338, "width": 230, "height": 48, "layout": "none", "cornerRadius": 6, "fill": "#090F20E6", "stroke": { "fill": "#FF6D00", "thickness": 1 }, "children": [
+            { "type": "text", "id": "OVTAG2T", "x": 10, "y": 8, "content": "花果林径流监测系统2号", "fontFamily": "Microsoft YaHei", "fontSize": 13, "fontWeight": "800", "fill": "#FFAA00" },
+            { "type": "text", "id": "OVTAG2D", "x": 10, "y": 28, "content": "流量：0.001 m3/h", "fontFamily": "Microsoft YaHei", "fontSize": 11, "fill": "#EAFBFF" }
+          ] },
+          { "type": "frame", "id": "OVTAG3", "x": 720, "y": 304, "width": 210, "height": 48, "layout": "none", "cornerRadius": 6, "fill": "#090F20E6", "stroke": { "fill": "#1DE9B6", "thickness": 1 }, "children": [
+            { "type": "text", "id": "OVTAG3T", "x": 10, "y": 8, "content": "次生林径流监测系统", "fontFamily": "Microsoft YaHei", "fontSize": 13, "fontWeight": "800", "fill": "#1DE9B6" },
+            { "type": "text", "id": "OVTAG3D", "x": 10, "y": 28, "content": "流量：0 m3/h", "fontFamily": "Microsoft YaHei", "fontSize": 11, "fill": "#EAFBFF" }
+          ] },
+          { "type": "frame", "id": "OVBOTT", "x": 22, "y": 942, "width": 1138, "height": 34, "layout": "none", "cornerRadius": 17, "fill": "#051728CC", "stroke": { "fill": "#10496B", "thickness": 1 }, "children": [
+            { "type": "text", "id": "OVB1", "x": 28, "y": 8, "content": "◆ 全局态势", "fontFamily": "Microsoft YaHei", "fontSize": 14, "fontWeight": "800", "fill": "#76E4F7" },
+            { "type": "text", "id": "OVB2", "x": 470, "y": 5, "content": "12 在线设备", "fontFamily": "Microsoft YaHei", "fontSize": 20, "fontWeight": "900", "fill": "#00D4FF" },
+            { "type": "text", "id": "OVB3", "x": 610, "y": 5, "content": "0 状态异常", "fontFamily": "Microsoft YaHei", "fontSize": 20, "fontWeight": "900", "fill": "#FFAA00" },
+            { "type": "text", "id": "OVB4", "x": 762, "y": 5, "content": "125 昨日虫情", "fontFamily": "Microsoft YaHei", "fontSize": 20, "fontWeight": "900", "fill": "#00FF9D" }
+          ] }
+        ] },
+        { "type": "frame", "id": "OVRIGHT", "x": 1552, "y": 82, "width": 360, "height": 988, "layout": "vertical", "gap": 8, "fill": "#00000000", "children": [
+          { "type": "frame", "id": "OVR1", "width": "fill_container", "height": 254, "layout": "vertical", "gap": 12, "padding": 16, "cornerRadius": 10, "fill": "#061426E6", "stroke": { "fill": "#10496B", "thickness": 1 }, "children": [
+            { "type": "text", "id": "OVR1T", "content": "面源水质污染负荷", "fontFamily": "Microsoft YaHei", "fontSize": 17, "fontWeight": "800", "fill": "#EAFBFF" },
+            { "type": "text", "id": "OVR1A", "content": "氨氮 0.22 mg/L          总磷 0.15 mg/L", "fontFamily": "Microsoft YaHei", "fontSize": 15, "fill": "#D6ECFF" },
+            { "type": "text", "id": "OVR1B", "content": "高锰酸盐 26.01 mg/L    总氮 1.99 mg/L", "fontFamily": "Microsoft YaHei", "fontSize": 15, "fill": "#D6ECFF" },
+            { "type": "rectangle", "id": "OVR1WARN", "width": 328, "height": 64, "cornerRadius": 6, "fill": "#191B20", "stroke": { "fill": "#FFAA00", "thickness": 1 } },
+            { "type": "text", "id": "OVR1WT", "x": 26, "y": 158, "content": "优化：按阈值给出绿/黄/红状态，减少四块孤立卡片的割裂感。", "fontFamily": "Microsoft YaHei", "fontSize": 13, "textGrowth": "fixed-width", "width": 300, "fill": "#FDE68A" }
+          ] },
+          { "type": "frame", "id": "OVR2", "width": "fill_container", "height": 466, "layout": "none", "padding": 16, "cornerRadius": 10, "fill": "#061426E6", "stroke": { "fill": "#10496B", "thickness": 1 }, "children": [
+            { "type": "text", "id": "OVR2T", "x": 16, "y": 16, "content": "虫情预警", "fontFamily": "Microsoft YaHei", "fontSize": 17, "fontWeight": "800", "fill": "#EAFBFF" },
+            { "type": "rectangle", "id": "OVR2IMG", "x": 16, "y": 54, "width": 328, "height": 70, "cornerRadius": 6, "fill": "#C7B99B", "stroke": { "fill": "#28435D", "thickness": 1 } },
+            { "type": "text", "id": "OVR2C1", "x": 16, "y": 142, "content": "捕获趋势（只）", "fontFamily": "Microsoft YaHei", "fontSize": 13, "fill": "#7DD3FC" },
+            { "type": "rectangle", "id": "OVR2CH1", "x": 16, "y": 166, "width": 328, "height": 92, "cornerRadius": 6, "fill": "#071629", "stroke": { "fill": "#123A5B", "thickness": 1 } },
+            { "type": "rectangle", "id": "OVBAR1", "x": 246, "y": 218, "width": 16, "height": 36, "fill": "#FF7043" },
+            { "type": "rectangle", "id": "OVBAR2", "x": 286, "y": 210, "width": 16, "height": 44, "fill": "#FF7043" },
+            { "type": "text", "id": "OVR2C2", "x": 16, "y": 282, "content": "虫种构成分析", "fontFamily": "Microsoft YaHei", "fontSize": 13, "fill": "#7DD3FC" },
+            { "type": "ellipse", "id": "OVDONUT", "x": 108, "y": 318, "width": 132, "height": 132, "fill": "#0B1729", "stroke": { "fill": "#FF7043", "thickness": 18 } },
+            { "type": "ellipse", "id": "OVDONUT2", "x": 130, "y": 340, "width": 88, "height": 88, "fill": "#061426" }
+          ] },
+          { "type": "frame", "id": "OVR3", "width": "fill_container", "height": 254, "layout": "none", "padding": 16, "cornerRadius": 10, "fill": "#061426E6", "stroke": { "fill": "#10496B", "thickness": 1 }, "children": [
+            { "type": "text", "id": "OVR3T", "x": 16, "y": 16, "content": "空气孢子捕捉分析", "fontFamily": "Microsoft YaHei", "fontSize": 17, "fontWeight": "800", "fill": "#EAFBFF" },
+            { "type": "frame", "id": "OVR3NUM", "x": 16, "y": 58, "width": 86, "height": 108, "layout": "vertical", "gap": 8, "padding": 14, "cornerRadius": 8, "fill": "#171431", "stroke": { "fill": "#6D28D9", "thickness": 1 }, "children": [
+              { "type": "text", "id": "OVR3NT", "content": "今日总量", "fontFamily": "Microsoft YaHei", "fontSize": 12, "fill": "#BFA8FF" },
+              { "type": "text", "id": "OVR3NV", "content": "0", "fontFamily": "Inter", "fontSize": 44, "fontWeight": "900", "fill": "#FFFFFF" }
+            ] },
+            { "type": "rectangle", "id": "OVR3IMG", "x": 114, "y": 58, "width": 230, "height": 108, "cornerRadius": 8, "fill": "#000000", "stroke": { "fill": "#2A3558", "thickness": 1 } },
+            { "type": "text", "id": "OVR3D", "x": 16, "y": 188, "content": "优化：空图像区域保持占位说明，避免黑块被误认为加载失败。", "fontFamily": "Microsoft YaHei", "fontSize": 13, "textGrowth": "fixed-width", "width": 318, "fill": "#8FC8E8" }
+          ] }
+        ] }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "ANV2",
+      "name": "02 数据分析页 - 基于现有平台优化",
+      "x": 2020,
+      "y": 0,
+      "width": 1920,
+      "height": 1080,
+      "clip": true,
+      "layout": "none",
+      "fill": "#020611",
+      "children": [
+        { "type": "frame", "id": "ANHEAD", "x": 0, "y": 0, "width": 1920, "height": 72, "layout": "none", "fill": "#03101FCC", "stroke": { "fill": "#0B6B8A", "thickness": { "bottom": 1 } }, "children": [
+          { "type": "text", "id": "ANTITLE", "x": 500, "y": 12, "content": "三亚市天涯区橡胶林近自然化改造和农田提升监测平台", "fontFamily": "Microsoft YaHei", "fontSize": 31, "fontWeight": "900", "fill": "#DFF8FF" },
+          { "type": "rectangle", "id": "ANTAB2", "x": 1616, "y": 34, "width": 84, "height": 30, "cornerRadius": 6, "fill": "#0B6B8A", "stroke": { "fill": "#38BDF8", "thickness": 1 } },
+          { "type": "text", "id": "ANTAB2T", "x": 1630, "y": 41, "content": "数据分析", "fontFamily": "Microsoft YaHei", "fontSize": 13, "fontWeight": "800", "fill": "#FFFFFF" }
+        ] },
+        { "type": "frame", "id": "ANPAGE", "x": 16, "y": 82, "width": 1888, "height": 998, "layout": "none", "cornerRadius": 10, "fill": "#03101F", "stroke": { "fill": "#123A5B", "thickness": 1 }, "children": [
+          { "type": "frame", "id": "ANLEFT", "x": 0, "y": 0, "width": 1242, "height": 600, "layout": "none", "cornerRadius": 10, "fill": "#061426", "stroke": { "fill": "#10496B", "thickness": 1 }, "children": [
+            { "type": "text", "id": "ANL1", "x": 28, "y": 24, "content": "DATA ANALYSIS", "fontFamily": "Inter", "fontSize": 12, "fontWeight": "800", "fill": "#7DD3FC" },
+            { "type": "text", "id": "ANL2", "x": 28, "y": 44, "content": "生态综合评估与趋势研判", "fontFamily": "Microsoft YaHei", "fontSize": 22, "fontWeight": "900", "fill": "#FFFFFF" },
+            { "type": "rectangle", "id": "ANRADAR", "x": 24, "y": 96, "width": 396, "height": 484, "cornerRadius": 12, "fill": "#08132B", "stroke": { "fill": "#15365E", "thickness": 1 } },
+            { "type": "text", "id": "ANRADART", "x": 178, "y": 114, "content": "生态画像", "fontFamily": "Microsoft YaHei", "fontSize": 13, "fontWeight": "800", "fill": "#76E4F7" },
+            { "type": "ellipse", "id": "ANR1", "x": 114, "y": 180, "width": 220, "height": 220, "fill": "#00000000", "stroke": { "fill": "#385BFF", "thickness": 2 } },
+            { "type": "polygon", "id": "ANPOLY", "x": 164, "y": 216, "width": 142, "height": 156, "fill": "#6D5DF640", "stroke": { "fill": "#8DA2FF", "thickness": 3 } },
+            { "type": "text", "id": "ANINDEX", "x": 52, "y": 484, "content": "生态健康指数  79 /100", "fontFamily": "Microsoft YaHei", "fontSize": 26, "fontWeight": "900", "fill": "#FFFFFF" },
+            { "type": "frame", "id": "ANKPIS", "x": 444, "y": 96, "width": 774, "height": 234, "layout": "none", "fill": "#00000000", "children": [
+              { "type": "rectangle", "id": "ANK1", "x": 0, "y": 0, "width": 246, "height": 106, "cornerRadius": 10, "fill": "#081827", "stroke": { "fill": "#10496B", "thickness": 1 } },
+              { "type": "text", "id": "ANK1T", "x": 14, "y": 14, "content": "水土流失风险", "fontFamily": "Microsoft YaHei", "fontSize": 16, "fontWeight": "800", "fill": "#FFFFFF" },
+              { "type": "text", "id": "ANK1V", "x": 14, "y": 44, "content": "0", "fontFamily": "Inter", "fontSize": 38, "fontWeight": "900", "fill": "#FFFFFF" },
+              { "type": "rectangle", "id": "ANK2", "x": 264, "y": 0, "width": 246, "height": 106, "cornerRadius": 10, "fill": "#111B16", "stroke": { "fill": "#A97911", "thickness": 1 } },
+              { "type": "text", "id": "ANK2T", "x": 278, "y": 14, "content": "水环境污染负荷", "fontFamily": "Microsoft YaHei", "fontSize": 16, "fontWeight": "800", "fill": "#FFFFFF" },
+              { "type": "text", "id": "ANK2V", "x": 278, "y": 44, "content": "61", "fontFamily": "Inter", "fontSize": 38, "fontWeight": "900", "fill": "#FFFFFF" },
+              { "type": "rectangle", "id": "ANK3", "x": 528, "y": 0, "width": 246, "height": 106, "cornerRadius": 10, "fill": "#160F24", "stroke": { "fill": "#7C3AED", "thickness": 1 } },
+              { "type": "text", "id": "ANK3T", "x": 542, "y": 14, "content": "病虫爆发预警", "fontFamily": "Microsoft YaHei", "fontSize": 16, "fontWeight": "800", "fill": "#FFFFFF" },
+              { "type": "text", "id": "ANK3V", "x": 542, "y": 44, "content": "5", "fontFamily": "Inter", "fontSize": 38, "fontWeight": "900", "fill": "#FFFFFF" },
+              { "type": "rectangle", "id": "ANK4", "x": 0, "y": 126, "width": 246, "height": 106, "cornerRadius": 10, "fill": "#081827", "stroke": { "fill": "#10B981", "thickness": 1 } },
+              { "type": "text", "id": "ANK4T", "x": 14, "y": 140, "content": "生物活跃指数", "fontFamily": "Microsoft YaHei", "fontSize": 16, "fontWeight": "800", "fill": "#FFFFFF" },
+              { "type": "text", "id": "ANK4V", "x": 14, "y": 170, "content": "46", "fontFamily": "Inter", "fontSize": 38, "fontWeight": "900", "fill": "#FFFFFF" },
+              { "type": "rectangle", "id": "ANK5", "x": 264, "y": 126, "width": 246, "height": 106, "cornerRadius": 10, "fill": "#081827", "stroke": { "fill": "#38BDF8", "thickness": 1 } },
+              { "type": "text", "id": "ANK5T", "x": 278, "y": 140, "content": "估算减蚀率", "fontFamily": "Microsoft YaHei", "fontSize": 16, "fontWeight": "800", "fill": "#FFFFFF" },
+              { "type": "text", "id": "ANK5V", "x": 278, "y": 170, "content": "100%", "fontFamily": "Inter", "fontSize": 38, "fontWeight": "900", "fill": "#FFFFFF" },
+              { "type": "rectangle", "id": "ANK6", "x": 528, "y": 126, "width": 246, "height": 106, "cornerRadius": 10, "fill": "#101820", "stroke": { "fill": "#3F3F46", "thickness": 1 } },
+              { "type": "text", "id": "ANK6T", "x": 542, "y": 140, "content": "污染削减综合率", "fontFamily": "Microsoft YaHei", "fontSize": 16, "fontWeight": "800", "fill": "#FFFFFF" },
+              { "type": "text", "id": "ANK6V", "x": 542, "y": 170, "content": "0%", "fontFamily": "Inter", "fontSize": 38, "fontWeight": "900", "fill": "#FFFFFF" }
+            ] },
+            { "type": "frame", "id": "ANJUDGE", "x": 444, "y": 348, "width": 774, "height": 232, "layout": "none", "cornerRadius": 12, "fill": "#08132B", "stroke": { "fill": "#15365E", "thickness": 1 }, "children": [
+              { "type": "text", "id": "ANJT", "x": 18, "y": 18, "content": "综合判断：生态综合评估存在局部环境扰动风险。", "fontFamily": "Microsoft YaHei", "fontSize": 24, "fontWeight": "900", "fill": "#FFFFFF" },
+              { "type": "text", "id": "ANJ1", "x": 20, "y": 70, "content": "水土分析：径流对照结果已形成有效参照，当前减蚀表现整体稳定。", "fontFamily": "Microsoft YaHei", "fontSize": 16, "fill": "#D6ECFF" },
+              { "type": "text", "id": "ANJ2", "x": 20, "y": 112, "content": "水质分析：统一基准期口径下整体波动可控，建议持续关注氨氮及高锰酸盐变化。", "fontFamily": "Microsoft YaHei", "fontSize": 16, "fill": "#D6ECFF" },
+              { "type": "text", "id": "ANJ3", "x": 20, "y": 154, "content": "病虫研判：当前病虫风险较高，建议维持联动巡检并同步开展田间复核。", "fontFamily": "Microsoft YaHei", "fontSize": 16, "fill": "#D6ECFF" }
+            ] }
+          ] },
+          { "type": "frame", "id": "ANWEATHER", "x": 1262, "y": 0, "width": 626, "height": 600, "layout": "none", "cornerRadius": 10, "fill": "#061426", "stroke": { "fill": "#10496B", "thickness": 1 }, "children": [
+            { "type": "text", "id": "ANW1", "x": 28, "y": 24, "content": "气象与水文支撑", "fontFamily": "Microsoft YaHei", "fontSize": 22, "fontWeight": "900", "fill": "#FFFFFF" },
+            { "type": "text", "id": "ANW2", "x": 456, "y": 26, "content": "04-20 - 04-26", "fontFamily": "Inter", "fontSize": 14, "fontWeight": "800", "fill": "#D6ECFF" },
+            { "type": "text", "id": "ANW3", "x": 36, "y": 92, "content": "晴        31°C        73%        62.29 mm", "fontFamily": "Microsoft YaHei", "fontSize": 30, "fontWeight": "900", "fill": "#FFFFFF" },
+            { "type": "rectangle", "id": "ANWCH", "x": 32, "y": 280, "width": 562, "height": 284, "cornerRadius": 8, "fill": "#071629", "stroke": { "fill": "#123A5B", "thickness": 1 } },
+            { "type": "line", "id": "ANWL1", "x": 84, "y": 430, "width": 430, "height": -32, "stroke": { "fill": "#38BDF8", "thickness": 4 } },
+            { "type": "line", "id": "ANWL2", "x": 84, "y": 454, "width": 430, "height": 18, "stroke": { "fill": "#FACC15", "thickness": 4 } },
+            { "type": "rectangle", "id": "ANWB", "x": 370, "y": 372, "width": 18, "height": 130, "fill": "#22C55E" }
+          ] },
+          { "type": "frame", "id": "ANSUM", "x": 0, "y": 616, "width": 1888, "height": 368, "layout": "none", "cornerRadius": 10, "fill": "#061426", "stroke": { "fill": "#10496B", "thickness": 1 }, "children": [
+            { "type": "text", "id": "ANS1", "x": 28, "y": 26, "content": "关键指标总览", "fontFamily": "Microsoft YaHei", "fontSize": 22, "fontWeight": "900", "fill": "#FFFFFF" },
+            { "type": "frame", "id": "ANALERT1", "x": 30, "y": 88, "width": 884, "height": 238, "layout": "none", "cornerRadius": 12, "fill": "#071629", "stroke": { "fill": "#E11D48", "thickness": 1 }, "children": [
+              { "type": "text", "id": "ANA1T", "x": 28, "y": 30, "content": "当前重点：虫情单日峰值", "fontFamily": "Microsoft YaHei", "fontSize": 26, "fontWeight": "900", "fill": "#FFFFFF" },
+              { "type": "text", "id": "ANA1V", "x": 28, "y": 96, "content": "143 只", "fontFamily": "Microsoft YaHei", "fontSize": 58, "fontWeight": "900", "fill": "#FFFFFF" },
+              { "type": "text", "id": "ANA1P", "x": 770, "y": 142, "content": "100%", "fontFamily": "Inter", "fontSize": 30, "fontWeight": "900", "fill": "#FFE4E6" }
+            ] },
+            { "type": "frame", "id": "ANALERT2", "x": 944, "y": 88, "width": 914, "height": 238, "layout": "none", "cornerRadius": 12, "fill": "#071629", "stroke": { "fill": "#E11D48", "thickness": 1 }, "children": [
+              { "type": "text", "id": "ANA2T", "x": 28, "y": 30, "content": "分级预警：含沙监测风险", "fontFamily": "Microsoft YaHei", "fontSize": 26, "fontWeight": "900", "fill": "#FFFFFF" },
+              { "type": "text", "id": "ANA2V", "x": 28, "y": 96, "content": "0.0217", "fontFamily": "Inter", "fontSize": 58, "fontWeight": "900", "fill": "#FFFFFF" },
+              { "type": "text", "id": "ANA2P", "x": 800, "y": 142, "content": "100%", "fontFamily": "Inter", "fontSize": 30, "fontWeight": "900", "fill": "#FFE4E6" }
+            ] }
+          ] }
+        ] }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "RPV2",
+      "name": "03 报告管理页 - 基于现有平台优化",
+      "x": 4040,
+      "y": 0,
+      "width": 1920,
+      "height": 1080,
+      "clip": true,
+      "layout": "none",
+      "fill": "#020611",
+      "children": [
+        { "type": "frame", "id": "RPHEAD", "x": 0, "y": 0, "width": 1920, "height": 72, "layout": "none", "fill": "#03101FCC", "stroke": { "fill": "#0B6B8A", "thickness": { "bottom": 1 } }, "children": [
+          { "type": "text", "id": "RPTITLETOP", "x": 500, "y": 12, "content": "三亚市天涯区橡胶林近自然化改造和农田提升监测平台", "fontFamily": "Microsoft YaHei", "fontSize": 31, "fontWeight": "900", "fill": "#DFF8FF" },
+          { "type": "rectangle", "id": "RPTAB", "x": 1708, "y": 34, "width": 84, "height": 30, "cornerRadius": 6, "fill": "#0B6B8A", "stroke": { "fill": "#38BDF8", "thickness": 1 } },
+          { "type": "text", "id": "RPTABT", "x": 1722, "y": 41, "content": "报告管理", "fontFamily": "Microsoft YaHei", "fontSize": 13, "fontWeight": "800", "fill": "#FFFFFF" }
+        ] },
+        { "type": "text", "id": "RPH1", "x": 30, "y": 96, "content": "报告生成与管理", "fontFamily": "Microsoft YaHei", "fontSize": 34, "fontWeight": "900", "fill": "#FFFFFF" },
+        { "type": "text", "id": "RPH2", "x": 30, "y": 144, "content": "报告数据会随周期口径自动切换：日报读取单日，周报读取最近 7 天，月报读取最近 30 天。", "fontFamily": "Microsoft YaHei", "fontSize": 16, "fill": "#8FC8E8" },
+        { "type": "text", "id": "RPFILTERL", "x": 1488, "y": 94, "content": "报告类型", "fontFamily": "Microsoft YaHei", "fontSize": 14, "fontWeight": "800", "fill": "#7DD3FC" },
+        { "type": "rectangle", "id": "RPFILTER", "x": 1488, "y": 120, "width": 210, "height": 46, "cornerRadius": 10, "fill": "#071629", "stroke": { "fill": "#123A5B", "thickness": 1 } },
+        { "type": "text", "id": "RPFILTERT", "x": 1518, "y": 134, "content": "全部报告", "fontFamily": "Microsoft YaHei", "fontSize": 15, "fontWeight": "800", "fill": "#FFFFFF" },
+        { "type": "rectangle", "id": "RPGEN", "x": 1714, "y": 120, "width": 160, "height": 46, "cornerRadius": 10, "fill": "#0B6B8A", "stroke": { "fill": "#38BDF8", "thickness": 1 } },
+        { "type": "text", "id": "RPGENT", "x": 1748, "y": 134, "content": "生成全部报告", "fontFamily": "Microsoft YaHei", "fontSize": 15, "fontWeight": "800", "fill": "#FFFFFF" },
+        { "type": "frame", "id": "RPSTATS", "x": 30, "y": 192, "width": 1844, "height": 124, "layout": "horizontal", "gap": 14, "fill": "#00000000", "children": [
+          { "type": "frame", "id": "RPS1", "width": "fill_container", "height": 124, "layout": "vertical", "gap": 8, "padding": 18, "cornerRadius": 10, "fill": "#061426", "stroke": { "fill": "#10496B", "thickness": 1 }, "children": [
+            { "type": "text", "id": "RPS1T", "content": "全部报告数量", "fontFamily": "Microsoft YaHei", "fontSize": 14, "fill": "#8FC8E8" },
+            { "type": "text", "id": "RPS1V", "content": "7", "fontFamily": "Inter", "fontSize": 34, "fontWeight": "900", "fill": "#FFFFFF" },
+            { "type": "text", "id": "RPS1M", "content": "当前筛选结果", "fontFamily": "Microsoft YaHei", "fontSize": 13, "fill": "#7DD3FC" }
+          ] },
+          { "type": "frame", "id": "RPS2", "width": "fill_container", "height": 124, "layout": "vertical", "gap": 8, "padding": 18, "cornerRadius": 10, "fill": "#061426", "stroke": { "fill": "#10496B", "thickness": 1 }, "children": [
+            { "type": "text", "id": "RPS2T", "content": "近 7 天生成", "fontFamily": "Microsoft YaHei", "fontSize": 14, "fill": "#8FC8E8" },
+            { "type": "text", "id": "RPS2V", "content": "3", "fontFamily": "Inter", "fontSize": 34, "fontWeight": "900", "fill": "#FFFFFF" },
+            { "type": "text", "id": "RPS2M", "content": "最近一周新增", "fontFamily": "Microsoft YaHei", "fontSize": 13, "fill": "#7DD3FC" }
+          ] },
+          { "type": "frame", "id": "RPS3", "width": "fill_container", "height": 124, "layout": "vertical", "gap": 8, "padding": 18, "cornerRadius": 10, "fill": "#061426", "stroke": { "fill": "#10496B", "thickness": 1 }, "children": [
+            { "type": "text", "id": "RPS3T", "content": "近 30 天生成", "fontFamily": "Microsoft YaHei", "fontSize": 14, "fill": "#8FC8E8" },
+            { "type": "text", "id": "RPS3V", "content": "7", "fontFamily": "Inter", "fontSize": 34, "fontWeight": "900", "fill": "#FFFFFF" },
+            { "type": "text", "id": "RPS3M", "content": "最近一月新增", "fontFamily": "Microsoft YaHei", "fontSize": 13, "fill": "#7DD3FC" }
+          ] },
+          { "type": "frame", "id": "RPS4", "width": "fill_container", "height": 124, "layout": "vertical", "gap": 8, "padding": 18, "cornerRadius": 10, "fill": "#061426", "stroke": { "fill": "#10496B", "thickness": 1 }, "children": [
+            { "type": "text", "id": "RPS4T", "content": "最近一次生成", "fontFamily": "Microsoft YaHei", "fontSize": 14, "fill": "#8FC8E8" },
+            { "type": "text", "id": "RPS4V", "content": "2026-04-24", "fontFamily": "Inter", "fontSize": 28, "fontWeight": "900", "fill": "#FFFFFF" },
+            { "type": "text", "id": "RPS4M", "content": "按创建时间排序", "fontFamily": "Microsoft YaHei", "fontSize": 13, "fill": "#7DD3FC" }
+          ] }
+        ] },
+        { "type": "frame", "id": "RPTABLE", "x": 30, "y": 336, "width": 1844, "height": 612, "layout": "none", "cornerRadius": 12, "fill": "#061426", "stroke": { "fill": "#10496B", "thickness": 1 }, "children": [
+          { "type": "rectangle", "id": "RPTHEAD", "x": 0, "y": 0, "width": 1844, "height": 52, "cornerRadius": 12, "fill": "#0A2342" },
+          { "type": "text", "id": "RPTC1", "x": 20, "y": 18, "content": "ID", "fontFamily": "Microsoft YaHei", "fontSize": 13, "fontWeight": "800", "fill": "#8FC8E8" },
+          { "type": "text", "id": "RPTC2", "x": 88, "y": 18, "content": "报告标题", "fontFamily": "Microsoft YaHei", "fontSize": 13, "fontWeight": "800", "fill": "#8FC8E8" },
+          { "type": "text", "id": "RPTC3", "x": 470, "y": 18, "content": "统计周期", "fontFamily": "Microsoft YaHei", "fontSize": 13, "fontWeight": "800", "fill": "#8FC8E8" },
+          { "type": "text", "id": "RPTC4", "x": 824, "y": 18, "content": "类型", "fontFamily": "Microsoft YaHei", "fontSize": 13, "fontWeight": "800", "fill": "#8FC8E8" },
+          { "type": "text", "id": "RPTC5", "x": 1178, "y": 18, "content": "生成时间", "fontFamily": "Microsoft YaHei", "fontSize": 13, "fontWeight": "800", "fill": "#8FC8E8" },
+          { "type": "text", "id": "RPTC6", "x": 1534, "y": 18, "content": "操作", "fontFamily": "Microsoft YaHei", "fontSize": 13, "fontWeight": "800", "fill": "#8FC8E8" },
+          { "type": "text", "id": "RPR1", "x": 20, "y": 88, "content": "13       三亚市天涯区生态监测周报 (20260418-20260424)             2026-04-18 - 2026-04-24          生态周报        2026-04-24 23:15:29        HTML   Word   删除", "fontFamily": "Microsoft YaHei", "fontSize": 15, "fontWeight": "700", "fill": "#EAFBFF" },
+          { "type": "line", "id": "RPL1", "x": 0, "y": 140, "width": 1844, "height": 0, "stroke": { "fill": "#102E4A", "thickness": 1 } },
+          { "type": "text", "id": "RPR2", "x": 20, "y": 176, "content": "12       三亚市天涯区生态监测月报 (20260325-20260423)             2026-03-25 - 2026-04-23          生态月报        2026-04-23 18:25:04        HTML   Word   删除", "fontFamily": "Microsoft YaHei", "fontSize": 15, "fontWeight": "700", "fill": "#EAFBFF" },
+          { "type": "line", "id": "RPL2", "x": 0, "y": 228, "width": 1844, "height": 0, "stroke": { "fill": "#102E4A", "thickness": 1 } },
+          { "type": "text", "id": "RPR3", "x": 20, "y": 264, "content": "11       三亚市天涯区生态监测周报 (20260417-20260423)             2026-04-17 - 2026-04-23          生态周报        2026-04-23 18:07:52        HTML   Word   删除", "fontFamily": "Microsoft YaHei", "fontSize": 15, "fontWeight": "700", "fill": "#EAFBFF" },
+          { "type": "line", "id": "RPL3", "x": 0, "y": 316, "width": 1844, "height": 0, "stroke": { "fill": "#102E4A", "thickness": 1 } },
+          { "type": "text", "id": "RPR4", "x": 20, "y": 352, "content": "10       三亚市天涯区生态监测周报 (20260410-20260416)             2026-04-10 - 2026-04-16          生态周报        2026-04-16 18:18:52        HTML   Word   删除", "fontFamily": "Microsoft YaHei", "fontSize": 15, "fontWeight": "700", "fill": "#EAFBFF" },
+          { "type": "text", "id": "RPNOTE", "x": 20, "y": 540, "content": "优化：表头固定、行高统一、报告标题宽度稳定；HTML/Word/删除按钮使用不同语义色并保持右侧对齐。", "fontFamily": "Microsoft YaHei", "fontSize": 14, "fill": "#7DD3FC" }
+        ] },
+        { "type": "text", "id": "RPPAGE", "x": 30, "y": 998, "content": "每页显示 10 条                                                         1 / 1                                               上一页   下一页", "fontFamily": "Microsoft YaHei", "fontSize": 15, "fontWeight": "700", "fill": "#D6ECFF" }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "LGV2",
+      "name": "04 登录页 - 基于现有平台优化",
+      "x": 6060,
+      "y": 0,
+      "width": 1920,
+      "height": 1080,
+      "clip": true,
+      "layout": "none",
+      "fill": "#020611",
+      "children": [
+        { "type": "rectangle", "id": "LGBG", "x": 0, "y": 0, "width": 1920, "height": 1080, "fill": { "type": "gradient", "enabled": true, "gradientType": "radial", "center": { "x": 0.48, "y": 0.46 }, "size": { "width": 1.2, "height": 1 }, "colors": [ { "color": "#0A2C42", "position": 0 }, { "color": "#020611", "position": 0.62 }, { "color": "#01030A", "position": 1 } ] } },
+        { "type": "frame", "id": "LGGRID", "x": 160, "y": 132, "width": 1600, "height": 816, "layout": "none", "cornerRadius": 16, "fill": "#03101FCC", "stroke": { "fill": "#123A5B", "thickness": 1 }, "children": [
+          { "type": "text", "id": "LGEYEBROW", "x": 78, "y": 96, "content": "平台访问验证", "fontFamily": "Microsoft YaHei", "fontSize": 18, "fontWeight": "800", "fill": "#76E4F7" },
+          { "type": "text", "id": "LGH1", "x": 78, "y": 148, "content": "三亚市天涯区橡胶林近自然化改造和农田提升监测平台", "fontFamily": "Microsoft YaHei", "fontSize": 48, "fontWeight": "900", "lineHeight": 1.18, "textGrowth": "fixed-width", "width": 930, "fill": "#FFFFFF" },
+          { "type": "text", "id": "LGDESC", "x": 80, "y": 292, "content": "安全接入总览态势、数据分析和报告生成管理。保留现有验证逻辑，提升首屏品牌识别和表单可读性。", "fontFamily": "Microsoft YaHei", "fontSize": 20, "lineHeight": 1.6, "textGrowth": "fixed-width", "width": 820, "fill": "#9DC9E8" },
+          { "type": "frame", "id": "LGSTATUS", "x": 80, "y": 450, "width": 720, "height": 160, "layout": "none", "cornerRadius": 12, "fill": "#071629", "stroke": { "fill": "#10496B", "thickness": 1 }, "children": [
+            { "type": "text", "id": "LGST1", "x": 26, "y": 26, "content": "接入范围", "fontFamily": "Microsoft YaHei", "fontSize": 16, "fontWeight": "800", "fill": "#7DD3FC" },
+            { "type": "text", "id": "LGST2", "x": 26, "y": 66, "content": "总览 / 数据分析 / 报告管理 / 设备实时数据", "fontFamily": "Microsoft YaHei", "fontSize": 22, "fontWeight": "900", "fill": "#FFFFFF" },
+            { "type": "text", "id": "LGST3", "x": 26, "y": 112, "content": "优化：登录页不再只居中一个表单，而是强化平台身份和安全状态。", "fontFamily": "Microsoft YaHei", "fontSize": 15, "fill": "#8FC8E8" }
+          ] },
+          { "type": "frame", "id": "LGCARD", "x": 1080, "y": 170, "width": 420, "height": 438, "layout": "vertical", "gap": 18, "padding": 28, "cornerRadius": 14, "fill": "#071629", "stroke": { "fill": "#1E6472", "thickness": 1 }, "children": [
+            { "type": "text", "id": "LGCT", "content": "安全接入校验", "fontFamily": "Microsoft YaHei", "fontSize": 24, "fontWeight": "900", "fill": "#FFFFFF" },
+            { "type": "text", "id": "LGCM", "content": "请输入平台密码后进入监测平台", "fontFamily": "Microsoft YaHei", "fontSize": 15, "fill": "#8FC8E8" },
+            { "type": "rectangle", "id": "LGINPUT", "width": 364, "height": 52, "cornerRadius": 10, "fill": "#020B17", "stroke": { "fill": "#123A5B", "thickness": 1 } },
+            { "type": "text", "id": "LGINPUTT", "content": "请输入平台密码", "fontFamily": "Microsoft YaHei", "fontSize": 15, "fill": "#5F82A3" },
+            { "type": "rectangle", "id": "LGBTN", "width": 364, "height": 52, "cornerRadius": 10, "fill": "#0B6B8A", "stroke": { "fill": "#38BDF8", "thickness": 1 } },
+            { "type": "text", "id": "LGBTNT", "content": "进入平台", "fontFamily": "Microsoft YaHei", "fontSize": 16, "fontWeight": "900", "fill": "#FFFFFF" },
+            { "type": "text", "id": "LGHELP", "content": "错误提示使用 role=alert；按钮禁用态保留可读对比。", "fontFamily": "Microsoft YaHei", "fontSize": 13, "lineHeight": 1.5, "textGrowth": "fixed-width", "width": 350, "fill": "#7DD3FC" }
+          ] }
+        ] }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,217 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/WaterQualityDailyChart.jsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=894c6ec3"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/WaterQualityDailyChart.jsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+import ReactECharts from "/node_modules/.vite/deps/echarts-for-react.js?v=894c6ec3";
+const TOOLTIP = {
+  backgroundColor: "rgba(3, 17, 46, 0.95)",
+  borderColor: "rgba(56, 189, 248, 0.5)",
+  borderWidth: 1,
+  textStyle: { color: "#e0f0ff", fontSize: 11 },
+  padding: [6, 8],
+  confine: true
+};
+const AXIS_LABEL = { color: "#8fc8e8", fontSize: 11, fontFamily: "monospace" };
+const SPLIT_LINE = {
+  lineStyle: { color: "rgba(56, 189, 248, 0.1)", type: "dotted" }
+};
+export default function WaterQualityDailyChart({ data }) {
+  const td = data?.data || [];
+  if (td.length === 0) return /* @__PURE__ */ jsxDEV(Empty, {}, void 0, false, {
+    fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/WaterQualityDailyChart.jsx",
+    lineNumber: 38,
+    columnNumber: 31
+  }, this);
+  const legendSelected = {
+    高锰酸盐: true,
+    总氮: true,
+    氨氮: true,
+    总磷: true
+  };
+  const option = {
+    backgroundColor: "transparent",
+    animation: false,
+    grid: { top: 48, bottom: 26, left: 40, right: 66, containLabel: true },
+    tooltip: { ...TOOLTIP, trigger: "axis" },
+    legend: {
+      top: 0,
+      left: "center",
+      textStyle: { color: "#b0d8f0", fontSize: 11 },
+      icon: "circle",
+      itemGap: 12,
+      selected: legendSelected
+    },
+    xAxis: {
+      type: "category",
+      data: td.map((d) => d.date.slice(5)),
+      axisLabel: { ...AXIS_LABEL, interval: "auto", rotate: 20 },
+      axisLine: { lineStyle: { color: "rgba(56, 189, 248, 0.4)" } },
+      axisTick: { show: false },
+      splitLine: { show: false },
+      boundaryGap: true
+    },
+    yAxis: [
+      {
+        type: "value",
+        position: "left",
+        scale: true,
+        name: "高锰酸盐 / 总氮 (mg/L)",
+        nameLocation: "end",
+        nameGap: 10,
+        nameRotate: 0,
+        nameTextStyle: { color: "#38bdf8", fontSize: 10, align: "left" },
+        axisLine: { show: true, lineStyle: { color: "#38bdf8" } },
+        axisTick: { show: true },
+        axisLabel: { ...AXIS_LABEL, color: "#38bdf8", margin: 8 },
+        splitLine: SPLIT_LINE
+      },
+      {
+        type: "value",
+        position: "right",
+        offset: 0,
+        scale: true,
+        name: "氨氮 / 总磷 (mg/L)",
+        nameLocation: "end",
+        nameGap: 10,
+        nameRotate: 0,
+        nameTextStyle: { color: "#fbbf24", fontSize: 10, align: "right" },
+        axisLine: { show: true, lineStyle: { color: "#fbbf24" } },
+        axisTick: { show: true },
+        axisLabel: { ...AXIS_LABEL, color: "#fbbf24", margin: 10 },
+        splitLine: { show: false }
+      }
+    ],
+    series: [
+      {
+        name: "高锰酸盐",
+        type: "bar",
+        barWidth: "32%",
+        yAxisIndex: 0,
+        data: td.map((d) => d.permanganate),
+        itemStyle: {
+          color: {
+            type: "linear",
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
+            colorStops: [
+              { offset: 0, color: "#38bdf8" },
+              { offset: 1, color: "rgba(56, 189, 248, 0.08)" }
+            ]
+          },
+          borderRadius: [4, 4, 0, 0]
+        },
+        tooltip: { valueFormatter: (v) => v != null ? `${v} mg/L` : "—" }
+      },
+      {
+        name: "总氮",
+        type: "line",
+        smooth: true,
+        yAxisIndex: 0,
+        data: td.map((d) => d.tn),
+        lineStyle: { color: "#a855f7", width: 2 },
+        itemStyle: { color: "#a855f7" },
+        showSymbol: false,
+        tooltip: { valueFormatter: (v) => v != null ? `${v} mg/L` : "—" }
+      },
+      {
+        name: "氨氮",
+        type: "line",
+        smooth: true,
+        yAxisIndex: 1,
+        data: td.map((d) => d.nh4n),
+        lineStyle: { color: "#fbbf24", width: 2 },
+        itemStyle: { color: "#fbbf24" },
+        showSymbol: false,
+        tooltip: { valueFormatter: (v) => v != null ? `${v} mg/L` : "—" }
+      },
+      {
+        name: "总磷",
+        type: "line",
+        smooth: true,
+        yAxisIndex: 1,
+        data: td.map((d) => d.tp),
+        lineStyle: { color: "#f87171", width: 2, type: "dashed" },
+        itemStyle: { color: "#f87171" },
+        showSymbol: false,
+        tooltip: { valueFormatter: (v) => v != null ? `${v} mg/L` : "—" }
+      }
+    ]
+  };
+  return /* @__PURE__ */ jsxDEV(
+    ReactECharts,
+    {
+      option,
+      style: { width: "100%", height: "100%" },
+      notMerge: true,
+      opts: { renderer: "canvas" }
+    },
+    void 0,
+    false,
+    {
+      fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/WaterQualityDailyChart.jsx",
+      lineNumber: 160,
+      columnNumber: 5
+    },
+    this
+  );
+}
+_c = WaterQualityDailyChart;
+function Empty() {
+  return /* @__PURE__ */ jsxDEV(
+    "div",
+    {
+      style: {
+        height: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: "rgba(255,255,255,0.3)",
+        fontSize: 13,
+        letterSpacing: 2
+      },
+      children: "暂无数据"
+    },
+    void 0,
+    false,
+    {
+      fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/WaterQualityDailyChart.jsx",
+      lineNumber: 171,
+      columnNumber: 5
+    },
+    this
+  );
+}
+_c2 = Empty;
+var _c, _c2;
+$RefreshReg$(_c, "WaterQualityDailyChart");
+$RefreshReg$(_c2, "Empty");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/WaterQualityDailyChart.jsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/WaterQualityDailyChart.jsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,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LFVBQVUsU0FBUztBQUFBO0FBQUEsSUFKN0I7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBLEVBSStCO0FBR25DO0FBQUNDLEtBbkl1QnBFO0FBcUl4QixTQUFTcUUsUUFBUTtBQUNmLFNBQ0U7QUFBQSxJQUFDO0FBQUE7QUFBQSxNQUNDLE9BQU87QUFBQSxRQUNMSCxRQUFRO0FBQUEsUUFDUkksU0FBUztBQUFBLFFBQ1RDLFlBQVk7QUFBQSxRQUNaQyxnQkFBZ0I7QUFBQSxRQUNoQmpGLE9BQU87QUFBQSxRQUNQQyxVQUFVO0FBQUEsUUFDVmlGLGVBQWU7QUFBQSxNQUNqQjtBQUFBLE1BQUU7QUFBQTtBQUFBLElBVEo7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBLEVBWUE7QUFFSjtBQUFDQyxNQWhCUUw7QUFBSyxJQUFBRCxJQUFBTTtBQUFBLGFBQUFOLElBQUE7QUFBQSxhQUFBTSxLQUFBIiwibmFtZXMiOlsiUmVhY3RFQ2hhcnRzIiwiVE9PTFRJUCIsImJhY2tncm91bmRDb2xvciIsImJvcmRlckNvbG9yIiwiYm9yZGVyV2lkdGgiLCJ0ZXh0U3R5bGUiLCJjb2xvciIsImZvbnRTaXplIiwicGFkZGluZyIsImNvbmZpbmUiLCJBWElTX0xBQkVMIiwiZm9udEZhbWlseSIsIlNQTElUX0xJTkUiLCJsaW5lU3R5bGUiLCJ0eXBlIiwiV2F0ZXJRdWFsaXR5RGFpbHlDaGFydCIsImRhdGEiLCJ0ZCIsImxlbmd0aCIsImxlZ2VuZFNlbGVjdGVkIiwi6auY6ZSw6YW455uQIiwi5oC75rCuIiwi5rCo5rCuIiwi5oC756O3Iiwib3B0aW9uIiwiYW5pbWF0aW9uIiwiZ3JpZCIsInRvcCIsImJvdHRvbSIsImxlZnQiLCJyaWdodCIsImNvbnRhaW5MYWJlbCIsInRvb2x0aXAiLCJ0cmlnZ2VyIiwibGVnZW5kIiwiaWNvbiIsIml0ZW1HYXAiLCJzZWxlY3RlZCIsInhBeGlzIiwibWFwIiwiZCIsImRhdGUiLCJzbGljZSIsImF4aXNMYWJlbCIsImludGVydmFsIiwicm90YXRlIiwiYXhpc0xpbmUiLCJheGlzVGljayIsInNob3ciLCJzcGxpdExpbmUiLCJib3VuZGFyeUdhcCIsInlBeGlzIiwicG9zaXRpb24iLCJzY2FsZSIsIm5hbWUiLCJuYW1lTG9jYXRpb24iLCJuYW1lR2FwIiwibmFtZVJvdGF0ZSIsIm5hbWVUZXh0U3R5bGUiLCJhbGlnbiIsIm1hcmdpbiIsIm9mZnNldCIsInNlcmllcyIsImJhcldpZHRoIiwieUF4aXNJbmRleCIsInBlcm1hbmdhbmF0ZSIsIml0ZW1TdHlsZSIsIngiLCJ5IiwieDIiLCJ5MiIsImNvbG9yU3RvcHMiLCJib3JkZXJSYWRpdXMiLCJ2YWx1ZUZvcm1hdHRlciIsInYiLCJzbW9vdGgiLCJ0biIsIndpZHRoIiwic2hvd1N5bWJvbCIsIm5oNG4iLCJ0cCIsImhlaWdodCIsInJlbmRlcmVyIiwiX2MiLCJFbXB0eSIsImRpc3BsYXkiLCJhbGlnbkl0ZW1zIiwianVzdGlmeUNvbnRlbnQiLCJsZXR0ZXJTcGFjaW5nIiwiX2MyIl0sImlnbm9yZUxpc3QiOltdLCJzb3VyY2VzIjpbIldhdGVyUXVhbGl0eURhaWx5Q2hhcnQuanN4Il0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCBSZWFjdEVDaGFydHMgZnJvbSAnZWNoYXJ0cy1mb3ItcmVhY3QnXG5cbmNvbnN0IFRPT0xUSVAgPSB7XG4gIGJhY2tncm91bmRDb2xvcjogJ3JnYmEoMywgMTcsIDQ2LCAwLjk1KScsXG4gIGJvcmRlckNvbG9yOiAncmdiYSg1NiwgMTg5LCAyNDgsIDAuNSknLFxuICBib3JkZXJXaWR0aDogMSxcbiAgdGV4dFN0eWxlOiB7IGNvbG9yOiAnI2UwZjBmZicsIGZvbnRTaXplOiAxMSB9LFxuICBwYWRkaW5nOiBbNiwgOF0sXG4gIGNvbmZpbmU6IHRydWUsXG59XG5cbmNvbnN0IEFYSVNfTEFCRUwgPSB7IGNvbG9yOiAnIzhmYzhlOCcsIGZvbnRTaXplOiAxMSwgZm9udEZhbWlseTogJ21vbm9zcGFjZScgfVxuY29uc3QgU1BMSVRfTElORSA9IHtcbiAgbGluZVN0eWxlOiB7IGNvbG9yOiAncmdiYSg1NiwgMTg5LCAyNDgsIDAuMSknLCB0eXBlOiAnZG90dGVkJyB9LFxufVxuXG5leHBvcnQgZGVmYXVsdCBmdW5jdGlvbiBXYXRlclF1YWxpdHlEYWlseUNoYXJ0KHsgZGF0YSB9KSB7XG4gIGNvbnN0IHRkID0gZGF0YT8uZGF0YSB8fCBbXVxuICBpZiAodGQubGVuZ3RoID09PSAwKSByZXR1cm4gPEVtcHR5IC8+XG5cbiAgY29uc3QgbGVnZW5kU2VsZWN0ZWQgPSB7XG4gICAg6auY6ZSw6YW455uQOiB0cnVlLFxuICAgIOaAu+awrjogdHJ1ZSxcbiAgICDmsKjmsK46IHRydWUsXG4gICAg5oC756O3OiB0cnVlLFxuICB9XG5cbiAgY29uc3Qgb3B0aW9uID0ge1xuICAgIGJhY2tncm91bmRDb2xvcjogJ3RyYW5zcGFyZW50JyxcbiAgICBhbmltYXRpb246IGZhbHNlLFxuICAgIGdyaWQ6IHsgdG9wOiA0OCwgYm90dG9tOiAyNiwgbGVmdDogNDAsIHJpZ2h0OiA2NiwgY29udGFpbkxhYmVsOiB0cnVlIH0sXG4gICAgdG9vbHRpcDogeyAuLi5UT09MVElQLCB0cmlnZ2VyOiAnYXhpcycgfSxcbiAgICBsZWdlbmQ6IHtcbiAgICAgIHRvcDogMCxcbiAgICAgIGxlZnQ6ICdjZW50ZXInLFxuICAgICAgdGV4dFN0eWxlOiB7IGNvbG9yOiAnI2IwZDhmMCcsIGZvbnRTaXplOiAxMSB9LFxuICAgICAgaWNvbjogJ2NpcmNsZScsXG4gICAgICBpdGVtR2FwOiAxMixcbiAgICAgIHNlbGVjdGVkOiBsZWdlbmRTZWxlY3RlZCxcbiAgICB9LFxuICAgIHhBeGlzOiB7XG4gICAgICB0eXBlOiAnY2F0ZWdvcnknLFxuICAgICAgZGF0YTogdGQubWFwKChkKSA9PiBkLmRhdGUuc2xpY2UoNSkpLFxuICAgICAgYXhpc0xhYmVsOiB7IC4uLkFYSVNfTEFCRUwsIGludGVydmFsOiAnYXV0bycsIHJvdGF0ZTogMjAgfSxcbiAgICAgIGF4aXNMaW5lOiB7IGxpbmVTdHlsZTogeyBjb2xvcjogJ3JnYmEoNTYsIDE4OSwgMjQ4LCAwLjQpJyB9IH0sXG4gICAgICBheGlzVGljazogeyBzaG93OiBmYWxzZSB9LFxuICAgICAgc3BsaXRMaW5lOiB7IHNob3c6IGZhbHNlIH0sXG4gICAgICBib3VuZGFyeUdhcDogdHJ1ZSxcbiAgICB9LFxuICAgIHlBeGlzOiBbXG4gICAgICB7XG4gICAgICAgIHR5cGU6ICd2YWx1ZScsXG4gICAgICAgIHBvc2l0aW9uOiAnbGVmdCcsXG4gICAgICAgIHNjYWxlOiB0cnVlLFxuICAgICAgICBuYW1lOiAn6auY6ZSw6YW455uQIC8g5oC75rCuIChtZy9MKScsXG4gICAgICAgIG5hbWVMb2NhdGlvbjogJ2VuZCcsXG4gICAgICAgIG5hbWVHYXA6IDEwLFxuICAgICAgICBuYW1lUm90YXRlOiAwLFxuICAgICAgICBuYW1lVGV4dFN0eWxlOiB7IGNvbG9yOiAnIzM4YmRmOCcsIGZvbnRTaXplOiAxMCwgYWxpZ246ICdsZWZ0JyB9LFxuICAgICAgICBheGlzTGluZTogeyBzaG93OiB0cnVlLCBsaW5lU3R5bGU6IHsgY29sb3I6ICcjMzhiZGY4JyB9IH0sXG4gICAgICAgIGF4aXNUaWNrOiB7IHNob3c6IHRydWUgfSxcbiAgICAgICAgYXhpc0xhYmVsOiB7IC4uLkFYSVNfTEFCRUwsIGNvbG9yOiAnIzM4YmRmOCcsIG1hcmdpbjogOCB9LFxuICAgICAgICBzcGxpdExpbmU6IFNQTElUX0xJTkUsXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICB0eXBlOiAndmFsdWUnLFxuICAgICAgICBwb3NpdGlvbjogJ3JpZ2h0JyxcbiAgICAgICAgb2Zmc2V0OiAwLFxuICAgICAgICBzY2FsZTogdHJ1ZSxcbiAgICAgICAgbmFtZTogJ+awqOawriAvIOaAu+ejtyAobWcvTCknLFxuICAgICAgICBuYW1lTG9jYXRpb246ICdlbmQnLFxuICAgICAgICBuYW1lR2FwOiAxMCxcbiAgICAgICAgbmFtZVJvdGF0ZTogMCxcbiAgICAgICAgbmFtZVRleHRTdHlsZTogeyBjb2xvcjogJyNmYmJmMjQnLCBmb250U2l6ZTogMTAsIGFsaWduOiAncmlnaHQnIH0sXG4gICAgICAgIGF4aXNMaW5lOiB7IHNob3c6IHRydWUsIGxpbmVTdHlsZTogeyBjb2xvcjogJyNmYmJmMjQnIH0gfSxcbiAgICAgICAgYXhpc1RpY2s6IHsgc2hvdzogdHJ1ZSB9LFxuICAgICAgICBheGlzTGFiZWw6IHsgLi4uQVhJU19MQUJFTCwgY29sb3I6ICcjZmJiZjI0JywgbWFyZ2luOiAxMCB9LFxuICAgICAgICBzcGxpdExpbmU6IHsgc2hvdzogZmFsc2UgfSxcbiAgICAgIH0sXG4gICAgXSxcbiAgICBzZXJpZXM6IFtcbiAgICAgIHtcbiAgICAgICAgbmFtZTogJ+mrmOmUsOmFuOebkCcsXG4gICAgICAgIHR5cGU6ICdiYXInLFxuICAgICAgICBiYXJXaWR0aDogJzMyJScsXG4gICAgICAgIHlBeGlzSW5kZXg6IDAsXG4gICAgICAgIGRhdGE6IHRkLm1hcCgoZCkgPT4gZC5wZXJtYW5nYW5hdGUpLFxuICAgICAgICBpdGVtU3R5bGU6IHtcbiAgICAgICAgICBjb2xvcjoge1xuICAgICAgICAgICAgdHlwZTogJ2xpbmVhcicsXG4gICAgICAgICAgICB4OiAwLFxuICAgICAgICAgICAgeTogMCxcbiAgICAgICAgICAgIHgyOiAwLFxuICAgICAgICAgICAgeTI6IDEsXG4gICAgICAgICAgICBjb2xvclN0b3BzOiBbXG4gICAgICAgICAgICAgIHsgb2Zmc2V0OiAwLCBjb2xvcjogJyMzOGJkZjgnIH0sXG4gICAgICAgICAgICAgIHsgb2Zmc2V0OiAxLCBjb2xvcjogJ3JnYmEoNTYsIDE4OSwgMjQ4LCAwLjA4KScgfSxcbiAgICAgICAgICAgIF0sXG4gICAgICAgICAgfSxcbiAgICAgICAgICBib3JkZXJSYWRpdXM6IFs0LCA0LCAwLCAwXSxcbiAgICAgICAgfSxcbiAgICAgICAgdG9vbHRpcDogeyB2YWx1ZUZvcm1hdHRlcjogKHYpID0+ICh2ICE9IG51bGwgPyBgJHt2fSBtZy9MYCA6ICfigJQnKSB9LFxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgbmFtZTogJ+aAu+awricsXG4gICAgICAgIHR5cGU6ICdsaW5lJyxcbiAgICAgICAgc21vb3RoOiB0cnVlLFxuICAgICAgICB5QXhpc0luZGV4OiAwLFxuICAgICAgICBkYXRhOiB0ZC5tYXAoKGQpID0+IGQudG4pLFxuICAgICAgICBsaW5lU3R5bGU6IHsgY29sb3I6ICcjYTg1NWY3Jywgd2lkdGg6IDIgfSxcbiAgICAgICAgaXRlbVN0eWxlOiB7IGNvbG9yOiAnI2E4NTVmNycgfSxcbiAgICAgICAgc2hvd1N5bWJvbDogZmFsc2UsXG4gICAgICAgIHRvb2x0aXA6IHsgdmFsdWVGb3JtYXR0ZXI6ICh2KSA9PiAodiAhPSBudWxsID8gYCR7dn0gbWcvTGAgOiAn4oCUJykgfSxcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIG5hbWU6ICfmsKjmsK4nLFxuICAgICAgICB0eXBlOiAnbGluZScsXG4gICAgICAgIHNtb290aDogdHJ1ZSxcbiAgICAgICAgeUF4aXNJbmRleDogMSxcbiAgICAgICAgZGF0YTogdGQubWFwKChkKSA9PiBkLm5oNG4pLFxuICAgICAgICBsaW5lU3R5bGU6IHsgY29sb3I6ICcjZmJiZjI0Jywgd2lkdGg6IDIgfSxcbiAgICAgICAgaXRlbVN0eWxlOiB7IGNvbG9yOiAnI2ZiYmYyNCcgfSxcbiAgICAgICAgc2hvd1N5bWJvbDogZmFsc2UsXG4gICAgICAgIHRvb2x0aXA6IHsgdmFsdWVGb3JtYXR0ZXI6ICh2KSA9PiAodiAhPSBudWxsID8gYCR7dn0gbWcvTGAgOiAn4oCUJykgfSxcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIG5hbWU6ICfmgLvno7cnLFxuICAgICAgICB0eXBlOiAnbGluZScsXG4gICAgICAgIHNtb290aDogdHJ1ZSxcbiAgICAgICAgeUF4aXNJbmRleDogMSxcbiAgICAgICAgZGF0YTogdGQubWFwKChkKSA9PiBkLnRwKSxcbiAgICAgICAgbGluZVN0eWxlOiB7IGNvbG9yOiAnI2Y4NzE3MScsIHdpZHRoOiAyLCB0eXBlOiAnZGFzaGVkJyB9LFxuICAgICAgICBpdGVtU3R5bGU6IHsgY29sb3I6ICcjZjg3MTcxJyB9LFxuICAgICAgICBzaG93U3ltYm9sOiBmYWxzZSxcbiAgICAgICAgdG9vbHRpcDogeyB2YWx1ZUZvcm1hdHRlcjogKHYpID0+ICh2ICE9IG51bGwgPyBgJHt2fSBtZy9MYCA6ICfigJQnKSB9LFxuICAgICAgfSxcbiAgICBdLFxuICB9XG5cbiAgcmV0dXJuIChcbiAgICA8UmVhY3RFQ2hhcnRzXG4gICAgICBvcHRpb249e29wdGlvbn1cbiAgICAgIHN0eWxlPXt7IHdpZHRoOiAnMTAwJScsIGhlaWdodDogJzEwMCUnIH19XG4gICAgICBub3RNZXJnZVxuICAgICAgb3B0cz17eyByZW5kZXJlcjogJ2NhbnZhcycgfX1cbiAgICAvPlxuICApXG59XG5cbmZ1bmN0aW9uIEVtcHR5KCkge1xuICByZXR1cm4gKFxuICAgIDxkaXZcbiAgICAgIHN0eWxlPXt7XG4gICAgICAgIGhlaWdodDogJzEwMCUnLFxuICAgICAgICBkaXNwbGF5OiAnZmxleCcsXG4gICAgICAgIGFsaWduSXRlbXM6ICdjZW50ZXInLFxuICAgICAgICBqdXN0aWZ5Q29udGVudDogJ2NlbnRlcicsXG4gICAgICAgIGNvbG9yOiAncmdiYSgyNTUsMjU1LDI1NSwwLjMpJyxcbiAgICAgICAgZm9udFNpemU6IDEzLFxuICAgICAgICBsZXR0ZXJTcGFjaW5nOiAyLFxuICAgICAgfX1cbiAgICA+XG4gICAgICDmmoLml6DmlbDmja5cbiAgICA8L2Rpdj5cbiAgKVxufVxuIl0sImZpbGUiOiJEOi9BX0NPREVCQVNFL3NhbnlhX2Vjb19tb25pdG9yL2Zyb250ZW5kL3NyYy9jb21wb25lbnRzL1dhdGVyUXVhbGl0eURhaWx5Q2hhcnQuanN4In0=

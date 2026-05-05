@@ -1,0 +1,251 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/SporePanel.jsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=894c6ec3"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/SporePanel.jsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+var _s = $RefreshSig$();
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=894c6ec3"; const React = __vite__cjsImport3_react.__esModule ? __vite__cjsImport3_react.default : __vite__cjsImport3_react; const useMemo = __vite__cjsImport3_react["useMemo"]; const useState = __vite__cjsImport3_react["useState"];
+import ReactECharts from "/node_modules/.vite/deps/echarts-for-react.js?v=894c6ec3";
+import __vite__cjsImport5_dayjs from "/node_modules/.vite/deps/dayjs.js?v=894c6ec3"; const dayjs = __vite__cjsImport5_dayjs.__esModule ? __vite__cjsImport5_dayjs.default : __vite__cjsImport5_dayjs;
+import s from "/src/components/SporePanel.module.css";
+import ImagePreviewModal from "/src/components/ImagePreviewModal.jsx";
+export default function SporePanel({ latest, trend }) {
+  _s();
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const rec = latest?.data || {};
+  const td = trend?.data || [];
+  const sporeItems = Object.entries(rec.spore_data || {}).sort((a, b) => b[1] - a[1]).slice(0, 2);
+  const maxSpore = Math.max(...sporeItems.map((i) => i[1]), 1);
+  const chartOpt = useMemo(() => {
+    const dates = td.map((d) => d.date.split("-").slice(1).join("/"));
+    const totals = td.map((d) => d.total);
+    return {
+      backgroundColor: "transparent",
+      grid: { top: 10, bottom: 20, left: 25, right: 5 },
+      xAxis: {
+        type: "category",
+        data: dates,
+        axisLabel: { color: "#64748b", fontSize: 8 },
+        axisLine: { show: false }
+      },
+      yAxis: {
+        type: "value",
+        minInterval: 1,
+        interval: 1,
+        splitLine: { lineStyle: { color: "rgba(255,255,255,0.02)" } },
+        axisLabel: {
+          color: "#d946ef",
+          fontSize: 8
+        }
+      },
+      series: [
+        {
+          type: "line",
+          smooth: true,
+          showSymbol: false,
+          itemStyle: { color: "#d946ef" },
+          lineStyle: { width: 2 },
+          areaStyle: {
+            color: {
+              type: "linear",
+              x: 0,
+              y: 0,
+              x2: 0,
+              y2: 1,
+              colorStops: [{ offset: 0, color: "rgba(217, 70, 239, 0.2)" }, { offset: 1, color: "transparent" }]
+            }
+          },
+          data: totals
+        }
+      ]
+    };
+  }, [td]);
+  return /* @__PURE__ */ jsxDEV("div", { className: s.panelWrapper, children: [
+    /* @__PURE__ */ jsxDEV("div", { className: s.mainRow, children: [
+      /* @__PURE__ */ jsxDEV("div", { className: s.metricCol, children: [
+        /* @__PURE__ */ jsxDEV("div", { className: s.totalCard, children: [
+          /* @__PURE__ */ jsxDEV("div", { children: /* @__PURE__ */ jsxDEV("div", { className: s.label, children: "今日总量" }, void 0, false, {
+            fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/SporePanel.jsx",
+            lineNumber: 84,
+            columnNumber: 15
+          }, this) }, void 0, false, {
+            fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/SporePanel.jsx",
+            lineNumber: 83,
+            columnNumber: 13
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { className: s.value, children: rec.total_count ?? "0" }, void 0, false, {
+            fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/SporePanel.jsx",
+            lineNumber: 86,
+            columnNumber: 13
+          }, this)
+        ] }, void 0, true, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/SporePanel.jsx",
+          lineNumber: 82,
+          columnNumber: 11
+        }, this),
+        sporeItems.length > 0 && /* @__PURE__ */ jsxDEV("div", { className: s.listCard, children: sporeItems.map(([name, cnt]) => {
+          const pct = cnt / maxSpore * 100;
+          return /* @__PURE__ */ jsxDEV("div", { className: s.row, children: [
+            /* @__PURE__ */ jsxDEV("div", { className: s.info, children: [
+              /* @__PURE__ */ jsxDEV("span", { className: s.n, children: name }, void 0, false, {
+                fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/SporePanel.jsx",
+                lineNumber: 95,
+                columnNumber: 45
+              }, this),
+              /* @__PURE__ */ jsxDEV("span", { className: s.c, children: cnt }, void 0, false, {
+                fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/SporePanel.jsx",
+                lineNumber: 95,
+                columnNumber: 80
+              }, this)
+            ] }, void 0, true, {
+              fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/SporePanel.jsx",
+              lineNumber: 95,
+              columnNumber: 21
+            }, this),
+            /* @__PURE__ */ jsxDEV("div", { className: s.track, children: /* @__PURE__ */ jsxDEV("div", { className: s.fill, style: { width: `${pct}%` } }, void 0, false, {
+              fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/SporePanel.jsx",
+              lineNumber: 96,
+              columnNumber: 46
+            }, this) }, void 0, false, {
+              fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/SporePanel.jsx",
+              lineNumber: 96,
+              columnNumber: 21
+            }, this)
+          ] }, name, true, {
+            fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/SporePanel.jsx",
+            lineNumber: 94,
+            columnNumber: 17
+          }, this);
+        }) }, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/SporePanel.jsx",
+          lineNumber: 90,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/SporePanel.jsx",
+        lineNumber: 81,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: s.imageCard, children: /* @__PURE__ */ jsxDEV("div", { className: s.imgBox, children: rec.image_url ? /* @__PURE__ */ jsxDEV(
+        "img",
+        {
+          src: rec.image_url,
+          alt: "Spore",
+          className: s.pImg,
+          onClick: () => setPreviewOpen(true)
+        },
+        void 0,
+        false,
+        {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/SporePanel.jsx",
+          lineNumber: 107,
+          columnNumber: 13
+        },
+        this
+      ) : /* @__PURE__ */ jsxDEV("div", { className: s.pPlaceholder, children: [
+        /* @__PURE__ */ jsxDEV("div", { className: s.scan }, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/SporePanel.jsx",
+          lineNumber: 115,
+          columnNumber: 18
+        }, this),
+        /* @__PURE__ */ jsxDEV("span", { children: "影像极低延迟传输中..." }, void 0, false, {
+          fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/SporePanel.jsx",
+          lineNumber: 116,
+          columnNumber: 18
+        }, this)
+      ] }, void 0, true, {
+        fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/SporePanel.jsx",
+        lineNumber: 114,
+        columnNumber: 13
+      }, this) }, void 0, false, {
+        fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/SporePanel.jsx",
+        lineNumber: 105,
+        columnNumber: 12
+      }, this) }, void 0, false, {
+        fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/SporePanel.jsx",
+        lineNumber: 104,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, true, {
+      fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/SporePanel.jsx",
+      lineNumber: 80,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: s.chartBox, children: [
+      /* @__PURE__ */ jsxDEV("div", { className: s.chartHeader, children: "浓度趋势" }, void 0, false, {
+        fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/SporePanel.jsx",
+        lineNumber: 124,
+        columnNumber: 10
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: s.chart, children: td.length > 0 ? /* @__PURE__ */ jsxDEV(ReactECharts, { option: chartOpt, style: { height: "100%" } }, void 0, false, {
+        fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/SporePanel.jsx",
+        lineNumber: 129,
+        columnNumber: 11
+      }, this) : /* @__PURE__ */ jsxDEV("div", { className: s.emptyChart, children: "无趋势数据" }, void 0, false, {
+        fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/SporePanel.jsx",
+        lineNumber: 131,
+        columnNumber: 11
+      }, this) }, void 0, false, {
+        fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/SporePanel.jsx",
+        lineNumber: 127,
+        columnNumber: 10
+      }, this)
+    ] }, void 0, true, {
+      fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/SporePanel.jsx",
+      lineNumber: 123,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV(
+      ImagePreviewModal,
+      {
+        open: previewOpen,
+        src: rec.image_url,
+        alt: "孢子图片预览",
+        onClose: () => setPreviewOpen(false)
+      },
+      void 0,
+      false,
+      {
+        fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/SporePanel.jsx",
+        lineNumber: 136,
+        columnNumber: 7
+      },
+      this
+    )
+  ] }, void 0, true, {
+    fileName: "D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/SporePanel.jsx",
+    lineNumber: 79,
+    columnNumber: 5
+  }, this);
+}
+_s(SporePanel, "BXz3fFCgrAJnWLcfJVsJpWnng7Q=");
+_c = SporePanel;
+var _c;
+$RefreshReg$(_c, "SporePanel");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/SporePanel.jsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("D:/A_CODEBASE/sanya_eco_monitor/frontend/src/components/SporePanel.jsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,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QUNDLE1BQU1wRjtBQUFBQSxRQUNOLEtBQUtFLElBQUkwRTtBQUFBQSxRQUNULEtBQUk7QUFBQSxRQUNKLFNBQVMsTUFBTTNFLGVBQWUsS0FBSztBQUFBO0FBQUEsTUFKckM7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBLElBSXVDO0FBQUEsT0E3RHpDO0FBQUE7QUFBQTtBQUFBO0FBQUEsU0ErREE7QUFFSjtBQUFDRixHQXRIdUJILFlBQVU7QUFBQSxLQUFWQTtBQUFVLElBQUF5RjtBQUFBLGFBQUFBLElBQUEiLCJuYW1lcyI6WyJSZWFjdCIsInVzZU1lbW8iLCJ1c2VTdGF0ZSIsIlJlYWN0RUNoYXJ0cyIsImRheWpzIiwicyIsIkltYWdlUHJldmlld01vZGFsIiwiU3BvcmVQYW5lbCIsImxhdGVzdCIsInRyZW5kIiwiX3MiLCJwcmV2aWV3T3BlbiIsInNldFByZXZpZXdPcGVuIiwicmVjIiwiZGF0YSIsInRkIiwic3BvcmVJdGVtcyIsIk9iamVjdCIsImVudHJpZXMiLCJzcG9yZV9kYXRhIiwic29ydCIsImEiLCJiIiwic2xpY2UiLCJtYXhTcG9yZSIsIk1hdGgiLCJtYXgiLCJtYXAiLCJpIiwiY2hhcnRPcHQiLCJkYXRlcyIsImQiLCJkYXRlIiwic3BsaXQiLCJqb2luIiwidG90YWxzIiwidG90YWwiLCJiYWNrZ3JvdW5kQ29sb3IiLCJncmlkIiwidG9wIiwiYm90dG9tIiwibGVmdCIsInJpZ2h0IiwieEF4aXMiLCJ0eXBlIiwiYXhpc0xhYmVsIiwiY29sb3IiLCJmb250U2l6ZSIsImF4aXNMaW5lIiwic2hvdyIsInlBeGlzIiwibWluSW50ZXJ2YWwiLCJpbnRlcnZhbCIsInNwbGl0TGluZSIsImxpbmVTdHlsZSIsInNlcmllcyIsInNtb290aCIsInNob3dTeW1ib2wiLCJpdGVtU3R5bGUiLCJ3aWR0aCIsImFyZWFTdHlsZSIsIngiLCJ5IiwieDIiLCJ5MiIsImNvbG9yU3RvcHMiLCJvZmZzZXQiLCJwYW5lbFdyYXBwZXIiLCJtYWluUm93IiwibWV0cmljQ29sIiwidG90YWxDYXJkIiwibGFiZWwiLCJ2YWx1ZSIsInRvdGFsX2NvdW50IiwibGVuZ3RoIiwibGlzdENhcmQiLCJuYW1lIiwiY250IiwicGN0Iiwicm93IiwiaW5mbyIsIm4iLCJjIiwidHJhY2siLCJmaWxsIiwiaW1hZ2VDYXJkIiwiaW1nQm94IiwiaW1hZ2VfdXJsIiwicEltZyIsInBQbGFjZWhvbGRlciIsInNjYW4iLCJjaGFydEJveCIsImNoYXJ0SGVhZGVyIiwiY2hhcnQiLCJoZWlnaHQiLCJlbXB0eUNoYXJ0IiwiX2MiXSwiaWdub3JlTGlzdCI6W10sInNvdXJjZXMiOlsiU3BvcmVQYW5lbC5qc3giXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IFJlYWN0LCB7IHVzZU1lbW8sIHVzZVN0YXRlIH0gZnJvbSAncmVhY3QnXG5pbXBvcnQgUmVhY3RFQ2hhcnRzIGZyb20gJ2VjaGFydHMtZm9yLXJlYWN0J1xuaW1wb3J0IGRheWpzIGZyb20gJ2RheWpzJ1xuaW1wb3J0IHMgZnJvbSAnLi9TcG9yZVBhbmVsLm1vZHVsZS5jc3MnXG5pbXBvcnQgSW1hZ2VQcmV2aWV3TW9kYWwgZnJvbSAnLi9JbWFnZVByZXZpZXdNb2RhbC5qc3gnXG5cbmV4cG9ydCBkZWZhdWx0IGZ1bmN0aW9uIFNwb3JlUGFuZWwoeyBsYXRlc3QsIHRyZW5kIH0pIHtcbiAgY29uc3QgW3ByZXZpZXdPcGVuLCBzZXRQcmV2aWV3T3Blbl0gPSB1c2VTdGF0ZShmYWxzZSlcbiAgY29uc3QgcmVjID0gbGF0ZXN0Py5kYXRhIHx8IHt9XG4gIGNvbnN0IHRkICA9IHRyZW5kPy5kYXRhIHx8IFtdXG4gIFxyXG4gIGNvbnN0IHNwb3JlSXRlbXMgPSBPYmplY3QuZW50cmllcyhyZWMuc3BvcmVfZGF0YSB8fCB7fSlcclxuICAgIC5zb3J0KChhLGIpID0+IGJbMV0gLSBhWzFdKVxyXG4gICAgLnNsaWNlKDAsIDIpIC8vIFNob3cgZmV3ZXIgaXRlbXMgdG8gc2F2ZSBzcGFjZVxyXG4gIGNvbnN0IG1heFNwb3JlID0gTWF0aC5tYXgoLi4uc3BvcmVJdGVtcy5tYXAoaSA9PiBpWzFdKSwgMSlcclxuXHJcbiAgY29uc3QgY2hhcnRPcHQgPSB1c2VNZW1vKCgpID0+IHtcclxuICAgIGNvbnN0IGRhdGVzID0gdGQubWFwKGQgPT4gZC5kYXRlLnNwbGl0KCctJykuc2xpY2UoMSkuam9pbignLycpKVxyXG4gICAgY29uc3QgdG90YWxzID0gdGQubWFwKGQgPT4gZC50b3RhbClcclxuXHJcbiAgICByZXR1cm4ge1xyXG4gICAgICBiYWNrZ3JvdW5kQ29sb3I6ICd0cmFuc3BhcmVudCcsXHJcbiAgICAgIGdyaWQ6IHsgdG9wOiAxMCwgYm90dG9tOiAyMCwgbGVmdDogMjUsIHJpZ2h0OiA1IH0sXHJcbiAgICAgIHhBeGlzOiB7XHJcbiAgICAgICAgdHlwZTogJ2NhdGVnb3J5JywgXHJcbiAgICAgICAgZGF0YTogZGF0ZXMsXHJcbiAgICAgICAgYXhpc0xhYmVsOiB7IGNvbG9yOiAnIzY0NzQ4YicsIGZvbnRTaXplOiA4IH0sIFxyXG4gICAgICAgIGF4aXNMaW5lOiB7IHNob3c6IGZhbHNlIH1cclxuICAgICAgfSxcclxuICAgICAgeUF4aXM6IHsgXHJcbiAgICAgICAgdHlwZTogJ3ZhbHVlJywgXHJcbiAgICAgICAgbWluSW50ZXJ2YWw6IDEsXHJcbiAgICAgICAgaW50ZXJ2YWw6IDEsXHJcbiAgICAgICAgc3BsaXRMaW5lOiB7IGxpbmVTdHlsZTogeyBjb2xvcjogJ3JnYmEoMjU1LDI1NSwyNTUsMC4wMiknIH0gfSwgXHJcbiAgICAgICAgYXhpc0xhYmVsOiB7IFxyXG4gICAgICAgICAgY29sb3I6ICcjZDk0NmVmJywgXHJcbiAgICAgICAgICBmb250U2l6ZTogOFxyXG4gICAgICAgIH0gXHJcbiAgICAgIH0sXHJcbiAgICAgIHNlcmllczogW1xyXG4gICAgICAgIHsgXHJcbiAgICAgICAgICB0eXBlOiAnbGluZScsIFxyXG4gICAgICAgICAgc21vb3RoOiB0cnVlLCBcclxuICAgICAgICAgIHNob3dTeW1ib2w6IGZhbHNlLFxyXG4gICAgICAgICAgaXRlbVN0eWxlOiB7IGNvbG9yOiAnI2Q5NDZlZicgfSwgXHJcbiAgICAgICAgICBsaW5lU3R5bGU6IHsgd2lkdGg6IDIgfSxcclxuICAgICAgICAgIGFyZWFTdHlsZTogeyBcclxuICAgICAgICAgICAgY29sb3I6IHsgXHJcbiAgICAgICAgICAgICAgdHlwZTogJ2xpbmVhcicsIHg6IDAsIHk6IDAsIHgyOiAwLCB5MjogMSwgXHJcbiAgICAgICAgICAgICAgY29sb3JTdG9wczogW3sgb2Zmc2V0OiAwLCBjb2xvcjogJ3JnYmEoMjE3LCA3MCwgMjM5LCAwLjIpJyB9LCB7IG9mZnNldDogMSwgY29sb3I6ICd0cmFuc3BhcmVudCcgfV0gXHJcbiAgICAgICAgICAgIH0gXHJcbiAgICAgICAgICB9LFxyXG4gICAgICAgICAgZGF0YTogdG90YWxzIFxyXG4gICAgICAgIH1cclxuICAgICAgXVxyXG4gICAgfVxyXG4gIH0sIFt0ZF0pXHJcblxyXG4gIHJldHVybiAoXHJcbiAgICA8ZGl2IGNsYXNzTmFtZT17cy5wYW5lbFdyYXBwZXJ9PlxyXG4gICAgICA8ZGl2IGNsYXNzTmFtZT17cy5tYWluUm93fT5cclxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT17cy5tZXRyaWNDb2x9PlxyXG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9e3MudG90YWxDYXJkfT5cbiAgICAgICAgICAgIDxkaXY+XG4gICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPXtzLmxhYmVsfT7ku4rml6XmgLvph488L2Rpdj5cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9e3MudmFsdWV9PntyZWMudG90YWxfY291bnQgPz8gJzAnfTwvZGl2PlxuICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgIFxyXG4gICAgICAgICAge3Nwb3JlSXRlbXMubGVuZ3RoID4gMCAmJiAoXHJcbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPXtzLmxpc3RDYXJkfT5cclxuICAgICAgICAgICAgICB7c3BvcmVJdGVtcy5tYXAoKFtuYW1lLCBjbnRdKSA9PiB7XHJcbiAgICAgICAgICAgICAgICBjb25zdCBwY3QgPSAoY250IC8gbWF4U3BvcmUpICogMTAwXHJcbiAgICAgICAgICAgICAgICByZXR1cm4gKFxyXG4gICAgICAgICAgICAgICAgICA8ZGl2IGtleT17bmFtZX0gY2xhc3NOYW1lPXtzLnJvd30+XHJcbiAgICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9e3MuaW5mb30+PHNwYW4gY2xhc3NOYW1lPXtzLm59PntuYW1lfTwvc3Bhbj48c3BhbiBjbGFzc05hbWU9e3MuY30+e2NudH08L3NwYW4+PC9kaXY+XHJcbiAgICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9e3MudHJhY2t9PjxkaXYgY2xhc3NOYW1lPXtzLmZpbGx9IHN0eWxlPXt7IHdpZHRoOiBgJHtwY3R9JWAgfX0gLz48L2Rpdj5cclxuICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICApXHJcbiAgICAgICAgICAgICAgfSl9XHJcbiAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgKX1cclxuICAgICAgICA8L2Rpdj5cclxuXHJcbiAgICAgICAgPGRpdiBjbGFzc05hbWU9e3MuaW1hZ2VDYXJkfT5cbiAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9e3MuaW1nQm94fT5cbiAgICAgICAgICAgICB7cmVjLmltYWdlX3VybCA/IChcbiAgICAgICAgICAgICAgIDxpbWdcbiAgICAgICAgICAgICAgICAgc3JjPXtyZWMuaW1hZ2VfdXJsfVxuICAgICAgICAgICAgICAgICBhbHQ9XCJTcG9yZVwiXG4gICAgICAgICAgICAgICAgIGNsYXNzTmFtZT17cy5wSW1nfVxuICAgICAgICAgICAgICAgICBvbkNsaWNrPXsoKSA9PiBzZXRQcmV2aWV3T3Blbih0cnVlKX1cbiAgICAgICAgICAgICAgIC8+XG4gICAgICAgICAgICAgKSA6IChcbiAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPXtzLnBQbGFjZWhvbGRlcn0+XG4gICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPXtzLnNjYW59IC8+XG4gICAgICAgICAgICAgICAgIDxzcGFuPuW9seWDj+aegeS9juW7tui/n+S8oOi+k+S4rS4uLjwvc3Bhbj5cclxuICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICApfVxyXG4gICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgIDwvZGl2PlxyXG4gICAgICA8L2Rpdj5cclxuXHJcbiAgICAgIDxkaXYgY2xhc3NOYW1lPXtzLmNoYXJ0Qm94fT5cbiAgICAgICAgIDxkaXYgY2xhc3NOYW1lPXtzLmNoYXJ0SGVhZGVyfT5cbiAgICAgICAgICAg5rWT5bqm6LaL5Yq/XG4gICAgICAgICA8L2Rpdj5cbiAgICAgICAgIDxkaXYgY2xhc3NOYW1lPXtzLmNoYXJ0fT5cclxuICAgICAgICAgICB7dGQubGVuZ3RoID4gMCA/IChcclxuICAgICAgICAgICAgIDxSZWFjdEVDaGFydHMgb3B0aW9uPXtjaGFydE9wdH0gc3R5bGU9e3toZWlnaHQ6ICcxMDAlJ319IC8+XHJcbiAgICAgICAgICAgKSA6IChcclxuICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPXtzLmVtcHR5Q2hhcnR9PuaXoOi2i+WKv+aVsOaNrjwvZGl2PlxyXG4gICAgICAgICAgICl9XHJcbiAgICAgICAgIDwvZGl2PlxuICAgICAgPC9kaXY+XG5cbiAgICAgIDxJbWFnZVByZXZpZXdNb2RhbFxuICAgICAgICBvcGVuPXtwcmV2aWV3T3Blbn1cbiAgICAgICAgc3JjPXtyZWMuaW1hZ2VfdXJsfVxuICAgICAgICBhbHQ9XCLlraLlrZDlm77niYfpooTop4hcIlxuICAgICAgICBvbkNsb3NlPXsoKSA9PiBzZXRQcmV2aWV3T3BlbihmYWxzZSl9XG4gICAgICAvPlxuICAgIDwvZGl2PlxuICApXG59XG4iXSwiZmlsZSI6IkQ6L0FfQ09ERUJBU0Uvc2FueWFfZWNvX21vbml0b3IvZnJvbnRlbmQvc3JjL2NvbXBvbmVudHMvU3BvcmVQYW5lbC5qc3gifQ==
