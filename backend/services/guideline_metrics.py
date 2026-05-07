@@ -11,6 +11,7 @@ from config import settings
 from models import InsectRecord, RunoffRecord, SporeRecord, WaterQualityRecord
 from services.weather_support import get_weather_support
 from services.warning_rules import build_warning_analysis, derive_pest_risk_level
+from services.water_quality_support import get_water_quality_records, resolve_water_quality_codes
 
 
 RUNOFF_DEVICE_NAMES = {
@@ -77,15 +78,11 @@ async def _build_water_quality_metrics(
     *,
     recent_days: int,
 ) -> dict[str, Any]:
-    water_code = settings.WATER_QUALITY_CODE.strip() or "16133028"
+    configured_water_code = settings.WATER_QUALITY_CODE.strip() or "16133028"
+    water_codes = await resolve_water_quality_codes(db, preferred_code=configured_water_code)
 
-    first_result = await db.execute(
-        select(WaterQualityRecord)
-        .where(WaterQualityRecord.device_code == water_code)
-        .order_by(asc(WaterQualityRecord.collection_time))
-        .limit(1)
-    )
-    first_record = first_result.scalar_one_or_none()
+    baseline_candidates = await get_water_quality_records(db, codes=water_codes)
+    first_record = baseline_candidates[0] if baseline_candidates else None
     if not first_record:
         return {
             "available": False,
@@ -100,30 +97,25 @@ async def _build_water_quality_metrics(
     )
     baseline_end = baseline_start + timedelta(days=baseline_days - 1)
     recent_start = now - timedelta(days=recent_days - 1)
-
-    baseline_result = await db.execute(
-        select(WaterQualityRecord).where(
-            WaterQualityRecord.device_code == water_code,
-            WaterQualityRecord.collection_time >= baseline_start,
-            WaterQualityRecord.collection_time <= baseline_end,
-        )
-    )
-    recent_result = await db.execute(
-        select(WaterQualityRecord).where(
-            WaterQualityRecord.device_code == water_code,
-            WaterQualityRecord.collection_time >= recent_start,
-        )
-    )
-    latest_result = await db.execute(
-        select(WaterQualityRecord)
-        .where(WaterQualityRecord.device_code == water_code)
-        .order_by(desc(WaterQualityRecord.collection_time))
-        .limit(1)
+    water_codes = await resolve_water_quality_codes(
+        db,
+        preferred_code=configured_water_code,
+        start_dt=recent_start,
     )
 
-    baseline_records = baseline_result.scalars().all()
-    recent_records = recent_result.scalars().all()
-    latest_record = latest_result.scalar_one_or_none()
+    baseline_records = await get_water_quality_records(
+        db,
+        start_dt=baseline_start,
+        end_dt=baseline_end,
+        codes=water_codes,
+    )
+    recent_records = await get_water_quality_records(
+        db,
+        start_dt=recent_start,
+        codes=water_codes,
+    )
+    latest_records = await get_water_quality_records(db, codes=water_codes)
+    latest_record = latest_records[-1] if latest_records else None
 
     metrics: list[dict[str, Any]] = []
     reduction_values: list[float] = []
@@ -158,7 +150,8 @@ async def _build_water_quality_metrics(
 
     return {
         "available": True,
-        "device_code": water_code,
+        "device_code": latest_record.device_code if latest_record else first_record.device_code,
+        "configured_device_code": configured_water_code,
         "baseline_period": {
             "start": baseline_start.date().isoformat(),
             "end": baseline_end.date().isoformat(),
@@ -323,11 +316,16 @@ async def _build_pest_management_metrics(
 
     insect_daily: dict[str, int] = defaultdict(int)
     insect_species: dict[str, int] = defaultdict(int)
+    recent_week_species: dict[str, int] = defaultdict(int)
+    recent_week_start = datetime.now() - timedelta(days=6)
     for record in insect_records:
         day = record.collection_time.strftime("%Y-%m-%d")
         insect_daily[day] += record.total_count
         for name, count in (record.species_data or {}).items():
-            insect_species[name] += int(count)
+            numeric_count = int(count)
+            insect_species[name] += numeric_count
+            if record.collection_time >= recent_week_start:
+                recent_week_species[name] += numeric_count
 
     spore_daily: dict[str, int] = defaultdict(int)
     for record in spore_records:
@@ -346,6 +344,14 @@ async def _build_pest_management_metrics(
     top_species_count = 0
     if insect_species:
         top_species_name, top_species_count = max(insect_species.items(), key=lambda item: item[1])
+
+    recent_week_top_species_name = "未识别"
+    recent_week_top_species_count = 0
+    if recent_week_species:
+        recent_week_top_species_name, recent_week_top_species_count = max(
+            recent_week_species.items(),
+            key=lambda item: item[1],
+        )
 
     total_insects = sum(insect_daily.values())
     total_spores = sum(spore_daily.values())
@@ -387,6 +393,10 @@ async def _build_pest_management_metrics(
             "name": top_species_name,
             "count": top_species_count,
             "share": dominant_species_share,
+        },
+        "recent_week_top_species": {
+            "name": recent_week_top_species_name,
+            "count": recent_week_top_species_count,
         },
         "insect_peak": {
             "date": peak_insect_day,

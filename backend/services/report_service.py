@@ -31,6 +31,7 @@ from models import (
 )
 from services.guideline_metrics import build_guideline_metrics
 from services.report_figures import build_figure_manifest
+from services.water_quality_support import get_water_quality_records, resolve_water_quality_codes
 from time_utils import cn_now_str
 
 
@@ -191,6 +192,231 @@ def build_history_comparison_summary(
             "degraded_count": degraded_count,
         },
     }
+
+
+def _display_value(value: Any, unit: str = "", fallback: str = "—") -> str:
+    if value in (None, ""):
+        return fallback
+    return f"{value}{unit}"
+
+
+def _daily_peak(rows: list[dict[str, Any]], key: str) -> dict[str, Any]:
+    clean = [
+        {
+            "date": item.get("date"),
+            "value": item.get(key) if item.get(key) is not None else item.get("count"),
+        }
+        for item in rows or []
+    ]
+    clean = [item for item in clean if item["date"] and item["value"] is not None]
+    if not clean:
+        return {"date": "—", "value": 0, "active_days": 0, "trend": "暂无趋势"}
+    peak = max(clean, key=lambda item: item["value"])
+    active_days = len([item for item in clean if (item.get("value") or 0) > 0])
+    first = clean[0]["value"] or 0
+    last = clean[-1]["value"] or 0
+    if last > first:
+        trend = "后段高于前段"
+    elif last < first:
+        trend = "后段低于前段"
+    else:
+        trend = "整体平稳"
+    return {
+        "date": peak["date"],
+        "value": peak["value"],
+        "active_days": active_days,
+        "trend": trend,
+    }
+
+
+def build_special_analysis_sections(summary: dict[str, Any]) -> list[dict[str, Any]]:
+    """Build fixed five-part deep analysis content for HTML/DOCX reports."""
+    ins = summary.get("insect", {}) or {}
+    sp = summary.get("spore", {}) or {}
+    rn = summary.get("rain", {}) or {}
+    ro = summary.get("runoff", {}) or {}
+    wq = summary.get("water_quality", {}) or {}
+    gm = summary.get("guideline_metrics", {}) or {}
+    history = (summary.get("history_comparison", {}) or {}).get("modules", {}) or {}
+    water_history = (summary.get("history_comparison", {}) or {}).get("water_quality", {}) or {}
+    runoff_guideline = gm.get("runoff_erosion", {}) or {}
+    water_guideline = gm.get("water_quality", {}) or {}
+    pest_guideline = gm.get("pest_management", {}) or {}
+    warning_analysis = gm.get("warning_analysis", {}) or {}
+
+    insect_peak = _daily_peak(ins.get("daily") or [], "count")
+    spore_peak = _daily_peak(sp.get("daily") or [], "count")
+    rain_peak = _daily_peak(rn.get("daily") or [], "rainfall")
+    top_species = (ins.get("top_species") or [["暂无", 0]])[0]
+    warning_items = {
+        item.get("key"): item
+        for item in (warning_analysis.get("indicator_warnings") or [])
+    }
+
+    runoff_devices = ro.get("by_device") or {}
+    device_rows = list(runoff_devices.values())
+    max_sand = max(
+        device_rows,
+        key=lambda item: item.get("avg_sand_content") or 0,
+        default={},
+    )
+    max_runoff = max(
+        device_rows,
+        key=lambda item: item.get("total_runoff") or 0,
+        default={},
+    )
+
+    water_metrics = water_guideline.get("metrics") or []
+    weakest_water = max(
+        water_metrics,
+        key=lambda item: item.get("latest_value") or item.get("recent_avg") or 0,
+        default={},
+    )
+
+    insect_history = history.get("insect") or {}
+    spore_history = history.get("spore") or {}
+    rain_history = history.get("rain") or {}
+    runoff_history = history.get("runoff") or {}
+
+    return [
+        {
+            "title": "虫情深度专项分析",
+            "badge": pest_guideline.get("risk_level", "风险研判"),
+            "facts": [
+                f"累计捕获 {_display_value(ins.get('total_count'), '只', '0只')}",
+                f"记录 {_display_value(ins.get('records_count'), '条', '0条')}",
+                f"优势虫种 {top_species[0]}",
+                f"峰值 {insect_peak['date']} / {_display_value(insect_peak['value'], '只')}",
+            ],
+            "paragraphs": [
+                (
+                    f"本期虫情监测形成 {ins.get('records_count', 0)} 条有效记录，累计捕获 "
+                    f"{ins.get('total_count', 0)} 只。优势虫种为 {top_species[0]}，数量为 {top_species[1] if len(top_species) > 1 else 0} 只；"
+                    f"日尺度峰值出现在 {insect_peak['date']}，单日捕获 {insect_peak['value']} 只，趋势表现为{insect_peak['trend']}。"
+                ),
+                (
+                    f"历史同口径对比显示，虫情捕获较上一周期为{insect_history.get('trend', '暂无对比')}，"
+                    f"变化率为 {_display_value(insect_history.get('change_rate'), '%')}。该项应作为生物多样性变化与害虫风险的双重信号，"
+                    "既要关注数量异常升高，也要关注高危害虫种在短时段内连续出现。"
+                ),
+            ],
+            "actions": [
+                "将优势虫种纳入重点巡查清单，复核诱捕点周边作物叶片、嫩梢和果实危害情况。",
+                "当虫情峰值与高温高湿天气叠加时，提高灯诱、性诱和田间样方调查频次。",
+                "处置上优先采用物理诱控、生物防治和低毒精准药剂，避免无差别大范围用药。",
+            ],
+        },
+        {
+            "title": "孢子深度专项分析",
+            "badge": "病害前置信号",
+            "facts": [
+                f"累计捕获 {_display_value(sp.get('total_count'), '个', '0个')}",
+                f"记录 {_display_value(sp.get('records_count'), '条', '0条')}",
+                f"有图 {_display_value(len(sp.get('capture_images') or []), '张', '0张')}",
+                f"峰值 {spore_peak['date']} / {_display_value(spore_peak['value'], '个')}",
+            ],
+            "paragraphs": [
+                (
+                    f"本期孢子监测累计捕获 {sp.get('total_count', 0)} 个，记录数为 {sp.get('records_count', 0)} 条，"
+                    f"活跃天数为 {spore_peak['active_days']} 天。孢子峰值出现在 {spore_peak['date']}，"
+                    f"单日捕获 {spore_peak['value']} 个，趋势表现为{spore_peak['trend']}。"
+                ),
+                (
+                    f"孢子与林间湿度、降雨后叶面结露和通风透光条件密切相关。与上一周期相比，"
+                    f"孢子捕获为{spore_history.get('trend', '暂无对比')}，变化率为 {_display_value(spore_history.get('change_rate'), '%')}。"
+                    "该指标更适合作为病害风险的前置信号，应与降雨、湿度和田间病斑巡查联动判断。"
+                ),
+            ],
+            "actions": [
+                "雨后和清晨优先巡查郁闭度高、通风差、湿度保持时间长的林下区域。",
+                "若孢子捕获连续升高，应同步检查叶片病斑、果实病斑和病残体积累情况。",
+                "防控上以通风降湿、清理病残体和保护性预防措施为主，避免等到病斑扩散后再处理。",
+            ],
+        },
+        {
+            "title": "雨情深度专项分析",
+            "badge": warning_items.get("rainfall_peak", {}).get("level", "雨量研判"),
+            "facts": [
+                f"累计降雨 {_display_value(rn.get('total_rainfall'), 'mm', '0mm')}",
+                f"记录 {_display_value(rn.get('records_count'), '条', '0条')}",
+                f"雨日 {_display_value(rain_peak['active_days'], '天')}",
+                f"峰值 {rain_peak['date']} / {_display_value(rain_peak['value'], 'mm')}",
+            ],
+            "paragraphs": [
+                (
+                    f"本期雨量监测累计降雨 {rn.get('total_rainfall', 0)} mm，形成 {rn.get('records_count', 0)} 条记录，"
+                    f"有降雨记录的天数为 {rain_peak['active_days']} 天。日尺度峰值出现在 {rain_peak['date']}，"
+                    f"峰值雨量为 {rain_peak['value']} mm，趋势表现为{rain_peak['trend']}。"
+                ),
+                (
+                    f"历史同口径对比显示，累计雨量较上一周期为{rain_history.get('trend', '暂无对比')}，"
+                    f"变化率为 {_display_value(rain_history.get('change_rate'), '%')}。雨情是径流、含沙量和面源污染迁移的触发因子，"
+                    "强降雨后应重点观察坡面裸露区、排水出口和低洼汇流点。"
+                ),
+            ],
+            "actions": [
+                "雨前检查雨量计、径流沟渠、采样容器和通信供电，保证关键降雨过程数据连续。",
+                "单日雨量超过预警阈值时，联动查看径流量、流速、含沙量和水质指标。",
+                "雨后优先安排低洼地块、坡面裸露区域和排水出口巡查，记录冲刷与淤积点位。",
+            ],
+        },
+        {
+            "title": "水土流失与径流深度专项分析",
+            "badge": "径流含沙联动",
+            "facts": [
+                f"累计径流 {_display_value(ro.get('total_runoff'), 'm3', '0m3')}",
+                f"记录 {_display_value(ro.get('records_count'), '条', '0条')}",
+                f"监测点 {_display_value(ro.get('device_count'), '个', '0个')}",
+                f"减蚀率 {_display_value(runoff_guideline.get('estimated_reduction_rate'), '%')}",
+            ],
+            "paragraphs": [
+                (
+                    f"本期地表径流监测覆盖 {ro.get('device_count', 0)} 个监测点，形成 {ro.get('records_count', 0)} 条记录，"
+                    f"累计径流量为 {ro.get('total_runoff', 0)} m3。径流量最高的监测点为 {max_runoff.get('name', '—')}，"
+                    f"累计径流量为 {_display_value(max_runoff.get('total_runoff'), 'm3')}；平均含沙量较高的监测点为 {max_sand.get('name', '—')}，"
+                    f"平均含沙量为 {_display_value(max_sand.get('avg_sand_content'))}。"
+                ),
+                (
+                    f"历史同口径对比显示，累计径流量较上一周期为{runoff_history.get('trend', '暂无对比')}，"
+                    f"变化率为 {_display_value(runoff_history.get('change_rate'), '%')}。监测型估算减蚀率为 "
+                    f"{_display_value(runoff_guideline.get('estimated_reduction_rate'), '%')}，可用于判断近自然化改造对坡面拦截、地表覆盖和水源涵养的阶段性效果。"
+                ),
+            ],
+            "actions": [
+                "对径流量和含沙量同步偏高的监测点开展现场复核，重点查看裸露坡面、汇流沟和排水出口。",
+                "在强降雨后增加水土保持设施巡查频次，记录冲刷沟、淤积带和植被覆盖缺口。",
+                "对比次生林参照点与经营林地监测点差异，持续优化覆盖层、缓冲带和排水组织。",
+            ],
+        },
+        {
+            "title": "面源水质污染深度专项分析",
+            "badge": _display_value(water_guideline.get("composite_reduction_rate"), "%", "水质研判"),
+            "facts": [
+                f"记录 {_display_value(wq.get('records_count'), '条', '0条')}",
+                f"氨氮 {_display_value(wq.get('avg_nh3_n'), 'mg/L')}",
+                f"总磷 {_display_value(wq.get('avg_tp'), 'mg/L')}",
+                f"总氮 {_display_value(wq.get('avg_tn'), 'mg/L')}",
+            ],
+            "paragraphs": [
+                (
+                    f"本期水质监测形成 {wq.get('records_count', 0)} 条记录，平均氨氮为 {_display_value(wq.get('avg_nh3_n'), 'mg/L')}，"
+                    f"平均总磷为 {_display_value(wq.get('avg_tp'), 'mg/L')}，平均高锰酸盐指数为 {_display_value(wq.get('avg_permanganate'), 'mg/L')}，"
+                    f"平均总氮为 {_display_value(wq.get('avg_tn'), 'mg/L')}。当前相对突出的指标为 {weakest_water.get('label', '—')}，"
+                    f"最新值为 {_display_value(weakest_water.get('latest_value'), weakest_water.get('unit', ''))}。"
+                ),
+                (
+                    f"农业面源污染综合削减率为 {_display_value(water_guideline.get('composite_reduction_rate'), '%')}。"
+                    f"水质关键指标中，较上一周期改善 {water_history.get('improved_count', 0)} 项、升高 {water_history.get('degraded_count', 0)} 项。"
+                    "该部分应与降雨和径流过程联合解释：降雨驱动径流形成，径流携带氮磷和有机污染物进入汇水通道，生态缓冲带和林下覆盖则决定污染拦截效率。"
+                ),
+            ],
+            "actions": [
+                "强降雨后优先复核氨氮、总磷、总氮和高锰酸盐指数，关注短时冲刷造成的浓度波动。",
+                "对水质偏高时段追溯对应降雨、径流和含沙量过程，判断是否存在面源输入集中释放。",
+                "持续优化农田排水口、生态沟渠和林缘缓冲带，提升氮磷拦截和颗粒物沉降能力。",
+            ],
+        },
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -454,15 +680,19 @@ class ReportService:
         start_dt: datetime,
         end_dt: datetime,
     ) -> dict[str, Any]:
-        water_code = settings.WATER_QUALITY_CODE.strip() or "16133028"
-        result = await db.execute(
-            select(WaterQualityRecord).where(
-                WaterQualityRecord.device_code == water_code,
-                WaterQualityRecord.collection_time >= start_dt,
-                WaterQualityRecord.collection_time <= end_dt,
-            )
+        configured_water_code = settings.WATER_QUALITY_CODE.strip() or "16133028"
+        water_codes = await resolve_water_quality_codes(
+            db,
+            preferred_code=configured_water_code,
+            start_dt=start_dt,
+            end_dt=end_dt,
         )
-        records = result.scalars().all()
+        records = await get_water_quality_records(
+            db,
+            start_dt=start_dt,
+            end_dt=end_dt,
+            codes=water_codes,
+        )
         if not records:
             return {"records_count": 0}
 
@@ -473,6 +703,8 @@ class ReportService:
 
         return {
             "records_count": len(records),
+            "device_code": records[-1].device_code,
+            "configured_device_code": configured_water_code,
             "avg_nh3_n": _safe_avg(nh3s),
             "avg_tp": _safe_avg(tps),
             "avg_tn": _safe_avg(tns),
@@ -783,7 +1015,7 @@ class ReportService:
         water_rows = [
             ("水质记录条数", wq["records_count"], "平均氨氮", wq["avg_nh3_n"]),
             ("平均总磷", wq["avg_tp"], "平均高猛酸盐", wq["avg_permanganate"]),
-            ("平均总氮", wq["avg_tn"], "监测设备", settings.WATER_QUALITY_CODE),
+            ("平均总氮", wq["avg_tn"], "监测设备", wq.get("device_code") or settings.WATER_QUALITY_CODE),
         ]
         for label_a, val_a, label_b, val_b in water_rows:
             ws.cell(row=row, column=1, value=label_a).font = self._label_font()
@@ -1087,6 +1319,26 @@ class ReportService:
             ) + """
 </div>"""
 
+        special_sections = build_special_analysis_sections(summary_dict)
+        special_cards_html = "".join(
+            f"""
+  <article class="special-card">
+    <div class="special-head">
+      <h3>{item['title']}</h3>
+      <span>{item.get('badge') or '专项研判'}</span>
+    </div>
+    <div class="special-facts">
+      {''.join(f'<b>{fact}</b>' for fact in item.get('facts', []))}
+    </div>
+    {''.join(f'<p>{paragraph}</p>' for paragraph in item.get('paragraphs', []))}
+    <div class="special-actions">
+      <div class="special-actions-title">管理建议</div>
+      {''.join(f'<em>{action}</em>' for action in item.get('actions', []))}
+    </div>
+  </article>"""
+            for item in special_sections
+        )
+
         weather_support_html = ""
         if weather.get("enabled") and weather.get("status") == "ok":
             current = weather.get("current", {}) or {}
@@ -1332,7 +1584,18 @@ class ReportService:
   {adaptive_management_html}
 </section>"""
 
-        # Section 6: AI
+        sec_special = f"""
+<section class="report-section special-section" id="sec-special">
+  <h2 class="sec-title"><span class="sec-num">六</span>五类深度专项分析</h2>
+  <div class="special-intro">
+    围绕虫情、孢子、雨情、水土流失与径流、面源水质污染五个专项方向，结合本期监测统计、历史同口径对比和管理阈值进行分项研判，形成可直接用于巡查、预警和处置的专项结论。
+  </div>
+  <div class="special-grid">
+    {special_cards_html}
+  </div>
+</section>"""
+
+        # Section 7: AI
         if ai_html:
             ai_body = f'<div class="ai-body">{ai_html}</div>'
         else:
@@ -1340,7 +1603,7 @@ class ReportService:
 
         sec_ai = f"""
 <section class="report-section ai-section" id="sec-ai">
-  <h2 class="sec-title"><span class="sec-num">六</span>AI 综合分析报告
+  <h2 class="sec-title"><span class="sec-num">七</span>AI 综合分析报告
     <span class="ai-badge">DeepSeek</span>
   </h2>
   {ai_body}
@@ -1912,6 +2175,101 @@ body {{
 .data-table tr:hover td {{ background: #EBF5FB; }}
 
 /* ============================================================
+   五类深度专项分析
+   ============================================================ */
+.special-section .sec-title {{
+  background: linear-gradient(90deg, #14532D, #15803D);
+}}
+.special-intro {{
+  margin: 20px 24px 0;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid #D8EFE0;
+  background: #F6FCF8;
+  color: #315545;
+  font-size: 13px;
+  line-height: 1.9;
+}}
+.special-grid {{
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  padding: 20px 24px 24px;
+}}
+.special-card {{
+  border: 1px solid #DDEBE3;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #FFFFFF 0%, #FAFDFB 100%);
+  padding: 18px;
+  box-shadow: 0 8px 22px rgba(20, 83, 45, 0.06);
+}}
+.special-head {{
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}}
+.special-head h3 {{
+  font-size: 16px;
+  color: #174D32;
+  line-height: 1.35;
+}}
+.special-head span {{
+  flex-shrink: 0;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #E8F7EE;
+  color: #166534;
+  border: 1px solid #BFE7CC;
+  font-size: 12px;
+  font-weight: 800;
+}}
+.special-facts {{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}}
+.special-facts b {{
+  display: block;
+  border-radius: 9px;
+  border: 1px solid #E2ECF3;
+  background: #F8FBFE;
+  color: #1F4E79;
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 8px 10px;
+}}
+.special-card p {{
+  margin: 8px 0;
+  color: #344E45;
+  font-size: 13.5px;
+  line-height: 1.95;
+  text-align: justify;
+}}
+.special-actions {{
+  margin-top: 12px;
+  display: grid;
+  gap: 8px;
+}}
+.special-actions-title {{
+  font-size: 13px;
+  font-weight: 800;
+  color: #14532D;
+}}
+.special-actions em {{
+  display: block;
+  border-left: 3px solid #22C55E;
+  background: #F4FBF6;
+  color: #355B48;
+  font-size: 13px;
+  line-height: 1.8;
+  font-style: normal;
+  padding: 8px 10px;
+}}
+
+/* ============================================================
    AI 分析区
    ============================================================ */
 .ai-section .sec-title {{
@@ -2118,7 +2476,8 @@ body {{
     <li><a href="#sec-water-quality"><span class="toc-num">三、</span>水质监测</a></li>
     <li><a href="#sec-insect"><span class="toc-num">四、</span>虫情测报监测</a></li>
     <li><a href="#sec-spore"><span class="toc-num">五、</span>孢子捕捉监测</a></li>
-    <li><a href="#sec-ai"><span class="toc-num">六、</span>AI 综合分析报告</a></li>
+    <li><a href="#sec-special"><span class="toc-num">六、</span>五类深度专项分析</a></li>
+    <li><a href="#sec-ai"><span class="toc-num">七、</span>AI 综合分析报告</a></li>
   </ul>
 </div>
 
@@ -2160,6 +2519,7 @@ body {{
   {sec_water_quality}
   {sec_insect}
   {sec_spore}
+  {sec_special}
   {sec_ai}
 
 </div><!-- /report-body -->

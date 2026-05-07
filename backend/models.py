@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, Index, Integer, JSON, String, Text
+from sqlalchemy import Boolean, DateTime, Float, Index, Integer, JSON, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from database import Base
@@ -159,3 +159,9 @@ class GeneratedReport(Base):
     html_path: Mapped[str | None] = mapped_column(String(255), nullable=True)
     docx_path: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=cn_now_naive, index=True)
+    status: Mapped[str] = mapped_column(String(24), default="completed", index=True)
+    review_status: Mapped[str] = mapped_column(String(24), default="pending", index=True)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    visible_to_leader: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    task_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)

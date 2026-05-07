@@ -62,6 +62,13 @@ export default function Header({ onTriggerCollect, activeTab, onTabChange }) {
           </button>
           <button
             className={s.btn}
+            style={activeTab === 'special' ? { background: 'rgba(0,212,255,0.25)', borderColor: 'rgba(0,212,255,0.7)' } : {}}
+            onClick={() => onTabChange('special')}
+          >
+            专项分析
+          </button>
+          <button
+            className={s.btn}
             style={activeTab === 'reports' ? { background: 'rgba(0,212,255,0.25)', borderColor: 'rgba(0,212,255,0.7)' } : {}}
             onClick={() => onTabChange('reports')}
           >

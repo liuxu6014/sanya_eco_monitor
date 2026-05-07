@@ -247,14 +247,14 @@ export default function DeepInsightPanel({ ecoIndex, guidelineMetrics }) {
       meta: '不足30天按已有天数',
     },
     {
-      label: '优势虫种',
-      value: pest.top_species?.name || '--',
-      meta: `风险等级 ${valueText(pest.risk_level)}`,
+      label: '近7天优势虫种',
+      value: pest.recent_week_top_species?.name || pest.top_species?.name || '--',
+      meta: `捕获 ${valueText(pest.recent_week_top_species?.count ?? pest.top_species?.count, '只')}`,
     },
     {
-      label: '近7天降水',
-      value: valueText(weather.history_summary?.total_precip, ' mm'),
-      meta: rangeText(weather.history_range?.start, weather.history_range?.end),
+      label: '虫情活跃天数',
+      value: valueText(pest.active_insect_days, '天'),
+      meta: `统计周期 ${valueText(pest.period_days, '天')}`,
     },
   ]
 

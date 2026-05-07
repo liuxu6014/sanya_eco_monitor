@@ -100,6 +100,7 @@ export default function InsectPanel({ latest, trend, species }) {
         open={previewOpen}
         src={rec?.image_url}
         alt="虫情图片预览"
+        capturedAt={rec?.image_collection_time || rec?.collection_time}
         onClose={() => setPreviewOpen(false)}
       />
     </div>

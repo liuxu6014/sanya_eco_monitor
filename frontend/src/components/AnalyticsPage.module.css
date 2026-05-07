@@ -116,7 +116,7 @@
 
 .cardSummary {
   grid-column: 1 / -1;
-  min-height: 860px;
+  min-height: clamp(380px, 34vh, 470px);
 }
 
 .cardHalf {
@@ -189,14 +189,6 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-}
-
-.cardEyebrow {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  color: #7fb9dc;
-  text-transform: uppercase;
 }
 
 .cardTitle {

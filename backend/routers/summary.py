@@ -21,6 +21,10 @@ from models import (
     WaterQualityRecord,
 )
 from services.weather_support import get_weather_support
+from services.water_quality_support import (
+    get_latest_water_quality_record,
+    resolve_water_quality_codes,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -232,9 +236,11 @@ async def get_overview(db: AsyncSession = Depends(get_db)):
             "status": device_statuses.get(f"runoff_{code}", "offline"),
         }
 
-    water_code = settings.WATER_QUALITY_CODE.strip() or "16133028"
-    water_record = await _get_latest_by_code(db, WaterQualityRecord, water_code)
+    configured_water_code = settings.WATER_QUALITY_CODE.strip() or "16133028"
+    active_water_codes = await resolve_water_quality_codes(db, preferred_code=configured_water_code)
+    water_record = await get_latest_water_quality_record(db, active_water_codes)
     water_quality = {
+        "device_code": water_record.device_code,
         "nh4n": water_record.ammonia_nitrogen,
         "tp": water_record.total_phosphorus,
         "tn": water_record.total_nitrogen,
@@ -309,8 +315,12 @@ async def get_device_status(db: AsyncSession = Depends(get_db)):
 
     insect_time = await last_time(InsectRecord)
     spore_time = await last_time(SporeRecord)
-    water_code = settings.WATER_QUALITY_CODE.strip() or "16133028"
-    water_time = await last_time(WaterQualityRecord, water_code)
+    configured_water_code = settings.WATER_QUALITY_CODE.strip() or "16133028"
+    active_water_codes = await resolve_water_quality_codes(db, preferred_code=configured_water_code)
+    water_time = None
+    if active_water_codes:
+        water_latest = await get_latest_water_quality_record(db, active_water_codes)
+        water_time = water_latest.collection_time if water_latest else None
 
     devices = [
         {

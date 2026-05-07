@@ -46,7 +46,12 @@ function WarningEyebrow({ text }) {
 export default function AnalyticsSummaryBoard({ guidelineMetrics }) {
   const payload = guidelineMetrics?.data || guidelineMetrics || {}
   const warningAnalysis = payload.warning_analysis || {}
-  const warnings = warningAnalysis.indicator_warnings || []
+  const warningsByKey = new Map((warningAnalysis.indicator_warnings || []).map((item) => [item.key, item]))
+  const warnings = [
+    warningsByKey.get('insect_peak') || createMissingWarning('insect_peak', '虫情单日峰值'),
+    warningsByKey.get('sand_content') || createMissingWarning('sand_content', '含沙监测风险'),
+    warningsByKey.get('rainfall_peak') || createMissingWarning('rainfall_peak', '单日降水强度'),
+  ]
   const warningKeySignature = warnings.map((item) => item.key).join('|')
 
   const [activeWarningIndex, setActiveWarningIndex] = useState(0)
@@ -130,4 +135,20 @@ export default function AnalyticsSummaryBoard({ guidelineMetrics }) {
       ) : null}
     </div>
   )
+}
+
+function createMissingWarning(key, title) {
+  return {
+    key,
+    title,
+    metric_label: '暂无有效监测数据',
+    level: '暂无数据',
+    level_code: 'unavailable',
+    score: 0,
+    display_value: '--',
+    band: '--',
+    rule_text: '',
+    summary: `${title}当前缺少有效数据。`,
+    action: '继续补齐监测数据后再开展同口径判定。',
+  }
 }

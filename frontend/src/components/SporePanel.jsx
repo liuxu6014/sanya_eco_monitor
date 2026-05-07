@@ -60,15 +60,8 @@ export default function SporePanel({ latest, trend }) {
   return (
     <div className={s.panelWrapper}>
       <div className={s.mainRow}>
-        <div className={s.metricCol}>
-          <div className={s.totalCard}>
-            <div>
-              <div className={s.label}>今日总量</div>
-            </div>
-            <div className={s.value}>{rec.total_count ?? '0'}</div>
-          </div>
-          
-          {sporeItems.length > 0 && (
+        {sporeItems.length > 0 && (
+          <div className={s.metricCol}>
             <div className={s.listCard}>
               {sporeItems.map(([name, cnt]) => {
                 const pct = (cnt / maxSpore) * 100
@@ -80,8 +73,8 @@ export default function SporePanel({ latest, trend }) {
                 )
               })}
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         <div className={s.imageCard}>
            <div className={s.imgBox}>
@@ -122,6 +115,7 @@ export default function SporePanel({ latest, trend }) {
         open={previewOpen}
         src={rec.image_url}
         alt="孢子图片预览"
+        capturedAt={rec.image_collection_time || rec.collection_time}
         onClose={() => setPreviewOpen(false)}
       />
     </div>

@@ -36,6 +36,7 @@ class Settings(BaseSettings):
 
     COLLECT_INTERVAL_MINUTES: int = 30
     ACCESS_PASSWORD: str = ""
+    LEADER_ACCESS_PASSWORD: str = ""
     AUTH_COOKIE_NAME: str = "sanya_monitor_auth"
     AUTH_MAX_AGE_HOURS: int = 12
     LOG_DIR: str = str((BACKEND_DIR.parent / "logs" / "backend").resolve())

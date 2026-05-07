@@ -8,12 +8,13 @@ import MapCenter from './components/MapCenter.jsx'
 import RunoffPanel from './components/RunoffPanel.jsx'
 import WaterPanel from './components/WaterPanel.jsx'
 import AnalyticsPage from './components/AnalyticsPage.jsx'
+import SpecialAnalysisPage from './components/SpecialAnalysisPage.jsx'
 import ReportManager from './components/ReportManager.jsx'
 import AutoResizer from './components/AutoResizer.jsx'
 import LoginGate from './components/LoginGate.jsx'
 import { usePolling } from './hooks/usePolling.js'
 import { api } from './utils/api.js'
-import { clearRequestCache } from './utils/requestCache.js'
+import { DEFAULT_TAB, TAB_STORAGE_KEY, normalizeTab, tabFromHash, tabHash } from './utils/navigationTabs.js'
 import s from './App.module.css'
 
 const IconWeather = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.5 19A4.5 4.5 0 0 0 18 10c-.8-4.4-5.8-6-9-2.5A5.5 5.5 0 0 0 3.5 12C1.5 12.5 1 15.5 2.5 17c1.5 1.5 3 2 4.5 2h10.5z" /></svg>
@@ -24,6 +25,23 @@ const IconInsect = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="n
 const IconSpore = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d946ef" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" /><path d="M12 8v4" /><path d="M12 16h.01" /><path d="M7 11h.01" /><path d="M17 11h.01" /><path d="M9 15h.01" /><path d="M15 15h.01" /></svg>
 
 const POLL = 30_000
+
+function getInitialTab() {
+  if (typeof window === 'undefined') {
+    return DEFAULT_TAB
+  }
+
+  const hashTab = tabFromHash(window.location.hash)
+  if (hashTab) {
+    return hashTab
+  }
+
+  try {
+    return normalizeTab(window.localStorage.getItem(TAB_STORAGE_KEY))
+  } catch {
+    return DEFAULT_TAB
+  }
+}
 
 function Panel({ title, extra, icon, children, style }) {
   return (
@@ -42,11 +60,12 @@ function Panel({ title, extra, icon, children, style }) {
 }
 
 function DashboardApp() {
-  const [activeTab, setActiveTab] = useState('overview')
+  const [activeTab, setActiveTab] = useState(getInitialTab)
   const [mountedTabs, setMountedTabs] = useState({
-    overview: true,
-    analytics: false,
-    reports: false,
+    overview: activeTab === 'overview',
+    analytics: activeTab === 'analytics',
+    special: activeTab === 'special',
+    reports: activeTab === 'reports',
   })
   const pollingOptions = useCallback((cacheKey) => ({
     cacheKey,
@@ -68,31 +87,49 @@ function DashboardApp() {
         ? current
         : { ...current, [activeTab]: true }
     ))
+
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    try {
+      window.localStorage.setItem(TAB_STORAGE_KEY, activeTab)
+    } catch {}
+
+    const nextHash = tabHash(activeTab)
+    if (window.location.hash !== nextHash) {
+      window.history.replaceState(null, '', nextHash)
+    }
   }, [activeTab])
 
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined
+    }
+
+    const handleHashChange = () => {
+      const nextTab = tabFromHash(window.location.hash)
+      if (nextTab) {
+        setActiveTab(nextTab)
+      }
+    }
+
+    window.addEventListener('hashchange', handleHashChange)
+    return () => window.removeEventListener('hashchange', handleHashChange)
+  }, [])
+
   const handleTrigger = async () => {
-    try {
-      await api.triggerCollect()
-      clearRequestCache('analysis-dashboard')
-      setTimeout(() => {
-        [
-          overview,
-          devices,
-          insectLatest,
-          insectTrend,
-          insectSpecies,
-          sporeLatest,
-          sporeTrend,
-          ecoIndex,
-        ].forEach((hook) => hook.refetch())
-      }, 3000)
-    } catch {}
+    window.location.reload()
   }
 
   return (
     <AutoResizer>
       <div className={s.app}>
-        <Header onTriggerCollect={handleTrigger} activeTab={activeTab} onTabChange={setActiveTab} />
+        <Header
+          onTriggerCollect={handleTrigger}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
 
         {mountedTabs.analytics && (
           <div
@@ -100,6 +137,14 @@ function DashboardApp() {
             style={{ display: activeTab === 'analytics' ? 'flex' : 'none' }}
           >
             <AnalyticsPage active={activeTab === 'analytics'} />
+          </div>
+        )}
+        {mountedTabs.special && (
+          <div
+            className={s.tabPane}
+            style={{ display: activeTab === 'special' ? 'flex' : 'none' }}
+          >
+            <SpecialAnalysisPage active={activeTab === 'special'} />
           </div>
         )}
         {mountedTabs.reports && (

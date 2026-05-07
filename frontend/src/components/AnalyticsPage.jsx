@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 import { usePolling } from '../hooks/usePolling.js'
 import { api } from '../utils/api.js'
 import InsectHeatmapChart from './InsectHeatmapChart.jsx'
@@ -28,7 +28,6 @@ function ChartCard({ title, icon, extra, children, className = '', bodyClassName
         <div className={s.cardHeading}>
           {icon ? <span className={s.iconShell}>{icon}</span> : null}
           <div className={s.cardCopy}>
-            <div className={s.cardEyebrow}>Data Analysis</div>
             <div className={s.cardTitle}>{title}</div>
           </div>
         </div>
@@ -56,6 +55,19 @@ export default function AnalyticsPage({ active = true }) {
       enabled: active,
     },
   )
+
+  useEffect(() => {
+    if (!active) {
+      return undefined
+    }
+
+    const handleRefresh = () => {
+      dashboard.refetch().catch(() => {})
+    }
+
+    window.addEventListener('app:refresh-data', handleRefresh)
+    return () => window.removeEventListener('app:refresh-data', handleRefresh)
+  }, [active, dashboard])
 
   const payload = dashboard.data?.data || {}
   const ecoIndex = wrapData(payload.eco_index || {})

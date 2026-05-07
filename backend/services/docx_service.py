@@ -35,6 +35,7 @@ from services.report_figures import (
     build_figure_manifest,
     build_figure_map as build_shared_figure_map,
 )
+from services.report_service import build_special_analysis_sections
 
 logger = logging.getLogger(__name__)
 
@@ -600,6 +601,31 @@ def _append_guideline_summary(doc: Document, summary: dict) -> None:
     doc.add_paragraph()
 
 
+def _append_special_analysis_section(doc: Document, summary: dict) -> None:
+    sections = build_special_analysis_sections(summary)
+    if not sections:
+        return
+
+    _set_heading(doc, "五类深度专项分析", level=1)
+    _add_paragraph(
+        doc,
+        "围绕虫情、孢子、雨情、水土流失与径流、面源水质污染五个专项方向，结合本期监测统计、历史同口径对比和管理阈值进行分项研判，形成可直接用于巡查、预警和处置的专项结论。",
+        first_indent=False,
+    )
+    for index, item in enumerate(sections, 1):
+        _set_heading(doc, f"{index}、{item.get('title', '专项分析')}", level=2)
+        facts = "；".join(item.get("facts") or [])
+        if facts:
+            _add_paragraph(doc, f"关键指标：{facts}", first_indent=False)
+        for paragraph in item.get("paragraphs") or []:
+            _add_paragraph(doc, paragraph)
+        actions = item.get("actions") or []
+        if actions:
+            _add_paragraph(doc, "管理建议：", first_indent=False)
+            for action in actions:
+                _add_paragraph(doc, f"■ {action}", first_indent=False, left_indent=True)
+
+
 # ---------------------------------------------------------------------------
 # Appendix: device capture images
 # ---------------------------------------------------------------------------
@@ -783,6 +809,8 @@ def generate_docx_report(
             if refs:
                 # Insert all figures up to the highest one mentioned in this line
                 _insert_figures_through(max(refs))
+
+    _append_special_analysis_section(doc, summary)
 
     # Any remaining AI/chart figures → standard appendix
     if figures:

@@ -13,6 +13,7 @@ from models import InsectRecord, RunoffRecord, SporeRecord, WaterQualityRecord
 from routers.insect import get_combined_trend, get_species_heatmap
 from routers.sensor import get_runoff_daily, get_wq_daily
 from services.guideline_metrics import build_guideline_metrics
+from services.water_quality_support import get_latest_water_quality_record, resolve_water_quality_codes
 
 _dashboard_cache: dict[str, Any] = {"value": None, "expires_at": 0.0}
 _dashboard_lock = asyncio.Lock()
@@ -63,14 +64,9 @@ async def build_eco_index_payload(db: AsyncSession) -> dict[str, Any]:
     avg_runoff = _avg([record.runoff for record in runoff_records])
     avg_level = _avg([record.water_level for record in runoff_records])
 
-    water_code = settings.WATER_QUALITY_CODE.strip() or "16133028"
-    water_result = await db.execute(
-        select(WaterQualityRecord)
-        .where(WaterQualityRecord.device_code == water_code)
-        .order_by(desc(WaterQualityRecord.collection_time))
-        .limit(1)
-    )
-    water_record = water_result.scalar_one_or_none()
+    configured_water_code = settings.WATER_QUALITY_CODE.strip() or "16133028"
+    active_water_codes = await resolve_water_quality_codes(db, preferred_code=configured_water_code)
+    water_record = await get_latest_water_quality_record(db, active_water_codes)
 
     insect_score = _clamp(avg_insects / 2.5, 0, 55)
     spore_score = _clamp(avg_spores / 2.0, 0, 45)

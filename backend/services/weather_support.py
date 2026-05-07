@@ -20,6 +20,8 @@ _weather_cache: dict[str, object] = {
     "expires_at": 0.0,
 }
 _weather_lock = asyncio.Lock()
+_OPEN_METEO_ARCHIVE_URL = "https://archive-api.open-meteo.com/v1/archive"
+_WEATHER_ERROR_CACHE_SECONDS = 120
 
 
 def _to_float(value: Any) -> float | None:
@@ -164,6 +166,13 @@ def _empty_history_result(message: str, status: str = "disabled") -> dict[str, A
     }
 
 
+def _exception_message(exc: Exception) -> str:
+    message = str(exc).strip()
+    if message:
+        return f"{type(exc).__name__}: {message}"
+    return type(exc).__name__
+
+
 def _summarize_history(items: list[dict[str, Any]]) -> dict[str, Any]:
     rainy_items = [item for item in items if (item.get("precip") or 0) > 0]
     wettest_item = max(items, key=lambda item: item.get("precip") or 0, default=None)
@@ -267,6 +276,29 @@ async def _fetch_forecast_bundle() -> dict[str, Any]:
     }
 
 
+async def _get_json_with_retries(
+    client: httpx.AsyncClient,
+    url: str,
+    *,
+    params: dict[str, Any],
+    attempts: int = 2,
+) -> dict[str, Any]:
+    last_exc: Exception | None = None
+    for attempt in range(attempts):
+        try:
+            resp = await client.get(url, params=params)
+            resp.raise_for_status()
+            return resp.json()
+        except (httpx.HTTPError, ValueError) as exc:
+            last_exc = exc
+            if attempt < attempts - 1:
+                await asyncio.sleep(0.5 * (attempt + 1))
+
+    if last_exc:
+        raise last_exc
+    raise RuntimeError("weather request failed before an attempt was made")
+
+
 async def _fetch_history_bundle() -> dict[str, Any]:
     location = _parse_location()
     if location is None:
@@ -275,7 +307,7 @@ async def _fetch_history_bundle() -> dict[str, Any]:
     lon, lat = location
     end_date = datetime.now().date() - timedelta(days=1)
     start_date = end_date - timedelta(days=6)
-    timeout = httpx.Timeout(12.0, connect=6.0)
+    timeout = httpx.Timeout(20.0, connect=8.0)
     params = {
         "latitude": lat,
         "longitude": lon,
@@ -296,10 +328,7 @@ async def _fetch_history_bundle() -> dict[str, Any]:
     }
 
     async with httpx.AsyncClient(timeout=timeout) as client:
-        resp = await client.get("https://archive-api.open-meteo.com/v1/archive", params=params)
-        resp.raise_for_status()
-
-    payload = resp.json()
+        payload = await _get_json_with_retries(client, _OPEN_METEO_ARCHIVE_URL, params=params)
     daily = payload.get("daily") or {}
     days = daily.get("time") or []
 
@@ -359,11 +388,12 @@ async def _fetch_weather_bundle() -> dict[str, Any]:
 
     for (name, _), result in zip(tasks, results):
         if isinstance(result, Exception):
-            logger.warning("Failed to fetch %s weather data: %s", name, result)
+            error_message = _exception_message(result)
+            logger.warning("Failed to fetch %s weather data: %s", name, error_message)
             if name == "history":
-                history = _empty_history_result(f"历史天气接口调用失败: {result}", status="error")
+                history = _empty_history_result(f"历史天气接口调用失败: {error_message}", status="error")
             else:
-                forecast = _empty_forecast_result(f"气象接口调用失败: {result}", status="error")
+                forecast = _empty_forecast_result(f"气象接口调用失败: {error_message}", status="error")
             continue
 
         if name == "history":
@@ -422,7 +452,8 @@ async def get_weather_support(*, force_refresh: bool = False) -> dict[str, Any]:
         async with _weather_lock:
             data = await _fetch_weather_bundle()
             _weather_cache["value"] = data
-            _weather_cache["expires_at"] = time.monotonic() + max(60, settings.QWEATHER_CACHE_SECONDS)
+            ttl = settings.QWEATHER_CACHE_SECONDS if data.get("status") == "ok" else _WEATHER_ERROR_CACHE_SECONDS
+            _weather_cache["expires_at"] = time.monotonic() + max(60, ttl)
             return data
 
     now = time.monotonic()
@@ -439,6 +470,17 @@ async def get_weather_support(*, force_refresh: bool = False) -> dict[str, Any]:
             return cached_value
 
         data = await _fetch_weather_bundle()
+        if data.get("status") != "ok" and isinstance(cached_value, dict) and cached_value.get("status") == "ok":
+            fallback = {
+                **cached_value,
+                "stale": True,
+                "message": data.get("message") or "历史天气接口临时失败，继续展示上次成功数据。",
+            }
+            _weather_cache["value"] = fallback
+            _weather_cache["expires_at"] = now + max(60, _WEATHER_ERROR_CACHE_SECONDS)
+            return fallback
+
         _weather_cache["value"] = data
-        _weather_cache["expires_at"] = now + max(60, settings.QWEATHER_CACHE_SECONDS)
+        ttl = settings.QWEATHER_CACHE_SECONDS if data.get("status") == "ok" else _WEATHER_ERROR_CACHE_SECONDS
+        _weather_cache["expires_at"] = now + max(60, ttl)
         return data

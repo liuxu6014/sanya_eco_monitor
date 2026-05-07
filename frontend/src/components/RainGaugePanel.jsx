@@ -9,6 +9,13 @@ export default function RainGaugePanel({ rainData }) {
 
   // Ensure we always have these 3 stations visualized
   const displayCodes = ['16132920', '16132921', '16132922'];
+  const formatUpdatedAt = (value) => {
+    if (!value) return '暂无数据';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '暂无数据';
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日 ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', height: '100%', padding: '4px 0' }}>
@@ -30,7 +37,7 @@ export default function RainGaugePanel({ rainData }) {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <div style={{ fontSize: '13px', color: '#e2e8f0', fontWeight: 'bold' }}>{name}</div>
                 <div style={{ fontSize: '10px', color: '#64748b' }}>
-                   ID: {code} | {d?.updated_at ? d.updated_at.replace('T', ' ').slice(11, 16) : '暂无数据'}
+                   ID: {code} | {formatUpdatedAt(d?.updated_at)}
                 </div>
               </div>
               

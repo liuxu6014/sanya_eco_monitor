@@ -208,18 +208,16 @@ export default function ReportManager() {
       </div>
 
       <div className={s.statsGrid}>
-        <StatCard label={`${currentFilterLabel}数量`} value={filteredReports.length} meta="当前筛选结果" />
+        <StatCard label={`${currentFilterLabel}数量`} value={filteredReports.length} />
         <StatCard
           label="近 7 天生成"
           value={filteredReports.filter((report) => new Date(report.created_at.replace(' ', 'T')) > sevenDaysAgo).length}
-          meta="最近一周新增"
         />
         <StatCard
           label="近 30 天生成"
           value={filteredReports.filter((report) => new Date(report.created_at.replace(' ', 'T')) > thirtyDaysAgo).length}
-          meta="最近一月新增"
         />
-        <StatCard label="最近一次生成" value={latestReportDate} meta="按创建时间排序" large />
+        <StatCard label="最近一次生成" value={latestReportDate} large />
       </div>
 
       <div className={s.tableShell}>
@@ -319,12 +317,11 @@ export default function ReportManager() {
   )
 }
 
-function StatCard({ label, value, meta, large = false }) {
+function StatCard({ label, value, large = false }) {
   return (
     <div className={s.statCard}>
       <div className={s.statLabel}>{label}</div>
       <div className={`${s.statValue} ${large ? s.largeValue : ''}`}>{value}</div>
-      <div className={s.statMeta}>{meta}</div>
     </div>
   )
 }

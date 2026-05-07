@@ -30,6 +30,25 @@
   object-fit: contain;
 }
 
+.timeBadge {
+  position: absolute;
+  top: 12px;
+  right: 58px;
+  z-index: 2;
+  max-width: min(58vw, 360px);
+  padding: 8px 12px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.88);
+  color: #e5f4ff;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(8px);
+}
+
 .close {
   position: absolute;
   top: 10px;
@@ -44,6 +63,22 @@
   line-height: 1;
   cursor: pointer;
   z-index: 1;
+}
+
+@media (max-width: 640px) {
+  .overlay {
+    padding: 18px;
+  }
+
+  .timeBadge {
+    top: 58px;
+    right: 14px;
+    left: 14px;
+    max-width: none;
+    overflow: hidden;
+    text-align: center;
+    text-overflow: ellipsis;
+  }
 }
 
 @keyframes fadeIn {
