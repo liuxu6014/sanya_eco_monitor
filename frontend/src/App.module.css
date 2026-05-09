@@ -43,7 +43,7 @@
   min-height: 0;
   width: 100%;
   display: flex;
-  overflow: hidden;
+  overflow: auto;
 }
 
 /* Panel body overrides so flex children fill height */

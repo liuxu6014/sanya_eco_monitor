@@ -88,6 +88,7 @@ def _require_admin(request: Request) -> None:
 
 def _report_dict(report: GeneratedReport) -> dict:
     review_deadline = report.created_at + timedelta(days=1)
+    report_completed = report.status == "completed"
     return {
         "id": report.id,
         "title": report.title,
@@ -95,8 +96,8 @@ def _report_dict(report: GeneratedReport) -> dict:
         "period_start": report.period_start,
         "period_end": report.period_end,
         "created_at": report.created_at.strftime("%Y-%m-%d %H:%M:%S"),
-        "has_html": bool(report.html_path),
-        "has_docx": bool(report.docx_path),
+        "has_html": report_completed and bool(report.html_path) and os.path.exists(report.html_path),
+        "has_docx": report_completed and bool(report.docx_path) and os.path.exists(report.docx_path),
         "status": report.status,
         "review_status": report.review_status,
         "visible_to_leader": bool(report.visible_to_leader),

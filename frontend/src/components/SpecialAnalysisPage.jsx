@@ -231,18 +231,6 @@ function PestSection({ type, data, query, draft, setDraft, applySearch, clearSea
           onClear={clearSearch}
           placeholder={isSpore ? '搜索某一类孢子' : '搜索某一类虫子'}
         />
-        <div className={s.granularity}>
-          {GRANULARITIES.map((item) => (
-            <button
-              key={item.value}
-              type="button"
-              className={granularity === item.value ? s.activePeriod : ''}
-              onClick={() => setGranularity(item.value)}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
         <div className={s.modeText}>{query ? `当前分析：${query}` : isSpore ? '当前展示：整体孢子捕捉情况' : '当前展示：整体虫情捕捉情况'}</div>
       </div>
 
@@ -254,8 +242,26 @@ function PestSection({ type, data, query, draft, setDraft, applySearch, clearSea
       </div>
 
       <div className={s.grid}>
-        <Card title={query ? '数量变化' : '捕获数量趋势'} extra={GRANULARITIES.find((item) => item.value === granularity)?.label} className={s.wide}>
-          <TrendChart data={aggregateTrend(data?.trend, granularity)} name={query || (isSpore ? '孢子数量' : '虫情数量')} unit={unit} />
+        <Card title={query ? '数量变化' : '捕获数量趋势'} className={s.wide}>
+          <div className={s.trendPanel}>
+            <div className={s.trendControls}>
+              <div className={s.trendGranularity}>
+                {GRANULARITIES.map((item) => (
+                  <button
+                    key={item.value}
+                    type="button"
+                    className={granularity === item.value ? s.activePeriod : ''}
+                    onClick={() => setGranularity(item.value)}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className={s.trendChartBody}>
+              <TrendChart data={aggregateTrend(data?.trend, granularity)} name={query || (isSpore ? '孢子数量' : '虫情数量')} unit={unit} />
+            </div>
+          </div>
         </Card>
         <Card title={query ? (isSpore ? '孢子介绍与风险' : '虫子介绍与风险') : (isSpore ? '孢子类型构成分析' : '虫种构成分析')} extra={query ? '专项' : '构成'}>
           {query && profile ? (

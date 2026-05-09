@@ -230,9 +230,8 @@ def _daily_peak(rows: list[dict[str, Any]], key: str) -> dict[str, Any]:
 
 
 def build_special_analysis_sections(summary: dict[str, Any]) -> list[dict[str, Any]]:
-    """Build fixed five-part deep analysis content for HTML/DOCX reports."""
+    """Build fixed deep analysis content for HTML/DOCX reports, excluding spore text."""
     ins = summary.get("insect", {}) or {}
-    sp = summary.get("spore", {}) or {}
     rn = summary.get("rain", {}) or {}
     ro = summary.get("runoff", {}) or {}
     wq = summary.get("water_quality", {}) or {}
@@ -245,7 +244,6 @@ def build_special_analysis_sections(summary: dict[str, Any]) -> list[dict[str, A
     warning_analysis = gm.get("warning_analysis", {}) or {}
 
     insect_peak = _daily_peak(ins.get("daily") or [], "count")
-    spore_peak = _daily_peak(sp.get("daily") or [], "count")
     rain_peak = _daily_peak(rn.get("daily") or [], "rainfall")
     top_species = (ins.get("top_species") or [["暂无", 0]])[0]
     warning_items = {
@@ -274,7 +272,6 @@ def build_special_analysis_sections(summary: dict[str, Any]) -> list[dict[str, A
     )
 
     insect_history = history.get("insect") or {}
-    spore_history = history.get("spore") or {}
     rain_history = history.get("rain") or {}
     runoff_history = history.get("runoff") or {}
 
@@ -304,33 +301,6 @@ def build_special_analysis_sections(summary: dict[str, Any]) -> list[dict[str, A
                 "将优势虫种纳入重点巡查清单，复核诱捕点周边作物叶片、嫩梢和果实危害情况。",
                 "当虫情峰值与高温高湿天气叠加时，提高灯诱、性诱和田间样方调查频次。",
                 "处置上优先采用物理诱控、生物防治和低毒精准药剂，避免无差别大范围用药。",
-            ],
-        },
-        {
-            "title": "孢子深度专项分析",
-            "badge": "病害前置信号",
-            "facts": [
-                f"累计捕获 {_display_value(sp.get('total_count'), '个', '0个')}",
-                f"记录 {_display_value(sp.get('records_count'), '条', '0条')}",
-                f"有图 {_display_value(len(sp.get('capture_images') or []), '张', '0张')}",
-                f"峰值 {spore_peak['date']} / {_display_value(spore_peak['value'], '个')}",
-            ],
-            "paragraphs": [
-                (
-                    f"本期孢子监测累计捕获 {sp.get('total_count', 0)} 个，记录数为 {sp.get('records_count', 0)} 条，"
-                    f"活跃天数为 {spore_peak['active_days']} 天。孢子峰值出现在 {spore_peak['date']}，"
-                    f"单日捕获 {spore_peak['value']} 个，趋势表现为{spore_peak['trend']}。"
-                ),
-                (
-                    f"孢子与林间湿度、降雨后叶面结露和通风透光条件密切相关。与上一周期相比，"
-                    f"孢子捕获为{spore_history.get('trend', '暂无对比')}，变化率为 {_display_value(spore_history.get('change_rate'), '%')}。"
-                    "该指标更适合作为病害风险的前置信号，应与降雨、湿度和田间病斑巡查联动判断。"
-                ),
-            ],
-            "actions": [
-                "雨后和清晨优先巡查郁闭度高、通风差、湿度保持时间长的林下区域。",
-                "若孢子捕获连续升高，应同步检查叶片病斑、果实病斑和病残体积累情况。",
-                "防控上以通风降湿、清理病残体和保护性预防措施为主，避免等到病斑扩散后再处理。",
             ],
         },
         {
@@ -1266,7 +1236,11 @@ class ReportService:
 </div>"""
 
         history_compare_html = ""
-        history_items = (history_comparison.get("modules") or {}).values()
+        history_items = [
+            item
+            for key, item in (history_comparison.get("modules") or {}).items()
+            if key != "spore"
+        ]
         previous_period = history_comparison.get("previous_period", {}) or {}
         history_cards = []
         for item in history_items:
@@ -1404,15 +1378,6 @@ class ReportService:
   </table>
 </div>""" if water_rows else ""
 
-        adaptive_management_html = ""
-        if pest_guideline:
-            adaptive_management_html = f"""
-<div class="methodology-box">
-  <div class="methodology-title">适应性管理与病虫风险链条</div>
-  <p>{pest_guideline.get('chain_text', '')}</p>
-  <p>{pest_guideline.get('management_record_template', '')}</p>
-</div>"""
-
         indicator_warnings = warning_analysis.get("indicator_warnings", []) or []
         warning_comparison = warning_analysis.get("comparison", {}) or {}
 
@@ -1460,10 +1425,34 @@ class ReportService:
             [
                 item
                 for item in indicator_warnings
-                if item.get("key") in {"insect_peak", "spore_peak"}
+                if item.get("key") == "insect_peak"
             ],
-            "虫情与孢子分级预警",
+            "虫情分级预警",
         )
+
+        def _render_spore_image_appendix() -> str:
+            images = (sp.get("capture_images") or [])[-12:]
+            if not images:
+                body = """
+  <div class="ai-placeholder"><strong>孢子采集图像</strong>本监测周期未获取到孢子捕捉仪采集图像，当前保留附录位置占位。</div>"""
+            else:
+                cards = "".join(
+                    f"""
+  <figure class="chart-figure" id="fig-spore-appendix-{idx}">
+    <img src="{img.get('url', '')}" alt="孢子采集实景 {idx}" />
+    <figcaption>孢子采集实景 {idx}&nbsp;&nbsp;设备编号：{img.get('device_code', '—')}&nbsp;&nbsp;采集时间：{img.get('time', '—')}</figcaption>
+  </figure>"""
+                    for idx, img in enumerate(images, 1)
+                    if img.get("url")
+                )
+                body = cards or """
+  <div class="ai-placeholder"><strong>孢子采集图像</strong>本监测周期未获取到有效孢子图片地址。</div>"""
+
+            return f"""
+<section class="report-section" id="sec-spore-images">
+  <h2 class="sec-title"><span class="sec-num">七</span>孢子采集图像附录</h2>
+  {body}
+</section>"""
 
         # ----------------------------------------------------------------
         # Build HTML sections
@@ -1566,29 +1555,11 @@ class ReportService:
   {pest_gallery}
 </section>"""
 
-        # Section 5: Spore
-        sec_spore = f"""
-<section class="report-section" id="sec-spore">
-  <h2 class="sec-title"><span class="sec-num">五</span>孢子捕捉监测</h2>
-  <div class="kpi-row">
-    <div class="kpi-card">
-      <div class="kpi-label">监测记录</div>
-      <div class="kpi-value">{_v(sp.get('records_count'), '', '0')}<span class="kpi-unit">条</span></div>
-    </div>
-    <div class="kpi-card kpi-purple">
-      <div class="kpi-label">期间捕获总数</div>
-      <div class="kpi-value">{_v(sp.get('total_count', 0))}<span class="kpi-unit">个</span></div>
-    </div>
-  </div>
-  {_render_section_figures('spore')}
-  {adaptive_management_html}
-</section>"""
-
         sec_special = f"""
 <section class="report-section special-section" id="sec-special">
-  <h2 class="sec-title"><span class="sec-num">六</span>五类深度专项分析</h2>
+  <h2 class="sec-title"><span class="sec-num">五</span>四类深度专项分析</h2>
   <div class="special-intro">
-    围绕虫情、孢子、雨情、水土流失与径流、面源水质污染五个专项方向，结合本期监测统计、历史同口径对比和管理阈值进行分项研判，形成可直接用于巡查、预警和处置的专项结论。
+    围绕虫情、雨情、水土流失与径流、面源水质污染四个专项方向，结合本期监测统计、历史同口径对比和管理阈值进行分项研判，形成可直接用于巡查、预警和处置的专项结论。
   </div>
   <div class="special-grid">
     {special_cards_html}
@@ -1603,11 +1574,13 @@ class ReportService:
 
         sec_ai = f"""
 <section class="report-section ai-section" id="sec-ai">
-  <h2 class="sec-title"><span class="sec-num">七</span>AI 综合分析报告
+  <h2 class="sec-title"><span class="sec-num">六</span>AI 综合分析报告
     <span class="ai-badge">DeepSeek</span>
   </h2>
   {ai_body}
 </section>"""
+
+        sec_spore_images = _render_spore_image_appendix()
 
         html = f"""<!DOCTYPE html>
 <html lang="zh-CN">
@@ -2175,7 +2148,7 @@ body {{
 .data-table tr:hover td {{ background: #EBF5FB; }}
 
 /* ============================================================
-   五类深度专项分析
+   四类深度专项分析
    ============================================================ */
 .special-section .sec-title {{
   background: linear-gradient(90deg, #14532D, #15803D);
@@ -2475,9 +2448,9 @@ body {{
     <li><a href="#sec-hydrology"><span class="toc-num">二、</span>雨量与径流监测</a></li>
     <li><a href="#sec-water-quality"><span class="toc-num">三、</span>水质监测</a></li>
     <li><a href="#sec-insect"><span class="toc-num">四、</span>虫情测报监测</a></li>
-    <li><a href="#sec-spore"><span class="toc-num">五、</span>孢子捕捉监测</a></li>
-    <li><a href="#sec-special"><span class="toc-num">六、</span>五类深度专项分析</a></li>
-    <li><a href="#sec-ai"><span class="toc-num">七、</span>AI 综合分析报告</a></li>
+    <li><a href="#sec-special"><span class="toc-num">五、</span>四类深度专项分析</a></li>
+    <li><a href="#sec-ai"><span class="toc-num">六、</span>AI 综合分析报告</a></li>
+    <li><a href="#sec-spore-images"><span class="toc-num">七、</span>孢子采集图像附录</a></li>
   </ul>
 </div>
 
@@ -2499,10 +2472,6 @@ body {{
         <div class="overview-value">{_v(ins.get('total_count', 0))}<span class="overview-unit">只</span></div>
       </div>
       <div class="overview-item">
-        <div class="overview-label">孢子捕获</div>
-        <div class="overview-value">{_v(sp.get('total_count', 0))}<span class="overview-unit">个</span></div>
-      </div>
-      <div class="overview-item">
         <div class="overview-label">记录虫种</div>
         <div class="overview-value">{len(ins.get('top_species') or [])}<span class="overview-unit">种</span></div>
       </div>
@@ -2518,9 +2487,9 @@ body {{
   {sec_hydrology}
   {sec_water_quality}
   {sec_insect}
-  {sec_spore}
   {sec_special}
   {sec_ai}
+  {sec_spore_images}
 
 </div><!-- /report-body -->
 

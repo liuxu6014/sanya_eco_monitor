@@ -32,6 +32,7 @@
 .tabs button,
 .filters button,
 .granularity button,
+.trendGranularity button,
 .search button {
   min-height: 34px;
   border: 1px solid rgba(125, 211, 252, 0.2);
@@ -48,6 +49,7 @@
 .tabs button:hover,
 .filters button:hover,
 .granularity button:hover,
+.trendGranularity button:hover,
 .search button:hover,
 .activeTab,
 .activePeriod {
@@ -75,6 +77,50 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.trendPanel {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.trendControls {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.trendControls span {
+  color: #8fc8e8;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.trendGranularity {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px;
+  border: 1px solid rgba(125, 211, 252, 0.12);
+  border-radius: 10px;
+  background: rgba(3, 17, 46, 0.56);
+}
+
+.trendGranularity button {
+  min-height: 28px;
+  border-radius: 7px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.trendChartBody {
+  flex: 1;
+  min-height: 0;
 }
 
 .search input {

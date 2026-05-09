@@ -40,7 +40,6 @@ function OverviewCard({ label, value, meta, wide = false, strong = false }) {
     <div className={`${s.metricCard} ${wide ? s.metricWide : ''} ${strong ? s.metricStrong : ''}`.trim()}>
       <div className={s.metricLabel}>{label}</div>
       <div className={s.metricValue}>{value}</div>
-      {meta ? <div className={s.metricMeta}>{meta}</div> : null}
     </div>
   )
 }
@@ -51,8 +50,6 @@ export default function WeatherSupportPanel({ data }) {
   const current = weather.current || {}
   const historyDaily = weather.history_daily || []
   const historySummary = weather.history_summary || {}
-  const historyRange = weather.history_range || {}
-  const rangeLabel = rangeText(historyRange.start, historyRange.end)
   const latestHistory = historyDaily[historyDaily.length - 1]
 
   if (!historyDaily.length) {
@@ -201,25 +198,18 @@ export default function WeatherSupportPanel({ data }) {
 
   return (
     <div className={s.wrap}>
-      <section className={s.overview}>
-        <div className={s.overviewHead}>
-          <div className={s.sectionEyebrow}>气象概览</div>
-          <div className={s.rangePill}>{rangeLabel}</div>
-        </div>
-
-        <div className={s.overviewBody}>
-          <div className={s.overviewGrid}>
-            {overviewMetrics.map((item) => (
-              <OverviewCard
-                key={item.key}
-                label={item.label}
-                value={item.value}
-                meta={item.meta}
-                wide={item.wide}
-                strong={item.strong}
-              />
-            ))}
-          </div>
+      <section className={s.overview} aria-label="气象概览">
+        <div className={s.overviewGrid}>
+          {overviewMetrics.map((item) => (
+            <OverviewCard
+              key={item.key}
+              label={item.label}
+              value={item.value}
+              meta={item.meta}
+              wide={item.wide}
+              strong={item.strong}
+            />
+          ))}
         </div>
       </section>
 

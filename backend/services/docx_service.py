@@ -543,7 +543,6 @@ def _append_guideline_summary(doc: Document, summary: dict) -> None:
 
     if pest.get("available"):
         insect_peak = pest.get("insect_peak") or {}
-        spore_peak = pest.get("spore_peak") or {}
         top_species = pest.get("top_species") or {}
         _set_heading(doc, "四、虫害发生情况与适应性管理闭环", level=2)
         _add_paragraph(
@@ -553,12 +552,10 @@ def _append_guideline_summary(doc: Document, summary: dict) -> None:
                     f"风险等级：{_value_text(pest.get('risk_level'))}",
                     f"主要关注虫种：{_value_text(top_species.get('name'))}",
                     f"虫情峰值：{_value_text(insect_peak.get('date'))} / {_value_text(insect_peak.get('count'))}只",
-                    f"孢子峰值：{_value_text(spore_peak.get('date'))} / {_value_text(spore_peak.get('count'))}个",
                 ]
             ),
             first_indent=False,
         )
-        _add_paragraph(doc, pest.get("chain_text", ""), first_indent=False)
         _add_paragraph(doc, pest.get("management_record_template", ""), first_indent=False)
 
     if weather.get("enabled") and weather.get("status") == "ok":
@@ -606,10 +603,10 @@ def _append_special_analysis_section(doc: Document, summary: dict) -> None:
     if not sections:
         return
 
-    _set_heading(doc, "五类深度专项分析", level=1)
+    _set_heading(doc, "四类深度专项分析", level=1)
     _add_paragraph(
         doc,
-        "围绕虫情、孢子、雨情、水土流失与径流、面源水质污染五个专项方向，结合本期监测统计、历史同口径对比和管理阈值进行分项研判，形成可直接用于巡查、预警和处置的专项结论。",
+        "围绕虫情、雨情、水土流失与径流、面源水质污染四个专项方向，结合本期监测统计、历史同口径对比和管理阈值进行分项研判，形成可直接用于巡查、预警和处置的专项结论。孢子内容不进入正文分析，仅在报告最后作为设备采集图像附录展示。",
         first_indent=False,
     )
     for index, item in enumerate(sections, 1):

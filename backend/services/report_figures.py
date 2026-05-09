@@ -67,32 +67,6 @@ _FIGURE_PLAN: tuple[dict[str, str], ...] = (
         "type": "pests",
         "section": "insect",
     },
-    {
-        "type": "chart",
-        "section": "spore",
-        "key": "孢子趋势",
-        "caption": "每日孢子捕获量趋势",
-        "html_id": "fig-spore",
-    },
-    {
-        "type": "capture",
-        "section": "spore",
-        "key": "spore",
-        "caption": "孢子监测设备最近实拍图",
-        "html_id": "fig-spore-capture",
-    },
-    {
-        "type": "scene",
-        "section": "spore",
-        "caption": "智慧监测设备场景示意（AI生成配图）",
-        "html_id": "fig-smart-devices",
-    },
-    {
-        "type": "disease",
-        "section": "spore",
-        "caption": "病害孢子扩散风险示意（AI生成配图）",
-        "html_id": "fig-disease",
-    },
 )
 
 _SCENE_PRIORITY: tuple[str, ...] = (

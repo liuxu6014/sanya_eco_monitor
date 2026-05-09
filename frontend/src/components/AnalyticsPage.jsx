@@ -79,7 +79,7 @@ export default function AnalyticsPage({ active = true }) {
 
   return (
     <div className={s.page}>
-      <div className={s.dashboardGrid}>
+      <div className={s.topGrid}>
         <ChartCard
           title="生态综合评估与趋势研判"
           icon={<IconDeep />}
@@ -92,12 +92,14 @@ export default function AnalyticsPage({ active = true }) {
         <ChartCard
           title="气象与水文支撑"
           icon={<IconWater />}
-          extra="历史气象"
+          extra="近7天历史气象"
           className={s.cardWeather}
         >
           <WeatherSupportPanel data={guidelineMetrics} />
         </ChartCard>
+      </div>
 
+      <div className={s.summaryGrid}>
         <ChartCard
           title="关键指标总览"
           icon={<IconDeep />}
@@ -106,7 +108,9 @@ export default function AnalyticsPage({ active = true }) {
         >
           <AnalyticsSummaryBoard ecoIndex={ecoIndex} guidelineMetrics={guidelineMetrics} />
         </ChartCard>
+      </div>
 
+      <div className={s.chartGrid}>
         <ChartCard
           title="近30天水质指标变化"
           icon={<IconWater />}

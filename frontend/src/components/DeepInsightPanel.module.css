@@ -1,9 +1,10 @@
 .wrap {
   display: grid;
-  grid-template-columns: minmax(250px, 0.88fr) minmax(0, 1.72fr);
-  gap: 12px;
-  height: 100%;
-  padding: 10px 12px;
+  grid-template-columns: minmax(320px, 0.64fr) minmax(0, 1.36fr);
+  align-items: start;
+  gap: 14px;
+  height: auto;
+  padding: 12px;
   color: #e2e8f0;
   background:
     radial-gradient(circle at center, rgba(30, 41, 59, 0.62) 0%, rgba(2, 6, 23, 0.92) 100%);
@@ -19,6 +20,8 @@
 
 .radarCard {
   min-width: 0;
+  align-self: start;
+  width: 100%;
   border: 1px solid rgba(99, 102, 241, 0.2);
   border-radius: 18px;
   padding: 14px;
@@ -34,8 +37,9 @@
 .radarShell {
   position: relative;
   width: 100%;
-  min-height: 310px;
-  flex: 1;
+  min-height: 300px;
+  height: clamp(300px, 26vw, 380px);
+  flex: 0 0 auto;
 }
 
 .radarHaloOuter,
@@ -94,10 +98,10 @@
 
 .main {
   min-width: 0;
-  min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  height: auto;
 }
 
 .metricsGrid {
@@ -121,7 +125,7 @@
   flex-direction: column;
   gap: 9px;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .metricCard::before {
@@ -224,7 +228,7 @@
 
 .insightCard {
   min-width: 0;
-  min-height: 0;
+  min-height: auto;
   border: 1px solid rgba(125, 211, 252, 0.16);
   border-radius: 18px;
   padding: 15px 16px;
@@ -234,16 +238,14 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  opacity: 0;
-  transform: translateY(12px);
-  transition:
-    opacity 0.5s ease,
-    transform 0.5s ease;
+  opacity: 1;
+  transform: none;
+  transition: none;
 }
 
 .insightVisible {
   opacity: 1;
-  transform: translateY(0);
+  transform: none;
 }
 
 .insightHead {
@@ -287,9 +289,9 @@
 
 .insightBody {
   display: grid;
-  grid-template-columns: minmax(0, 1.18fr) minmax(240px, 0.82fr);
+  grid-template-columns: minmax(0, 1.18fr) minmax(220px, 0.82fr);
   gap: 12px;
-  min-height: 0;
+  min-height: auto;
 }
 
 .insightRow {
@@ -376,21 +378,31 @@
 
 @media (max-width: 1540px) {
   .wrap {
-    grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.8fr);
+    grid-template-columns: minmax(320px, 0.64fr) minmax(0, 1.36fr);
   }
 
   .metricsGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 1180px) {
+@media (max-width: 1320px) {
   .wrap {
     grid-template-columns: 1fr;
+    height: auto;
   }
 
   .radarCard {
-    min-height: 360px;
+    height: auto;
+    min-height: 0;
+  }
+
+  .radarShell {
+    height: 340px;
+  }
+
+  .insightBody {
+    grid-template-columns: 1fr;
   }
 }
 

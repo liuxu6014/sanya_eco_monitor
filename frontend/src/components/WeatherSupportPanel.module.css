@@ -1,5 +1,5 @@
 .wrap {
-  height: 100%;
+  height: auto;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -8,12 +8,8 @@
 }
 
 .overview {
-  border: 1px solid rgba(56, 189, 248, 0.14);
-  border-radius: 18px;
-  background:
-    radial-gradient(circle at top right, rgba(56, 189, 248, 0.08), transparent 34%),
-    linear-gradient(180deg, rgba(7, 27, 58, 0.92), rgba(4, 17, 40, 0.92));
-  padding: 12px;
+  position: relative;
+  padding-top: 0;
 }
 
 .overviewHead {
@@ -46,20 +42,15 @@
   color: #d9efff;
 }
 
-.overviewBody {
-  display: grid;
-  gap: 10px;
-}
-
 .overviewGrid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(8, minmax(0, 1fr));
   gap: 10px;
 }
 
 .metricCard {
   min-width: 0;
-  min-height: 94px;
+  min-height: 86px;
   border: 1px solid rgba(56, 189, 248, 0.12);
   border-radius: 16px;
   background:
@@ -67,8 +58,8 @@
     rgba(3, 17, 46, 0.54);
   padding: 12px 14px;
   display: grid;
-  grid-template-rows: auto minmax(42px, 1fr) auto;
-  row-gap: 6px;
+  grid-template-rows: auto 1fr;
+  row-gap: 8px;
 }
 
 .metricWide {
@@ -88,7 +79,7 @@
 }
 
 .metricValue {
-  font-size: 24px;
+  font-size: clamp(20px, 1.55vw, 30px);
   line-height: 1.05;
   font-weight: 900;
   color: #f4fbff;
@@ -99,20 +90,13 @@
 }
 
 .metricStrong .metricValue {
-  font-size: 40px;
-}
-
-.metricMeta {
-  padding-top: 8px;
-  font-size: 11px;
-  line-height: 1.5;
-  color: #7fb9dc;
-  word-break: break-word;
+  font-size: clamp(30px, 2.25vw, 42px);
 }
 
 .chartWrap {
-  flex: 1;
-  min-height: 260px;
+  flex: none;
+  height: 320px;
+  min-height: 300px;
   border: 1px solid rgba(56, 189, 248, 0.12);
   border-radius: 16px;
   background: rgba(4, 18, 44, 0.72);
@@ -129,23 +113,25 @@
 }
 
 @media (max-width: 1480px) {
-  .overviewGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .metricWide {
+    grid-column: span 1;
+  }
+}
+
+@media (max-width: 1320px) {
+  .wrap {
+    height: auto;
   }
 
-  .metricWide {
-    grid-column: span 2;
+  .chartWrap {
+    flex: none;
+    height: 320px;
   }
 }
 
 @media (max-width: 720px) {
-  .overviewHead {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
   .overviewGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .metricWide {
@@ -155,5 +141,9 @@
   .metricValue,
   .metricStrong .metricValue {
     white-space: normal;
+  }
+
+  .chartWrap {
+    height: 280px;
   }
 }
