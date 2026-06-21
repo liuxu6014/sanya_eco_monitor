@@ -25,29 +25,30 @@ test('reads tab from hash', () => {
   assert.equal(tabFromHash(''), null)
 })
 
-test('reads tab from path', () => {
-  assert.equal(tabFromPath('/analytics'), 'analytics')
-  assert.equal(tabFromPath('/reports'), 'reports')
-  assert.equal(tabFromPath('/'), 'overview')
-  assert.equal(tabFromPath('/unknown'), null)
+test('reads tab from path under /sanya base', () => {
+  assert.equal(tabFromPath('/sanya/analytics'), 'analytics')
+  assert.equal(tabFromPath('/sanya/reports'), 'reports')
+  assert.equal(tabFromPath('/sanya/'), 'overview')
+  assert.equal(tabFromPath('/sanya'), 'overview')
+  assert.equal(tabFromPath('/sanya/unknown'), null)
 })
 
-test('writes normalized tab path without hash', () => {
-  assert.equal(tabPath('reports'), '/reports')
-  assert.equal(tabPath('unknown'), '/')
+test('writes normalized tab path with /sanya base, without hash', () => {
+  assert.equal(tabPath('reports'), '/sanya/reports')
+  assert.equal(tabPath('unknown'), '/sanya/')
 })
 
 test('resolves tabs from modern paths while keeping legacy hash links working', () => {
-  assert.equal(tabFromLocation('/analytics', ''), 'analytics')
-  assert.equal(tabFromLocation('/reports', '#analytics'), 'reports')
-  assert.equal(tabFromLocation('/', '#analytics'), 'analytics')
-  assert.equal(tabFromLocation('/', ''), 'overview')
+  assert.equal(tabFromLocation('/sanya/analytics', ''), 'analytics')
+  assert.equal(tabFromLocation('/sanya/reports', '#analytics'), 'reports')
+  assert.equal(tabFromLocation('/sanya/', '#analytics'), 'analytics')
+  assert.equal(tabFromLocation('/sanya/', ''), 'overview')
 })
 
 test('restores last active tab from storage when url has no explicit tab', () => {
-  assert.equal(resolveInitialTab('/', '', 'reports'), 'reports')
-  assert.equal(resolveInitialTab('/', '', 'analytics'), 'analytics')
-  assert.equal(resolveInitialTab('/', '', null), 'overview')
-  assert.equal(resolveInitialTab('/special', '', 'reports'), 'special')
-  assert.equal(resolveInitialTab('/', '#reports', 'analytics'), 'reports')
+  assert.equal(resolveInitialTab('/sanya/', '', 'reports'), 'reports')
+  assert.equal(resolveInitialTab('/sanya/', '', 'analytics'), 'analytics')
+  assert.equal(resolveInitialTab('/sanya/', '', null), 'overview')
+  assert.equal(resolveInitialTab('/sanya/special', '', 'reports'), 'special')
+  assert.equal(resolveInitialTab('/sanya/', '#reports', 'analytics'), 'reports')
 })

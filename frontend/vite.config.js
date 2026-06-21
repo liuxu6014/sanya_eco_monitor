@@ -4,6 +4,8 @@ import react from '@vitejs/plugin-react'
 const proxyTarget = process.env.VITE_API_PROXY_TARGET || 'http://localhost:8888'
 
 export default defineConfig({
+  // 部署在子路径 /sanya 下（需与 src/utils/navigationTabs.js 的 BASE_PATH 保持一致）
+  base: '/sanya/',
   plugins: [react()],
   build: {
     chunkSizeWarningLimit: 1200,

@@ -10,7 +10,7 @@
 
 - 操作系统：Linux（Ubuntu 20.04+/CentOS 7+ 等均可）
 - 已安装 **Docker** 与 **Docker Compose v2**、**git**
-- 放行入站端口 **80**（启用 HTTPS 再放行 **443**）
+- 放行入站端口 **5188**（启用 HTTPS 再放行 **443**）
 
 检查环境：
 
@@ -80,13 +80,16 @@ docker compose logs -f frontend    # nginx 日志
 
 ## 五、访问
 
-浏览器打开：
+浏览器打开（本项目挂在 **5188 端口的 `/sanya` 子路径**下）：
 
 ```
-http://<服务器IP>/
+http://<服务器IP>:5188/sanya/
 ```
 
-用 `ACCESS_PASSWORD` 登录。`/api` 由前端 Nginx 反代到后端，无需单独开放 8888 端口。
+用 `ACCESS_PASSWORD` 登录。`/api` 由前端 Nginx 同源反代到后端，无需单独开放 8888 端口。
+
+> 各页签地址：`/sanya/`（概览）、`/sanya/analytics`、`/sanya/special`、`/sanya/reports`。
+> 如需改子路径或端口：改 `frontend/vite.config.js` 的 `base`、`src/utils/navigationTabs.js` 的 `BASE_PATH`、`frontend/nginx.conf` 的 `location /sanya/`、`docker-compose.yml` 的端口映射（四处保持一致）。
 
 ---
 

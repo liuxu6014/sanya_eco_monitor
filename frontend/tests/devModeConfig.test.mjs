@@ -11,7 +11,9 @@ test('frontend service serves a production build via nginx (not a vite dev serve
   assert.doesNotMatch(compose, /frontend:[\s\S]*vite --host/i)
   const nginx = readFileSync(new URL('../nginx.conf', import.meta.url), 'utf8')
   assert.match(nginx, /proxy_pass\s+http:\/\/backend:8888/)
-  assert.match(nginx, /try_files \$uri \$uri\/ \/index\.html/)
+  // 挂在子路径 /sanya 下，SPA 回退到 /sanya/index.html
+  assert.match(nginx, /location \/sanya\//)
+  assert.match(nginx, /try_files \$uri \$uri\/ \/sanya\/index\.html/)
 })
 
 test('vite dev config still supports local `npm run dev` proxy to backend', () => {
