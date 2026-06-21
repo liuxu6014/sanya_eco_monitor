@@ -10,6 +10,7 @@ from services.report_figures import build_figure_reference_rules
 
 logger = logging.getLogger(__name__)
 _MIN_ANALYSIS_CHARS = 4500
+_SPORE_TOKENS = ("孢子", "瀛㈠瓙")
 _FORBIDDEN_STANDALONE_HEADINGS = (
     "《指南》指标适配摘要",
     "本期已确认业务口径",
@@ -155,7 +156,7 @@ async def generate_ai_analysis(
                 )
                 if rewritten:
                     content = rewritten
-            return content
+            return _strip_spore_sentences(content)
     except httpx.HTTPStatusError as e:
         logger.error(f"DeepSeek API HTTP error: {e.response.status_code} {e.response.text}")
         return f"【AI分析服务暂时不可用】HTTP {e.response.status_code}，请稍后重试。"
@@ -205,6 +206,57 @@ def _append_fact(lines: list[str], label: str, value: Any, unit: str = "") -> No
     lines.append(f"  - {label}：{_prompt_value(value, unit)}")
 
 
+def _contains_spore_token(text: str) -> bool:
+    return "\u5b62\u5b50" in text or "瀛㈠瓙" in text
+
+
+def _strip_spore_text(text: Any) -> str:
+    if not isinstance(text, str) or not text.strip():
+        return ""
+
+    sanitized = (
+        text.replace("虫情和孢子", "虫情")
+        .replace("虫情、孢子", "虫情")
+        .replace("虫情与孢子", "虫情")
+        .replace("、孢子", "")
+        .replace("孢子、", "")
+    )
+    segments = re.split(r"(?<=[。！？；])", sanitized)
+    kept = [segment for segment in segments if not _contains_spore_token(segment)]
+    return "".join(kept).strip()
+
+
+def _strip_spore_sentences(text: Any) -> str:
+    if not isinstance(text, str) or not text.strip():
+        return ""
+
+    cleaned_lines: list[str] = []
+    for raw_line in text.splitlines():
+        stripped = raw_line.strip()
+        if not stripped:
+            cleaned_lines.append("")
+            continue
+        if stripped.startswith("#"):
+            cleaned_lines.append(raw_line)
+            continue
+
+        segments = re.split(r"(?<=[\u3002\uff01\uff1f\uff1b])", raw_line)
+        kept_segments = [segment for segment in segments if not _contains_spore_token(segment)]
+        cleaned_line = "".join(kept_segments).strip()
+        if cleaned_line:
+            cleaned_lines.append(cleaned_line)
+
+    compact_lines: list[str] = []
+    previous_blank = False
+    for line in cleaned_lines:
+        is_blank = not line.strip()
+        if is_blank and previous_blank:
+            continue
+        compact_lines.append(line)
+        previous_blank = is_blank
+    return "\n".join(compact_lines).strip()
+
+
 def format_summary_for_prompt(summary: dict) -> str:
     """Format summary dict into reader-facing Chinese facts for the prompt."""
     lines: list[str] = []
@@ -249,7 +301,7 @@ def format_summary_for_prompt(summary: dict) -> str:
                 f"最大流速 {_prompt_value(item.get('max_flow_speed'))}，"
                 f"平均流量 {_prompt_value(item.get('avg_flow_rate'))}，"
                 f"最大流量 {_prompt_value(item.get('max_flow_rate'))}，"
-                f"最新累计流量 {_prompt_value(item.get('total_flow_latest'))}，"
+                f"最新累计流量读数 {_prompt_value(item.get('total_flow_latest'))}，"
                 f"平均水位 {_prompt_value(item.get('avg_water_level'))}，"
                 f"最高水位 {_prompt_value(item.get('max_water_level'))}，"
                 f"平均含沙量 {_prompt_value(item.get('avg_sand_content'))}，"
@@ -268,6 +320,7 @@ def format_summary_for_prompt(summary: dict) -> str:
         current = weather.get("current", {}) or {}
         history_summary = weather.get("history_summary", {}) or {}
         history_range = weather.get("history_range", {}) or {}
+        history_days = history_summary.get("days") or 30
         lines.append("气象补充数据：")
         _append_fact(lines, "数据来源", weather.get("source", "QWeather"))
         _append_fact(lines, "当前天气", current.get("text"))
@@ -275,10 +328,10 @@ def format_summary_for_prompt(summary: dict) -> str:
         _append_fact(lines, "当前湿度", current.get("humidity"), " %")
         _append_fact(lines, "当前风速", current.get("wind_speed"), " km/h")
         _append_fact(lines, "历史区间", f"{history_range.get('start', '—')} 至 {history_range.get('end', '—')}")
-        _append_fact(lines, "最近7天累计降水", history_summary.get("total_precip"), " mm")
-        _append_fact(lines, "最近7天平均气温", history_summary.get("avg_temp_mean"), " ℃")
-        _append_fact(lines, "最近7天平均湿度", history_summary.get("avg_humidity"), " %")
-        _append_fact(lines, "最近7天平均风速", history_summary.get("avg_wind_speed"), " km/h")
+        _append_fact(lines, f"最近{history_days}天累计降水", history_summary.get("total_precip"), " mm")
+        _append_fact(lines, f"最近{history_days}天平均气温", history_summary.get("avg_temp_mean"), " ℃")
+        _append_fact(lines, f"最近{history_days}天平均湿度", history_summary.get("avg_humidity"), " %")
+        _append_fact(lines, f"最近{history_days}天平均风速", history_summary.get("avg_wind_speed"), " km/h")
 
     guideline = summary.get("guideline_metrics", {}) or {}
     runoff_guideline = guideline.get("runoff_erosion", {}) or {}
@@ -291,8 +344,12 @@ def format_summary_for_prompt(summary: dict) -> str:
 
     if methodology:
         lines.append("需融入第一章的监测体系与基准期口径：")
-        _append_fact(lines, "监测体系说明", methodology.get("monitoring_statement"))
-        _append_fact(lines, "基准期说明", methodology.get("baseline_statement"))
+        monitoring_statement = _strip_spore_text(methodology.get("monitoring_statement"))
+        baseline_statement = _strip_spore_text(methodology.get("baseline_statement"))
+        if monitoring_statement:
+            _append_fact(lines, "监测体系说明", monitoring_statement)
+        if baseline_statement:
+            _append_fact(lines, "基准期说明", baseline_statement)
 
     if runoff_guideline.get("available"):
         reference_station = runoff_guideline.get("reference_station") or {}
@@ -331,8 +388,12 @@ def format_summary_for_prompt(summary: dict) -> str:
             f"{pest_guideline.get('insect_peak', {}).get('date', '—')} / "
             f"{pest_guideline.get('insect_peak', {}).get('count', 0)} 只",
         )
-        _append_fact(lines, "建议动作", pest_guideline.get("suggestion"))
-        _append_fact(lines, "闭环说明", pest_guideline.get("chain_text"))
+        suggestion = _strip_spore_text(pest_guideline.get("suggestion"))
+        chain_text = _strip_spore_text(pest_guideline.get("chain_text"))
+        if suggestion:
+            _append_fact(lines, "建议动作", suggestion)
+        if chain_text:
+            _append_fact(lines, "闭环说明", chain_text)
 
     if warning_analysis:
         lines.append("需融入第二章和第三章的分级预警判定：")

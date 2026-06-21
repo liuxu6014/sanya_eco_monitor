@@ -18,6 +18,7 @@ WQ_FIELD_MAP = {
     "氨氮": "ammonia_nitrogen",
     "总磷": "total_phosphorus",
     "总氮": "total_nitrogen",
+    "COD": "permanganate_index",
     "高猛酸盐": "permanganate_index",
     "高锰酸盐": "permanganate_index",
     "高锰酸盐指数": "permanganate_index",

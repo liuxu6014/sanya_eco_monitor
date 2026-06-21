@@ -20,7 +20,7 @@ async def get_token() -> str:
         return _token_cache["token"]
 
     logger.info("Fetching new platform token...")
-    async with httpx.AsyncClient(verify=False, timeout=15) as client:
+    async with httpx.AsyncClient(verify=settings.HTTP_TLS_VERIFY, timeout=15) as client:
         # PLATFORM_BASE_URL must be the API root, e.g. https://zhnlkj.com/iotSmasrt
         # Do not include /login in the env value, because the login path is appended here.
         resp = await client.post(
@@ -43,7 +43,7 @@ async def get_token() -> str:
 async def platform_get(path: str, params: dict | None = None) -> dict:
     """Authenticated GET request to the platform API."""
     token = await get_token()
-    async with httpx.AsyncClient(verify=False, timeout=20) as client:
+    async with httpx.AsyncClient(verify=settings.HTTP_TLS_VERIFY, timeout=20) as client:
         resp = await client.get(
             f"{settings.PLATFORM_BASE_URL}{path}",
             params=params,

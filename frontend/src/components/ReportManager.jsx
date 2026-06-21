@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import s from './ReportManager.module.css'
 
 const API_BASE = '/api'
@@ -31,7 +31,19 @@ const TASK_STATUS_LABELS = {
 
 const ACTIVE_TASK_STATUSES = new Set(['queued', 'running'])
 
-export default function ReportManager() {
+function splitReportTitle(title) {
+  const text = String(title || '')
+  const match = text.match(/^(.*?)(\s*\(\d{8}-\d{8}\))$/)
+  if (!match) {
+    return { main: text, period: '' }
+  }
+  return {
+    main: match[1].trim(),
+    period: match[2].trim(),
+  }
+}
+
+export default function ReportManager({ onNotice }) {
   const [reports, setReports] = useState([])
   const [role, setRole] = useState('')
   const [reviewReminder, setReviewReminder] = useState({ pending: 0, overdue: 0 })
@@ -40,10 +52,15 @@ export default function ReportManager() {
   const [filterType, setFilterType] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
-  const [messageNotice, setMessageNotice] = useState(null)
   const trackedTaskIdsRef = useRef(new Set())
   const notifiedTaskIdsRef = useRef(new Set())
-  const noticeTimerRef = useRef(null)
+
+  const showMessage = useCallback((nextNotice) => {
+    onNotice?.(nextNotice)
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+      new Notification(nextNotice.title, { body: nextNotice.message })
+    }
+  }, [onNotice])
 
   useEffect(() => {
     fetchReports()
@@ -103,7 +120,7 @@ export default function ReportManager() {
         })
       }
     })
-  }, [reports])
+  }, [reports, showMessage])
 
   async function fetchReports(options = {}) {
     if (!options.silent) {
@@ -126,27 +143,12 @@ export default function ReportManager() {
     }
   }
 
-  function showMessage(nextNotice) {
-    setMessageNotice(nextNotice)
-
-    if (typeof window !== 'undefined') {
-      window.clearTimeout(noticeTimerRef.current)
-      noticeTimerRef.current = window.setTimeout(() => {
-        setMessageNotice(null)
-      }, 8000)
-    }
-
-    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-      new Notification(nextNotice.title, { body: nextNotice.message })
-    }
-  }
-
   async function handleGenerate() {
     const reportTypes = filterType === 'all' ? ['daily', 'weekly', 'monthly'] : [filterType]
 
     setSubmitting(true)
     setCurrentPage(1)
-    setMessageNotice(null)
+    onNotice?.(null)
 
     if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
       const permissionRequest = Notification.requestPermission()
@@ -246,34 +248,26 @@ export default function ReportManager() {
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 3600 * 1000)
   const latestReportDate = filteredReports.length > 0 ? filteredReports[0].created_at.split(' ')[0] : '暂无'
   const isAdmin = role !== 'leader'
+  const headerTitle = role === 'leader' ? '报告批阅' : '报告生成与管理'
+  const leaderSubtitle = '已为您聚合所有合规有效的报告，方便您快速批阅与决策'
 
   return (
     <div className={s.container}>
-      {messageNotice ? (
-        <div className={`${s.messageNotice} ${s[messageNotice.type] || ''}`}>
-          <strong>{messageNotice.title}</strong>
-          <span>{messageNotice.message}</span>
-          <button type="button" onClick={() => setMessageNotice(null)}>知道了</button>
-        </div>
-      ) : null}
-
       <div className={s.header}>
         <div>
-          <div className={s.title}>报告生成与管理</div>
-          <div className={s.subtitle}>
-            {role === 'leader'
-              ? '当前为区领导查看权限，仅显示审核通过并开放可见的报告。'
-              : '报告生成后默认为待审核，审核通过后区领导密码才可以查看。'}
-          </div>
+          <div className={s.title}>{headerTitle}</div>
+          {role === 'leader' ? (
+            <div className={s.subtitle}>{leaderSubtitle}</div>
+          ) : null}
         </div>
 
         {isAdmin ? (
           <div className={s.controls}>
             <label className={s.filterGroup}>
-              <span className={s.filterLabel}>报告类型</span>
               <div className={s.selectWrap}>
                 <select
                   className={s.typeSelect}
+                  aria-label="报告筛选"
                   value={filterType}
                   onChange={(event) => setFilterType(event.target.value)}
                   disabled={submitting}
@@ -309,7 +303,7 @@ export default function ReportManager() {
           <span>待审核 {reviewReminder.pending || 0} 份</span>
           <span>逾期 {reviewReminder.overdue || 0} 份</span>
           {activeTasks.length > 0 ? <span>后台生成 {activeTasks.length} 份</span> : null}
-          <em>报告生成后 1 天内需完成审核，审核通过后区领导可见。</em>
+          <em>报告生成后 1 天内需完成审核，审核通过后领导可见！</em>
         </div>
       ) : null}
 
@@ -360,7 +354,9 @@ export default function ReportManager() {
               {currentReports.map((report) => (
                 <tr key={report.id}>
                   <td className={s.idCol}>{report.id}</td>
-                  <td className={s.titleCol}>{report.title}</td>
+                  <td className={s.titleCol}>
+                    <ReportTitle title={report.title} />
+                  </td>
                   <td className={s.periodCol}>{report.period_start} - {report.period_end}</td>
                   <td className={s.typeCol}>
                     <span className={`${s.tag} ${s[report.report_type]}`}>
@@ -450,6 +446,16 @@ export default function ReportManager() {
           </div>
         </div>
       ) : null}
+    </div>
+  )
+}
+
+function ReportTitle({ title }) {
+  const { main, period } = splitReportTitle(title)
+  return (
+    <div className={s.reportTitle}>
+      <span className={s.reportTitleMain}>{main}</span>
+      {period ? <span className={s.reportTitlePeriod}>{period}</span> : null}
     </div>
   )
 }

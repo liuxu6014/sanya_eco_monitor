@@ -15,7 +15,9 @@ function canUseSessionStorage() {
   return typeof storageRef() !== 'undefined'
 }
 
-export function readRequestCache(key) {
+export function readRequestCache(key, options = {}) {
+  const { persist = true } = options
+
   if (!key) {
     return null
   }
@@ -25,7 +27,7 @@ export function readRequestCache(key) {
     return memoryValue
   }
 
-  if (!canUseSessionStorage()) {
+  if (!persist || !canUseSessionStorage()) {
     return null
   }
 

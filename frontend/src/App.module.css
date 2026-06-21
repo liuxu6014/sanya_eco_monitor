@@ -46,6 +46,125 @@
   overflow: auto;
 }
 
+.globalNoticeLayer {
+  position: fixed;
+  top: 88px;
+  right: 28px;
+  z-index: 1000;
+  width: min(460px, calc(100vw - 32px));
+  pointer-events: none;
+}
+
+.globalNotice {
+  position: relative;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  min-height: 76px;
+  padding: 16px 18px;
+  border: 1px solid rgba(125, 211, 252, 0.32);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(11, 32, 58, 0.98), rgba(4, 13, 29, 0.96));
+  color: #e8f7ff;
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  pointer-events: auto;
+}
+
+.globalNotice::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  border-radius: 8px 0 0 8px;
+  background: #38bdf8;
+}
+
+.globalNotice.success {
+  border-color: rgba(74, 222, 128, 0.42);
+  background:
+    linear-gradient(135deg, rgba(8, 52, 41, 0.98), rgba(5, 24, 28, 0.96));
+}
+
+.globalNotice.success::before {
+  background: #4ade80;
+}
+
+.globalNotice.error {
+  border-color: rgba(248, 113, 113, 0.46);
+  background:
+    linear-gradient(135deg, rgba(70, 24, 34, 0.98), rgba(30, 10, 20, 0.96));
+}
+
+.globalNotice.error::before {
+  background: #f87171;
+}
+
+.noticeIcon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  background: rgba(125, 211, 252, 0.12);
+  color: #7dd3fc;
+}
+
+.success .noticeIcon {
+  background: rgba(74, 222, 128, 0.14);
+  color: #86efac;
+}
+
+.error .noticeIcon {
+  background: rgba(248, 113, 113, 0.15);
+  color: #fca5a5;
+}
+
+.noticeIcon svg {
+  width: 23px;
+  height: 23px;
+}
+
+.noticeText {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.noticeText strong {
+  color: #ffffff;
+  font-size: 16px;
+  line-height: 1.25;
+  font-weight: 900;
+}
+
+.noticeText span {
+  color: #bcd6ef;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.noticeClose {
+  height: 34px;
+  padding: 0 13px;
+  border: 1px solid rgba(125, 211, 252, 0.26);
+  border-radius: 8px;
+  background: rgba(14, 165, 233, 0.13);
+  color: #e6f7ff;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.noticeClose:hover {
+  background: rgba(14, 165, 233, 0.22);
+  border-color: rgba(125, 211, 252, 0.42);
+}
+
 /* Panel body overrides so flex children fill height */
 .col :global(.panel-body) {
   flex: 1;
@@ -119,6 +238,22 @@
 
 /* For truly narrow screens, consider collapsing or scrolling */
 @media (max-width: 900px) {
+  .globalNoticeLayer {
+    top: 76px;
+    right: 16px;
+    left: 16px;
+    width: auto;
+  }
+
+  .globalNotice {
+    grid-template-columns: 38px minmax(0, 1fr);
+  }
+
+  .noticeClose {
+    grid-column: 2;
+    justify-self: start;
+  }
+
   .body {
     display: flex;
     flex-wrap: wrap;

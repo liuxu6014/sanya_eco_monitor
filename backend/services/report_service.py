@@ -8,6 +8,7 @@ workbooks or standalone HTML documents.
 from __future__ import annotations
 
 import io
+import re
 from collections import defaultdict
 from datetime import date, datetime, timedelta
 from typing import Any
@@ -30,8 +31,14 @@ from models import (
     WaterQualityRecord, RainfallRecord, RunoffRecord
 )
 from services.guideline_metrics import build_guideline_metrics
-from services.report_figures import build_figure_manifest
-from services.water_quality_support import get_water_quality_records, resolve_water_quality_codes
+from services.counter_aggregation import cumulative_counter_delta
+from services.image_quality import is_probably_black_image
+from services.rainfall_aggregation import aggregate_rainfall_daily
+from services.report_figures import (
+    build_figure_manifest,
+    finalize_figure_references,
+)
+from services.water_quality_support import get_water_quality_records, resolve_water_quality_codes, water_metric_value
 from time_utils import cn_now_str
 
 
@@ -47,10 +54,72 @@ def _safe_avg(values: list[float]) -> float | None:
     return round(sum(clean) / len(clean), 2)
 
 
+def _valid_hydrology_values(values: list[float], *, upper_bound: float) -> list[float]:
+    valid = []
+    for value in values:
+        if value is None:
+            continue
+        numeric = float(value)
+        if 0 <= numeric <= upper_bound:
+            valid.append(numeric)
+    return valid
+
+
+def _last_stable_value(values: list[float | None]) -> float | None:
+    clean = [float(value) for value in values if value is not None]
+    if not clean:
+        return None
+    return clean[-1]
+
+
+def _sum_daily_latest_readings(records: list[RunoffRecord], attr_name: str) -> float:
+    by_day: dict[str, list[float | None]] = defaultdict(list)
+    for record in records:
+        by_day[record.collection_time.date().isoformat()].append(getattr(record, attr_name, None))
+
+    total = 0.0
+    for values in by_day.values():
+        latest = _last_stable_value(values)
+        if latest is not None:
+            total += latest
+    return round(total, 3)
+
+
+def _has_hydrology_support(values: dict) -> bool:
+    valid_flow = _valid_hydrology_values(values["flow_rates"], upper_bound=100)
+    valid_runoff = _valid_hydrology_values(values["runoffs"], upper_bound=10)
+    return any(value > 0 for value in valid_flow) or any(value > 0 for value in valid_runoff)
+
+
+def _records_have_hydrology_support(records: list[RunoffRecord]) -> bool:
+    valid_flow = _valid_hydrology_values([record.flow_rate for record in records], upper_bound=100)
+    valid_runoff = _valid_hydrology_values([record.runoff for record in records], upper_bound=10)
+    return any(value > 0 for value in valid_flow) or any(value > 0 for value in valid_runoff)
+
+
+def _aggregate_clean_counter_by_day(records: list[RunoffRecord]) -> float:
+    by_day: dict[str, list[RunoffRecord]] = defaultdict(list)
+    for record in records:
+        by_day[record.collection_time.date().isoformat()].append(record)
+    total = 0.0
+    for day_records in by_day.values():
+        if not _records_have_hydrology_support(day_records):
+            continue
+        values = [record.total_flow for record in day_records if record.total_flow is not None]
+        delta = cumulative_counter_delta(values)
+        if delta is not None:
+            total += delta
+    return round(total, 3)
+
+
 def _round_or_none(value: float | None, ndigits: int = 2) -> float | None:
     if value is None:
         return None
     return round(value, ndigits)
+
+
+def _is_synthetic_record(record) -> bool:
+    return bool(record and isinstance(record.raw_data, dict) and record.raw_data.get("synthetic") is True)
 
 
 def _date_range_bounds(start_date: date, end_date: date) -> tuple[datetime, datetime]:
@@ -194,10 +263,51 @@ def build_history_comparison_summary(
     }
 
 
+def build_warning_history_comparison(history_comparison: dict[str, Any]) -> dict[str, Any]:
+    modules = history_comparison.get("modules") or {}
+    compared_items = [
+        item
+        for key, item in modules.items()
+        if key != "spore" and item.get("current_value") is not None and item.get("previous_value") is not None
+    ]
+    if not compared_items:
+        return {
+            "available": False,
+            "message": "历史同口径对比暂未形成有效上一周期数据，当前预警以本期指标判定标准为主。",
+        }
+
+    fragments = []
+    for item in compared_items:
+        rate = item.get("change_rate")
+        rate_text = f"{rate}%" if rate is not None else "—"
+        fragments.append(f"{item.get('label', '指标')}{item.get('trend', '持平')}{rate_text}")
+
+    return {
+        "available": True,
+        "message": f"历史同口径对比已接入：{'，'.join(fragments)}。",
+    }
+
+
 def _display_value(value: Any, unit: str = "", fallback: str = "—") -> str:
     if value in (None, ""):
         return fallback
     return f"{value}{unit}"
+
+
+def _strip_spore_text(text: Any) -> str:
+    if not isinstance(text, str) or not text.strip():
+        return ""
+
+    sanitized = (
+        text.replace("虫情和孢子", "虫情")
+        .replace("虫情、孢子", "虫情")
+        .replace("虫情与孢子", "虫情")
+        .replace("、孢子", "")
+        .replace("孢子、", "")
+    )
+    segments = re.split(r"(?<=[。！？；])", sanitized)
+    kept = [segment for segment in segments if "孢子" not in segment]
+    return "".join(kept).strip()
 
 
 def _daily_peak(rows: list[dict[str, Any]], key: str) -> dict[str, Any]:
@@ -426,6 +536,22 @@ class ReportService:
             if record.image_url
         ]
 
+    async def _spore_capture_images(self, records: list[SporeRecord]) -> list[dict[str, str]]:
+        capture_images: list[dict[str, str]] = []
+        for record in records:
+            if not record.image_url:
+                continue
+            if await is_probably_black_image(record.image_url):
+                continue
+            capture_images.append(
+                {
+                    "time": record.collection_time.strftime("%Y-%m-%d %H:%M"),
+                    "device_code": record.device_code,
+                    "url": record.image_url,
+                }
+            )
+        return capture_images
+
     # ------------------------------------------------------------------
     # Public summary entry points
     # ------------------------------------------------------------------
@@ -514,6 +640,8 @@ class ReportService:
                 "runoff": previous_runoff,
             },
         )
+        if isinstance(guideline_metrics.get("warning_analysis"), dict):
+            guideline_metrics["warning_analysis"]["comparison"] = build_warning_history_comparison(history_comparison)
 
         return {
             "period": current_period,
@@ -543,7 +671,7 @@ class ReportService:
                 InsectRecord.collection_time <= end_dt,
             ).order_by(InsectRecord.collection_time)
         )
-        records = result.scalars().all()
+        records = [record for record in result.scalars().all() if not _is_synthetic_record(record)]
 
         total_count = sum(r.total_count for r in records)
 
@@ -579,13 +707,6 @@ class ReportService:
             for r in records
             if r.image_url
         ]
-        if not capture_images:
-            capture_images = await self._fallback_capture_images(
-                db,
-                InsectRecord,
-                end_dt,
-            )
-
         return {
             "total_count": total_count,
             "records_count": len(records),
@@ -606,7 +727,7 @@ class ReportService:
                 SporeRecord.collection_time <= end_dt,
             ).order_by(SporeRecord.collection_time)
         )
-        records = result.scalars().all()
+        records = [record for record in result.scalars().all() if not _is_synthetic_record(record)]
 
         total_count = sum(r.total_count for r in records)
 
@@ -621,22 +742,7 @@ class ReportService:
         ]
 
         # Collect capture images
-        capture_images: list[dict] = [
-            {
-                "time": r.collection_time.strftime("%Y-%m-%d %H:%M"),
-                "device_code": r.device_code,
-                "url": r.image_url,
-            }
-            for r in records
-            if r.image_url
-        ]
-        if not capture_images:
-            capture_images = await self._fallback_capture_images(
-                db,
-                SporeRecord,
-                end_dt,
-            )
-
+        capture_images = await self._spore_capture_images(records)
         return {
             "total_count": total_count,
             "records_count": len(records),
@@ -669,7 +775,11 @@ class ReportService:
         nh3s = [r.ammonia_nitrogen for r in records if r.ammonia_nitrogen is not None]
         tps = [r.total_phosphorus for r in records if r.total_phosphorus is not None]
         tns = [r.total_nitrogen for r in records if r.total_nitrogen is not None]
-        permanganates = [r.permanganate_index for r in records if r.permanganate_index is not None]
+        permanganates = [
+            value
+            for r in records
+            if (value := water_metric_value(r, "permanganate_index", "permanganate")) is not None
+        ]
 
         return {
             "records_count": len(records),
@@ -697,24 +807,13 @@ class ReportService:
         if not records:
             return {"records_count": 0, "total_rainfall": 0.0, "daily": []}
 
-        daily_totals: dict[str, float] = defaultdict(float)
-        total_rainfall = 0.0
-        for record in records:
-            rainfall_value = record.hourly_rainfall
-            if rainfall_value is None:
-                rainfall_value = record.rainfall
-            if rainfall_value is None:
-                continue
-            total_rainfall += rainfall_value
-            daily_totals[record.collection_time.strftime("%Y-%m-%d")] += rainfall_value
+        daily_items = aggregate_rainfall_daily(records, start_dt.date(), end_dt.date())
+        total_rainfall = round(sum(item["rainfall"] for item in daily_items), 2)
 
         return {
             "records_count": len(records),
-            "total_rainfall": round(total_rainfall, 2),
-            "daily": [
-                {"date": day, "rainfall": round(value, 2)}
-                for day, value in sorted(daily_totals.items())
-            ],
+            "total_rainfall": total_rainfall,
+            "daily": [{"date": item["date"], "rainfall": item["rainfall"]} for item in daily_items],
         }
 
     async def _aggregate_runoff(
@@ -724,12 +823,12 @@ class ReportService:
         end_dt: datetime,
     ) -> dict[str, Any]:
         DEVICE_NAMES = {
-            '16132920': '杧果林1监测点',
-            '16132921': '橡胶林1监测点',
-            '16132922': '次生林监测点',
-            '16132923': '杧果林2监测点',
+            '16132920': '橡胶林1监测点',
+            '16132921': '次生林监测点',
+            '16132922': '芒果林1监测点',
+            '16132923': '槟榔林监测点',
             '16132924': '橡胶林2监测点',
-            '16132925': '槟榔林监测点',
+            '16132925': '芒果林2监测点',
         }
 
         result = await db.execute(
@@ -763,25 +862,39 @@ class ReportService:
 
         device_summary = {}
         for code, d in by_device.items():
+            valid_flow_speeds = _valid_hydrology_values(d["flow_speeds"], upper_bound=100)
+            valid_flow_rates = _valid_hydrology_values(d["flow_rates"], upper_bound=100)
+            valid_water_levels = _valid_hydrology_values(d["water_levels"], upper_bound=100)
+            valid_sand_contents = _valid_hydrology_values(d["sand_contents"], upper_bound=1)
+            valid_liquid_pressures = _valid_hydrology_values(d["liquid_pressures"], upper_bound=100)
+            device_records = [record for record in records if record.device_code == code]
+            total_flow_delta = (
+                _aggregate_clean_counter_by_day(device_records)
+                if _has_hydrology_support(d)
+                else 0.0
+            )
+            total_flow_latest = _last_stable_value(d["total_flows"])
+            runoff_total = total_flow_delta
+            rainfall_total = _sum_daily_latest_readings(device_records, "rainfall")
             device_summary[code] = {
                 "name": DEVICE_NAMES.get(code, code),
                 "records_count": d["count"],
-                "avg_flow_speed":     _safe_avg(d["flow_speeds"]),
-                "max_flow_speed":     _round_or_none(max(d["flow_speeds"])) if d["flow_speeds"] else None,
-                "avg_flow_rate":      _safe_avg(d["flow_rates"]),
-                "max_flow_rate":      _round_or_none(max(d["flow_rates"])) if d["flow_rates"] else None,
-                "total_flow_latest":  _round_or_none(d["total_flows"][-1]) if d["total_flows"] else None,
-                "avg_water_level":    _safe_avg(d["water_levels"]),
-                "max_water_level":    _round_or_none(max(d["water_levels"])) if d["water_levels"] else None,
-                "avg_sand_content":   _safe_avg(d["sand_contents"]),
-                "avg_liquid_pressure":_safe_avg(d["liquid_pressures"]),
-                "total_runoff":       _round_or_none(sum(d["runoffs"])) if d["runoffs"] else 0.0,
-                "total_rainfall":     _round_or_none(sum(d["rainfalls"])) if d["rainfalls"] else 0.0,
+                "avg_flow_speed":     _safe_avg(valid_flow_speeds),
+                "max_flow_speed":     _round_or_none(max(valid_flow_speeds)) if valid_flow_speeds else None,
+                "avg_flow_rate":      _safe_avg(valid_flow_rates),
+                "max_flow_rate":      _round_or_none(max(valid_flow_rates)) if valid_flow_rates else None,
+                "total_flow_latest":  _round_or_none(total_flow_latest) if total_flow_latest is not None else 0.0,
+                "avg_water_level":    _safe_avg(valid_water_levels),
+                "max_water_level":    _round_or_none(max(valid_water_levels)) if valid_water_levels else None,
+                "avg_sand_content":   _safe_avg(valid_sand_contents),
+                "avg_liquid_pressure":_safe_avg(valid_liquid_pressures),
+                "total_runoff":       _round_or_none(runoff_total) if runoff_total is not None else 0.0,
+                "total_rainfall":     _round_or_none(rainfall_total) if rainfall_total is not None else 0.0,
             }
 
         # Overall aggregated values across all devices
-        all_flows = [r.flow_rate for r in records if r.flow_rate is not None]
-        all_levels = [r.water_level for r in records if r.water_level is not None]
+        all_flows = _valid_hydrology_values([r.flow_rate for r in records if r.flow_rate is not None], upper_bound=100)
+        all_levels = _valid_hydrology_values([r.water_level for r in records if r.water_level is not None], upper_bound=100)
 
         return {
             "records_count": len(records),
@@ -1128,6 +1241,7 @@ class ReportService:
         charts = charts or {}
         ai_images = ai_images or {}
         figure_manifest = figure_manifest or build_figure_manifest(summary_dict, charts, ai_images)
+        ai_analysis, figure_manifest = finalize_figure_references(ai_analysis or "", figure_manifest)
 
         period = summary_dict.get("period", {})
         start_str = period.get("start", "")
@@ -1228,12 +1342,18 @@ class ReportService:
 
         methodology_html = ""
         if methodology:
+            monitoring_statement = _strip_spore_text(methodology.get("monitoring_statement", ""))
+            baseline_statement = _strip_spore_text(methodology.get("baseline_statement", ""))
+            methodology_parts = "".join(
+                f"  <p>{item}</p>"
+                for item in (monitoring_statement, baseline_statement)
+                if item
+            )
             methodology_html = f"""
 <div class="methodology-box">
   <div class="methodology-title">监测体系科学性说明</div>
-  <p>{methodology.get('monitoring_statement', '')}</p>
-  <p>{methodology.get('baseline_statement', '')}</p>
-</div>"""
+{methodology_parts}
+</div>""" if methodology_parts else ""
 
         history_compare_html = ""
         history_items = [
@@ -1283,7 +1403,11 @@ class ReportService:
 </div>"""
 
         fixed_rules_html = ""
-        confirmed_rules = implementation_matrix.get("confirmed_rules") or []
+        confirmed_rules = [
+            _strip_spore_text(item)
+            for item in (implementation_matrix.get("confirmed_rules") or [])
+        ]
+        confirmed_rules = [item for item in confirmed_rules if item]
         if confirmed_rules:
             fixed_rules_html = """
 <div class="methodology-box">
@@ -1318,6 +1442,7 @@ class ReportService:
             current = weather.get("current", {}) or {}
             history_summary = weather.get("history_summary", {}) or {}
             history_range = weather.get("history_range", {}) or {}
+            history_days = history_summary.get("days") or 30
             history_range_text = f"{history_range.get('start', '—')} 至 {history_range.get('end', '—')}"
             support_note_html = ""
             if water_source_support.get("message"):
@@ -1334,10 +1459,10 @@ class ReportService:
   <div class="support-card">
     <div class="support-title">水源涵养支撑说明</div>
     <div class="support-row"><span>历史区间</span><strong>{history_range_text}</strong></div>
-    <div class="support-row"><span>最近7天累计降水</span><strong>{_v(history_summary.get('total_precip'), ' mm')}</strong></div>
-    <div class="support-row"><span>最近7天平均气温</span><strong>{_v(history_summary.get('avg_temp_mean'), ' ℃')}</strong></div>
-    <div class="support-row"><span>最近7天平均湿度</span><strong>{_v(history_summary.get('avg_humidity'), ' %')}</strong></div>
-    <div class="support-row"><span>最近7天平均风速</span><strong>{_v(history_summary.get('avg_wind_speed'), ' km/h')}</strong></div>
+    <div class="support-row"><span>最近{history_days}天累计降水</span><strong>{_v(history_summary.get('total_precip'), ' mm')}</strong></div>
+    <div class="support-row"><span>最近{history_days}天平均气温</span><strong>{_v(history_summary.get('avg_temp_mean'), ' ℃')}</strong></div>
+    <div class="support-row"><span>最近{history_days}天平均湿度</span><strong>{_v(history_summary.get('avg_humidity'), ' %')}</strong></div>
+    <div class="support-row"><span>最近{history_days}天平均风速</span><strong>{_v(history_summary.get('avg_wind_speed'), ' km/h')}</strong></div>
     <div class="support-row"><span>降水日数</span><strong>{_v(history_summary.get('rainy_days'), ' 天')}</strong></div>
     {support_note_html}
   </div>
@@ -1396,6 +1521,8 @@ class ReportService:
     </div>
     <div class="warning-value">{item.get('display_value', '—')}</div>
     <div class="warning-band">判定区间：{item.get('band', '—')}</div>
+    <div class="warning-basis">判定依据：{item.get('basis', '—')}</div>
+    <div class="warning-rule">判定标准：{item.get('rule_text', '—')}</div>
     <div class="warning-progress"><span style="width:{item.get('score', 0)}%"></span></div>
     <p class="warning-summary">{item.get('summary', '')}</p>
     <p class="warning-action">建议动作：{item.get('action', '—')}</p>
@@ -1428,31 +1555,68 @@ class ReportService:
                 if item.get("key") == "insect_peak"
             ],
             "虫情分级预警",
+            warning_comparison.get("message", ""),
         )
 
-        def _render_spore_image_appendix() -> str:
-            images = (sp.get("capture_images") or [])[-12:]
+        def _render_capture_image_appendix(
+            *,
+            section_id: str,
+            section_num: str,
+            title: str,
+            strong_label: str,
+            empty_message: str,
+            invalid_message: str,
+            figure_prefix: str,
+            alt_prefix: str,
+            images: list[dict[str, Any]],
+        ) -> str:
             if not images:
-                body = """
-  <div class="ai-placeholder"><strong>孢子采集图像</strong>本监测周期未获取到孢子捕捉仪采集图像，当前保留附录位置占位。</div>"""
+                body = f"""
+  <div class="ai-placeholder"><strong>{strong_label}</strong>{empty_message}</div>"""
             else:
                 cards = "".join(
                     f"""
-  <figure class="chart-figure" id="fig-spore-appendix-{idx}">
-    <img src="{img.get('url', '')}" alt="孢子采集实景 {idx}" />
-    <figcaption>孢子采集实景 {idx}&nbsp;&nbsp;设备编号：{img.get('device_code', '—')}&nbsp;&nbsp;采集时间：{img.get('time', '—')}</figcaption>
+  <figure class="chart-figure" id="{figure_prefix}-{idx}">
+    <img src="{img.get('url', '')}" alt="{alt_prefix} {idx}" />
+    <figcaption>{alt_prefix} {idx}&nbsp;&nbsp;设备编号：{img.get('device_code', '—')}&nbsp;&nbsp;采集时间：{img.get('time', '—')}</figcaption>
   </figure>"""
                     for idx, img in enumerate(images, 1)
                     if img.get("url")
                 )
-                body = cards or """
-  <div class="ai-placeholder"><strong>孢子采集图像</strong>本监测周期未获取到有效孢子图片地址。</div>"""
+                body = cards or f"""
+  <div class="ai-placeholder"><strong>{strong_label}</strong>{invalid_message}</div>"""
 
             return f"""
-<section class="report-section" id="sec-spore-images">
-  <h2 class="sec-title"><span class="sec-num">七</span>孢子采集图像附录</h2>
+<section class="report-section" id="{section_id}">
+  <h2 class="sec-title"><span class="sec-num">{section_num}</span>{title}</h2>
   {body}
 </section>"""
+
+        def _render_insect_image_appendix() -> str:
+            return _render_capture_image_appendix(
+                section_id="sec-insect-images",
+                section_num="七",
+                title="虫情采集图像附录",
+                strong_label="虫情采集图像",
+                empty_message="本监测周期未获取到虫情测报灯采集图像，当前保留附录位置占位。",
+                invalid_message="本监测周期未获取到有效虫情图片地址。",
+                figure_prefix="fig-insect-appendix",
+                alt_prefix="虫情捕获实景",
+                images=ins.get("capture_images") or [],
+            )
+
+        def _render_spore_image_appendix() -> str:
+            return _render_capture_image_appendix(
+                section_id="sec-spore-images",
+                section_num="八",
+                title="孢子采集图像附录",
+                strong_label="孢子采集图像",
+                empty_message="本监测周期未获取到孢子捕捉仪采集图像，当前保留附录位置占位。",
+                invalid_message="本监测周期未获取到有效孢子图片地址。",
+                figure_prefix="fig-spore-appendix",
+                alt_prefix="孢子采集实景",
+                images=sp.get("capture_images") or [],
+            )
 
         # ----------------------------------------------------------------
         # Build HTML sections
@@ -1460,7 +1624,7 @@ class ReportService:
 
         sec_hydrology = f"""
 <section class="report-section" id="sec-hydrology">
-  <h2 class="sec-title"><span class="sec-num">二</span>雨量与径流监测</h2>
+  <h2 class="sec-title"><span class="sec-num">三</span>雨量与径流监测</h2>
   <div class="kpi-row">
     <div class="kpi-card kpi-blue">
       <div class="kpi-label">雨量记录</div>
@@ -1491,7 +1655,7 @@ class ReportService:
 
         sec_water_quality = f"""
 <section class="report-section" id="sec-water-quality">
-  <h2 class="sec-title"><span class="sec-num">三</span>水质监测</h2>
+  <h2 class="sec-title"><span class="sec-num">四</span>水质监测</h2>
   <div class="kpi-row">
     <div class="kpi-card">
       <div class="kpi-label">水质记录</div>
@@ -1534,7 +1698,7 @@ class ReportService:
 
         sec_insect = f"""
 <section class="report-section" id="sec-insect">
-  <h2 class="sec-title"><span class="sec-num">四</span>虫情测报监测</h2>
+  <h2 class="sec-title"><span class="sec-num">二</span>虫情测报监测</h2>
   <div class="kpi-row">
     <div class="kpi-card">
       <div class="kpi-label">监测记录</div>
@@ -1580,6 +1744,7 @@ class ReportService:
   {ai_body}
 </section>"""
 
+        sec_insect_images = _render_insect_image_appendix()
         sec_spore_images = _render_spore_image_appendix()
 
         html = f"""<!DOCTYPE html>
@@ -1969,6 +2134,16 @@ body {{
   margin-top: 8px;
   font-size: 12px;
   color: #5D7185;
+}}
+.warning-basis,
+.warning-rule {{
+  margin-top: 6px;
+  font-size: 12px;
+  color: #4B6278;
+  line-height: 1.75;
+}}
+.warning-rule {{
+  color: #1F4E79;
 }}
 .warning-progress {{
   height: 8px;
@@ -2445,12 +2620,13 @@ body {{
   <div class="toc-title">目 &nbsp; 录</div>
   <ul class="toc-list">
     <li><a href="#sec-overview"><span class="toc-num">一、</span>监测期综合概况与评估背景</a></li>
-    <li><a href="#sec-hydrology"><span class="toc-num">二、</span>雨量与径流监测</a></li>
-    <li><a href="#sec-water-quality"><span class="toc-num">三、</span>水质监测</a></li>
-    <li><a href="#sec-insect"><span class="toc-num">四、</span>虫情测报监测</a></li>
+    <li><a href="#sec-insect"><span class="toc-num">二、</span>虫情测报监测</a></li>
+    <li><a href="#sec-hydrology"><span class="toc-num">三、</span>雨量与径流监测</a></li>
+    <li><a href="#sec-water-quality"><span class="toc-num">四、</span>水质监测</a></li>
     <li><a href="#sec-special"><span class="toc-num">五、</span>四类深度专项分析</a></li>
     <li><a href="#sec-ai"><span class="toc-num">六、</span>AI 综合分析报告</a></li>
-    <li><a href="#sec-spore-images"><span class="toc-num">七、</span>孢子采集图像附录</a></li>
+    <li><a href="#sec-insect-images"><span class="toc-num">七、</span>虫情采集图像附录</a></li>
+    <li><a href="#sec-spore-images"><span class="toc-num">八、</span>孢子采集图像附录</a></li>
   </ul>
 </div>
 
@@ -2484,11 +2660,12 @@ body {{
     {history_compare_html}
   </section>
 
+  {sec_insect}
   {sec_hydrology}
   {sec_water_quality}
-  {sec_insect}
   {sec_special}
   {sec_ai}
+  {sec_insect_images}
   {sec_spore_images}
 
 </div><!-- /report-body -->

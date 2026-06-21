@@ -46,6 +46,9 @@ async def auth_login(payload: LoginRequest, response: Response):
 
 
 @router.post("/logout")
-async def auth_logout(response: Response):
-    clear_auth_cookie(response)
+async def auth_logout(request: Request, response: Response):
+    clear_auth_cookie(
+        response,
+        cookie_value=request.cookies.get(settings.AUTH_COOKIE_NAME),
+    )
     return {"status": "ok"}

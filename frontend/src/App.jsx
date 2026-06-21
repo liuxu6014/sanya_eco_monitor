@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import Header from './components/Header.jsx'
 import DeviceStatusPanel from './components/DeviceStatusPanel.jsx'
 import RainGaugePanel from './components/RainGaugePanel.jsx'
@@ -7,15 +7,17 @@ import SporePanel from './components/SporePanel.jsx'
 import MapCenter from './components/MapCenter.jsx'
 import RunoffPanel from './components/RunoffPanel.jsx'
 import WaterPanel from './components/WaterPanel.jsx'
-import AnalyticsPage from './components/AnalyticsPage.jsx'
-import SpecialAnalysisPage from './components/SpecialAnalysisPage.jsx'
-import ReportManager from './components/ReportManager.jsx'
 import AutoResizer from './components/AutoResizer.jsx'
 import LoginGate from './components/LoginGate.jsx'
 import { usePolling } from './hooks/usePolling.js'
 import { api } from './utils/api.js'
-import { DEFAULT_TAB, TAB_STORAGE_KEY, normalizeTab, tabFromHash, tabHash } from './utils/navigationTabs.js'
+import { clearRequestCache } from './utils/requestCache.js'
+import { DEFAULT_TAB, TAB_STORAGE_KEY, resolveInitialTab, tabFromLocation, tabPath } from './utils/navigationTabs.js'
 import s from './App.module.css'
+
+const AnalyticsPage = lazy(() => import('./components/AnalyticsPage.jsx'))
+const SpecialAnalysisPage = lazy(() => import('./components/SpecialAnalysisPage.jsx'))
+const ReportManager = lazy(() => import('./components/ReportManager.jsx'))
 
 const IconWeather = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.5 19A4.5 4.5 0 0 0 18 10c-.8-4.4-5.8-6-9-2.5A5.5 5.5 0 0 0 3.5 12C1.5 12.5 1 15.5 2.5 17c1.5 1.5 3 2 4.5 2h10.5z" /></svg>
 const IconPulse = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>;
@@ -26,20 +28,27 @@ const IconSpore = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="no
 
 const POLL = 30_000
 
+function formatWaterUpdatedAt(value) {
+  if (!value) return null
+
+  const text = String(value).replace('T', ' ')
+  const match = text.match(/^(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2})/)
+  return match ? `${match[1]} ${match[2]}` : text
+}
+
 function getInitialTab() {
   if (typeof window === 'undefined') {
     return DEFAULT_TAB
   }
 
-  const hashTab = tabFromHash(window.location.hash)
-  if (hashTab) {
-    return hashTab
-  }
-
   try {
-    return normalizeTab(window.localStorage.getItem(TAB_STORAGE_KEY))
+    return resolveInitialTab(
+      window.location.pathname,
+      window.location.hash,
+      window.localStorage.getItem(TAB_STORAGE_KEY),
+    )
   } catch {
-    return DEFAULT_TAB
+    return resolveInitialTab(window.location.pathname, window.location.hash, null)
   }
 }
 
@@ -59,7 +68,46 @@ function Panel({ title, extra, icon, children, style }) {
   )
 }
 
-function DashboardApp() {
+function GlobalNotice({ notice, onClose }) {
+  if (!notice) {
+    return null
+  }
+
+  const iconPath = notice.type === 'error'
+    ? 'M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z'
+    : notice.type === 'success'
+      ? 'M20 6 9 17l-5-5'
+      : 'M12 8h.01M11 12h1v4h1'
+
+  return (
+    <div className={s.globalNoticeLayer} role="status" aria-live="polite">
+      <div className={`${s.globalNotice} ${s[notice.type] || ''}`}>
+        <div className={s.noticeIcon} aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+            <path d={iconPath} />
+          </svg>
+        </div>
+        <div className={s.noticeText}>
+          <strong>{notice.title}</strong>
+          <span>{notice.message}</span>
+        </div>
+        <button type="button" className={s.noticeClose} onClick={onClose} aria-label="关闭提示">
+          关闭
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function TabLoadingState({ label }) {
+  return (
+    <div className={s.app} style={{ display: 'grid', placeItems: 'center', minHeight: '100%' }}>
+      <div style={{ color: '#dce8ff', fontSize: 16 }}>{label}加载中...</div>
+    </div>
+  )
+}
+
+function DashboardApp({ onLogout }) {
   const [activeTab, setActiveTab] = useState(getInitialTab)
   const [mountedTabs, setMountedTabs] = useState({
     overview: activeTab === 'overview',
@@ -67,19 +115,31 @@ function DashboardApp() {
     special: activeTab === 'special',
     reports: activeTab === 'reports',
   })
+  const [globalNotice, setGlobalNotice] = useState(null)
+  const noticeTimerRef = useRef(null)
   const pollingOptions = useCallback((cacheKey) => ({
     cacheKey,
-    persist: true,
+    persist: false,
     staleMs: POLL,
   }), [])
   const overview = usePolling(useCallback(() => api.overview(), []), POLL, pollingOptions('overview'))
   const devices = usePolling(useCallback(() => api.deviceStatus(), []), POLL, pollingOptions('device-status'))
   const insectLatest = usePolling(useCallback(() => api.insectLatest(), []), POLL, pollingOptions('insect-latest'))
   const insectTrend = usePolling(useCallback(() => api.insectTrend(7), []), POLL, pollingOptions('insect-trend-7d'))
-  const insectSpecies = usePolling(useCallback(() => api.insectSpecies(7), []), POLL, pollingOptions('insect-species-7d'))
+  const insectSpecies = usePolling(useCallback(() => api.insectSpecies(30), []), POLL, pollingOptions('insect-species-30d'))
   const sporeLatest = usePolling(useCallback(() => api.sporeLatest(), []), POLL, pollingOptions('spore-latest'))
   const sporeTrend = usePolling(useCallback(() => api.sporeTrend(7), []), POLL, pollingOptions('spore-trend-7d'))
-  const ecoIndex = usePolling(useCallback(() => api.ecoIndex(), []), POLL, pollingOptions('eco-index'))
+  const waterUpdatedAt = formatWaterUpdatedAt(overview.data?.data?.water_quality?.updated_at)
+
+  useEffect(() => {
+    clearRequestCache('overview')
+    clearRequestCache('device-status')
+    clearRequestCache('insect-latest')
+    clearRequestCache('insect-trend-7d')
+    clearRequestCache('insect-species-30d')
+    clearRequestCache('spore-latest')
+    clearRequestCache('spore-trend-7d')
+  }, [])
 
   useEffect(() => {
     setMountedTabs((current) => (
@@ -96,9 +156,10 @@ function DashboardApp() {
       window.localStorage.setItem(TAB_STORAGE_KEY, activeTab)
     } catch {}
 
-    const nextHash = tabHash(activeTab)
-    if (window.location.hash !== nextHash) {
-      window.history.replaceState(null, '', nextHash)
+    const nextPath = tabPath(activeTab)
+    const currentPath = `${window.location.pathname}${window.location.search}` || '/'
+    if (currentPath !== nextPath || window.location.hash) {
+      window.history.replaceState(null, '', nextPath)
     }
   }, [activeTab])
 
@@ -107,26 +168,79 @@ function DashboardApp() {
       return undefined
     }
 
-    const handleHashChange = () => {
-      const nextTab = tabFromHash(window.location.hash)
+    const handleLocationChange = () => {
+      const nextTab = tabFromLocation(window.location.pathname, window.location.hash)
       if (nextTab) {
         setActiveTab(nextTab)
       }
     }
 
-    window.addEventListener('hashchange', handleHashChange)
-    return () => window.removeEventListener('hashchange', handleHashChange)
+    window.addEventListener('popstate', handleLocationChange)
+    window.addEventListener('hashchange', handleLocationChange)
+    return () => {
+      window.removeEventListener('popstate', handleLocationChange)
+      window.removeEventListener('hashchange', handleLocationChange)
+    }
   }, [])
 
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined
+    }
+
+    const handleRefresh = () => {
+      overview.refetch().catch(() => {})
+      devices.refetch().catch(() => {})
+      insectLatest.refetch().catch(() => {})
+      insectTrend.refetch().catch(() => {})
+      insectSpecies.refetch().catch(() => {})
+      sporeLatest.refetch().catch(() => {})
+      sporeTrend.refetch().catch(() => {})
+    }
+
+    window.addEventListener('app:refresh-data', handleRefresh)
+    return () => window.removeEventListener('app:refresh-data', handleRefresh)
+  }, [devices, insectLatest, insectSpecies, insectTrend, overview, sporeLatest, sporeTrend])
+
   const handleTrigger = async () => {
-    window.location.reload()
+    window.dispatchEvent(new CustomEvent('app:refresh-data'))
   }
+
+  const handleLogout = async () => {
+    try {
+      await api.authLogout()
+    } catch (error) {
+      console.error(error)
+    } finally {
+      onLogout()
+    }
+  }
+
+  const showGlobalNotice = useCallback((notice) => {
+    setGlobalNotice(notice)
+
+    if (typeof window !== 'undefined') {
+      window.clearTimeout(noticeTimerRef.current)
+      noticeTimerRef.current = window.setTimeout(() => {
+        setGlobalNotice(null)
+      }, 9000)
+    }
+  }, [])
+
+  useEffect(() => () => {
+    if (typeof window !== 'undefined') {
+      window.clearTimeout(noticeTimerRef.current)
+    }
+  }, [])
 
   return (
     <AutoResizer>
       <div className={s.app}>
+        <GlobalNotice notice={globalNotice} onClose={() => setGlobalNotice(null)} />
+
         <Header
           onTriggerCollect={handleTrigger}
+          onLogout={handleLogout}
           activeTab={activeTab}
           onTabChange={setActiveTab}
         />
@@ -136,7 +250,9 @@ function DashboardApp() {
             className={s.tabPane}
             style={{ display: activeTab === 'analytics' ? 'flex' : 'none' }}
           >
-            <AnalyticsPage active={activeTab === 'analytics'} />
+            <Suspense fallback={<TabLoadingState label="数据分析" />}>
+              <AnalyticsPage active={activeTab === 'analytics'} />
+            </Suspense>
           </div>
         )}
         {mountedTabs.special && (
@@ -144,7 +260,9 @@ function DashboardApp() {
             className={s.tabPane}
             style={{ display: activeTab === 'special' ? 'flex' : 'none' }}
           >
-            <SpecialAnalysisPage active={activeTab === 'special'} />
+            <Suspense fallback={<TabLoadingState label="专项分析" />}>
+              <SpecialAnalysisPage active={activeTab === 'special'} />
+            </Suspense>
           </div>
         )}
         {mountedTabs.reports && (
@@ -152,7 +270,9 @@ function DashboardApp() {
             className={s.tabPane}
             style={{ display: activeTab === 'reports' ? 'flex' : 'none' }}
           >
-            <ReportManager />
+            <Suspense fallback={<TabLoadingState label="报告管理" />}>
+              <ReportManager onNotice={showGlobalNotice} />
+            </Suspense>
           </div>
         )}
 
@@ -163,20 +283,30 @@ function DashboardApp() {
             </Panel>
 
             <Panel title="区域降雨" icon={<IconWeather />} style={{ flex: '1' }}>
-              <RainGaugePanel rainData={overview.data?.data?.rain_gauges} />
+              <RainGaugePanel
+                rainData={overview.data?.data?.rain_gauges}
+                deviceMeta={overview.data?.data?.device_meta?.rain_gauges}
+              />
             </Panel>
 
             <Panel title="水土流失与径流" icon={<IconRunoff />} style={{ flex: '1' }}>
-              <RunoffPanel runoffStations={overview.data?.data?.runoff_stations} />
+              <RunoffPanel
+                runoffStations={overview.data?.data?.runoff_stations}
+                deviceMeta={overview.data?.data?.device_meta?.runoff_devices}
+              />
             </Panel>
           </div>
 
           <div className={s.mapWrap}>
-            <MapCenter overview={overview.data?.data} />
+            <MapCenter
+              overview={overview.data?.data}
+              deviceMeta={overview.data?.data?.device_meta}
+              active={activeTab === 'overview'}
+            />
           </div>
 
           <div className={s.col}>
-            <Panel title="面源水质污染负荷" icon={<IconWater />} style={{ flex: '1.2' }}>
+            <Panel title="面源水质污染负荷" extra={waterUpdatedAt} icon={<IconWater />} style={{ flex: '1.2' }}>
               <WaterPanel water={overview.data?.data?.water_quality} />
             </Panel>
 
@@ -235,5 +365,5 @@ export default function App() {
     return <LoginGate onSuccess={() => setAuthenticated(true)} />
   }
 
-  return <DashboardApp />
+  return <DashboardApp onLogout={() => setAuthenticated(false)} />
 }

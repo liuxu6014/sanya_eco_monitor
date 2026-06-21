@@ -7,12 +7,13 @@ services:
     ports:
       - "8888:8888"
     volumes:
-      - ./backend/sanya_eco.db:/app/sanya_eco.db
+      - ./deploy/runtime/backend:/app/runtime
       - ./backend/data:/app/data
       - ./logs/backend:/app/logs
     env_file:
       - ./backend/.env
     environment:
+      DATABASE_URL: sqlite+aiosqlite:////app/runtime/sanya_eco.db
       LOG_DIR: /app/logs
     restart: always
     healthcheck:
@@ -28,20 +29,24 @@ services:
         max-file: "3"
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: node:20
     container_name: sanya-eco-frontend
+    working_dir: /app
+    environment:
+      VITE_API_PROXY_TARGET: http://backend:8888
+      CHOKIDAR_USEPOLLING: "true"
+    command: sh -c "if [ ! -d node_modules ] || [ -z \"$$(ls -A node_modules 2>/dev/null)\" ]; then npm ci; fi && npx vite --host 0.0.0.0 --port 5188"
     ports:
-      - "5188:80"
+      - "5188:5188"
     volumes:
-      - ./logs/frontend:/var/log/nginx
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
     depends_on:
       backend:
         condition: service_healthy
     restart: always
     healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5188').then((res) => process.exit(res.ok ? 0 : 1)).catch(() => process.exit(1))"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -55,3 +60,6 @@ services:
 networks:
   default:
     name: sanya-eco-network
+
+volumes:
+  frontend_node_modules:

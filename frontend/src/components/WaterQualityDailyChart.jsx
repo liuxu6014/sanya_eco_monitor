@@ -1,4 +1,4 @@
-import ReactECharts from 'echarts-for-react'
+import ResponsiveEChart from './ResponsiveEChart.jsx'
 
 const TOOLTIP = {
   backgroundColor: 'rgba(3, 17, 46, 0.95)',
@@ -9,7 +9,8 @@ const TOOLTIP = {
   confine: true,
 }
 
-const AXIS_LABEL = { color: '#8fc8e8', fontSize: 11, fontFamily: 'monospace' }
+const CHART_FONT_FAMILY = 'Microsoft YaHei, PingFang SC, Noto Sans CJK SC, Source Han Sans SC, Arial, sans-serif'
+const AXIS_LABEL = { color: '#8fc8e8', fontSize: 11, fontFamily: CHART_FONT_FAMILY, hideOverlap: true }
 const SPLIT_LINE = {
   lineStyle: { color: 'rgba(56, 189, 248, 0.1)', type: 'dotted' },
 }
@@ -56,7 +57,7 @@ export default function WaterQualityDailyChart({ data }) {
         nameLocation: 'end',
         nameGap: 10,
         nameRotate: 0,
-        nameTextStyle: { color: '#38bdf8', fontSize: 10, align: 'left' },
+        nameTextStyle: { color: '#38bdf8', fontSize: 10, fontFamily: CHART_FONT_FAMILY, align: 'left' },
         axisLine: { show: true, lineStyle: { color: '#38bdf8' } },
         axisTick: { show: true },
         axisLabel: { ...AXIS_LABEL, color: '#38bdf8', margin: 8 },
@@ -71,7 +72,7 @@ export default function WaterQualityDailyChart({ data }) {
         nameLocation: 'end',
         nameGap: 10,
         nameRotate: 0,
-        nameTextStyle: { color: '#fbbf24', fontSize: 10, align: 'right' },
+        nameTextStyle: { color: '#fbbf24', fontSize: 10, fontFamily: CHART_FONT_FAMILY, align: 'right' },
         axisLine: { show: true, lineStyle: { color: '#fbbf24' } },
         axisTick: { show: true },
         axisLabel: { ...AXIS_LABEL, color: '#fbbf24', margin: 10 },
@@ -138,9 +139,9 @@ export default function WaterQualityDailyChart({ data }) {
   }
 
   return (
-    <ReactECharts
+    <ResponsiveEChart
       option={option}
-      style={{ width: '100%', height: '100%' }}
+      resizeDeps={[td.length]}
       notMerge
       opts={{ renderer: 'canvas' }}
     />

@@ -12,12 +12,12 @@ logger = logging.getLogger(__name__)
 
 # 设备配置：测试ID -> 名称
 RUNOFF_DEVICES = {
-    "16132920": "杧果林径流1",
-    "16132921": "橡胶林径流1",
-    "16132922": "次生林径流",
-    "16132923": "杧果林径流2",
+    "16132920": "橡胶林径流1",
+    "16132921": "次生林径流",
+    "16132922": "芒果林径流1",
+    "16132923": "槟榔林径流",
     "16132924": "橡胶林径流2",
-    "16132925": "槟榔林径流",
+    "16132925": "芒果林径流2",
 }
 
 # 字段映射：API返回中文名 -> RunoffRecord字段
@@ -48,7 +48,7 @@ def _parse_float(val) -> float | None:
 
 async def _fetch_whxph_latest(device_id: str) -> dict:
     url = f"{settings.WHXPH_BASE_URL.rstrip('/')}/data-n/{device_id}"
-    async with httpx.AsyncClient(verify=False, timeout=20) as client:
+    async with httpx.AsyncClient(verify=settings.HTTP_TLS_VERIFY, timeout=20) as client:
         resp = await client.get(url, headers={"accept": "*/*"})
         resp.raise_for_status()
         data = resp.json()

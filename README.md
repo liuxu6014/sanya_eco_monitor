@@ -194,70 +194,47 @@
 
 ```
 sanya_eco_monitor/
-├── README.md                              # 本文件
-├── start_backend.sh                       # 后端快捷启动脚本
-├── start_frontend.sh                      # 前端快捷启动脚本
-├── http通讯.postman_collection.json         # Postman API 调试集合
-├── 平台HTTP接口v3.pdf                       # 第三方平台接口文档
-├── 智能孢子捕捉仪.png                       # 设备图片
-├── 智能虫情测报灯.png                       # 设备图片
-│
-├── backend/                               # ── 后端服务 ──
-│   ├── main.py                            # FastAPI 应用入口，生命周期管理
-│   ├── config.py                          # Pydantic Settings 配置中心
-│   ├── database.py                        # SQLAlchemy 异步引擎与会话
-│   ├── models.py                          # 数据模型 (7 张数据表 + 日志表)
-│   ├── scheduler.py                       # APScheduler 定时采集任务
-│   ├── pyproject.toml                     # Python 项目依赖声明
-│   ├── requirements.txt                   # 备用依赖列表
-│   ├── .env.example                       # 环境变量模板
-│   ├── sanya_eco.db                       # SQLite 数据库文件 (运行时生成)
-│   │
-│   ├── collectors/                        # 数据采集器层
-│   │   ├── base.py                        # HTTP 客户端基类 (JWT 缓存/刷新)
-│   │   ├── insect.py                      # 虫情 + 孢子 数据采集
-│   │   └── sensor.py                      # 气象 + 墒情 数据采集
-│   │
+├── backend/                               # FastAPI 后端服务
+│   ├── main.py                            # 应用入口与路由注册
+│   ├── auth.py                            # 登录态签名与鉴权工具
+│   ├── config.py                          # 环境变量配置
+│   ├── database.py                        # SQLAlchemy 异步数据库连接
+│   ├── models.py                          # 数据表模型
+│   ├── scheduler.py                       # 定时采集任务
+│   ├── collectors/                        # 第三方设备平台采集器
 │   ├── routers/                           # API 路由层
-│   │   ├── insect.py                      # 虫情/孢子查询接口
-│   │   ├── sensor.py                      # 气象/墒情查询接口
-│   │   ├── summary.py                     # 综合概览 + 设备状态接口
-│   │   └── report.py                      # 报告生成接口 (JSON/HTML/Excel)
-│   │
-│   └── services/                          # 业务服务层
-│       ├── report_service.py              # 报告聚合 + Excel/HTML 生成 (1000+ 行)
-│       └── ai_report.py                   # AI 智能分析服务 (Claude API 预留)
-│
-└── frontend/                              # ── 前端应用 ──
-    ├── index.html                         # 入口 HTML (天地图/Leaflet CDN)
-    ├── vite.config.js                     # Vite 配置 (代理 → localhost:8001)
-    ├── package.json                       # Node 依赖
-    ├── .env.example                       # 前端环境变量模板
-    │
-    └── src/
-        ├── main.jsx                       # React 入口
-        ├── App.jsx                        # 主布局 (三栏大屏)
-        ├── App.module.css                 # 主布局样式
-        ├── index.css                      # 全局设计系统 (CSS 变量/Panel/组件)
-        │
-        ├── components/
-        │   ├── Header.jsx                 # 顶部标题栏 (含手动采集按钮)
-        │   ├── Header.module.css          # 标题栏样式
-        │   ├── MapCenter.jsx              # GIS 地图中心 (天地图 + 标记)
-        │   ├── MapCenter.module.css       # 地图区域样式
-        │   ├── CenterMap.jsx              # 地图备用组件
-        │   ├── WeatherPanel.jsx           # 气象监测面板
-        │   ├── SoilPanel.jsx              # 土壤墒情面板
-        │   ├── InsectPanel.jsx            # 虫情测报面板
-        │   ├── SporePanel.jsx             # 孢子捕捉面板
-        │   └── DeviceStatus.jsx           # 设备运行状态面板
-        │
-        ├── hooks/
-        │   └── usePolling.js              # 自动轮询 Hook (30s 间隔)
-        │
-        └── utils/
-            └── api.js                     # API 请求封装
+│   ├── services/                          # 聚合、图表、报告、指标判定等业务逻辑
+│   ├── scripts/                           # 数据回填、种子数据、报告重生成等运维脚本
+│   ├── tests/                             # 后端单元与回归测试
+│   ├── data/reports/                      # 运行时生成的 HTML/DOCX 报告，禁止提交
+│   ├── sanya_eco.db                       # 本地 SQLite 数据库，禁止提交
+│   ├── pyproject.toml                     # Python 依赖
+│   └── .env.example                       # 后端环境变量模板
+├── frontend/                              # React + Vite 前端
+│   ├── src/
+│   │   ├── components/                    # 页面组件、图表组件与面板
+│   │   ├── hooks/                         # 前端 Hook
+│   │   ├── utils/                         # API、导航与缓存工具
+│   │   ├── App.jsx                        # 主应用框架
+│   │   └── main.jsx                       # React 入口
+│   ├── tests/                             # 前端回归测试
+│   ├── dist/                              # 构建产物，禁止提交
+│   ├── package.json
+│   └── .env.example
+├── docs/                                  # 数据真实性、接口、方案与实施文档
+├── deploy/                                # 部署相关配置
+├── scripts/                               # 仓库级辅助脚本
+├── logs/                                  # 本地运行日志，禁止提交
+├── docker-compose.yml
+└── README.md
 ```
+
+整理约定：
+
+- 后端根目录只放应用入口、配置、模型、数据库和兼容入口；一次性或人工执行脚本放入 `backend/scripts/`。
+- 采集器只放 `backend/collectors/`，接口只放 `backend/routers/`，业务聚合和报告逻辑只放 `backend/services/`。
+- 数据库、报告、日志、缓存、虚拟环境、前端构建产物均为运行时产物，不进入版本管理。
+- 旧的 `backend/backfill.py`、`backend/backfill_full.py` 保留为兼容入口，新代码应直接使用 `backend/scripts/` 下的脚本。
 
 ---
 

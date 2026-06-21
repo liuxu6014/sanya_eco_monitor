@@ -6,6 +6,32 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models import WaterQualityRecord
 
 
+def raw_water_metric_value(record, metric_key: str) -> float | None:
+    if metric_key != "permanganate":
+        return None
+
+    raw_data = getattr(record, "raw_data", None) or {}
+    if not isinstance(raw_data, dict):
+        return None
+
+    for item in raw_data.get("eleLists") or []:
+        name = str(item.get("eName") or "").strip().upper()
+        if name != "COD":
+            continue
+        try:
+            return float(item.get("eValue"))
+        except (TypeError, ValueError):
+            return None
+    return None
+
+
+def water_metric_value(record, attr_name: str, metric_key: str) -> float | None:
+    value = getattr(record, attr_name)
+    if value is not None:
+        return value
+    return raw_water_metric_value(record, metric_key)
+
+
 async def get_water_quality_code_stats(db: AsyncSession) -> list[dict]:
     result = await db.execute(
         select(
@@ -52,26 +78,21 @@ async def resolve_water_quality_codes(
     )
     result = await db.execute(period_query)
     period_stats = result.all()
+    if preferred_code:
+        for row in period_stats:
+            if row[0] == preferred_code:
+                return [preferred_code]
+        return []
+
     if not period_stats:
         return []
 
     top_code = period_stats[0][0]
-    top_count = int(period_stats[0][1] or 0)
-    if preferred_code:
-        for row in period_stats:
-            code = row[0]
-            count = int(row[1] or 0)
-            if code == preferred_code and count >= top_count:
-                return [preferred_code]
 
     if top_code:
         return [top_code]
 
-    stats = await get_water_quality_code_stats(db)
-    if preferred_code and any(item["device_code"] == preferred_code for item in stats):
-        return [preferred_code]
-
-    return [stats[0]["device_code"]] if stats else []
+    return []
 
 
 async def get_latest_water_quality_record(

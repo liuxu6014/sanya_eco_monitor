@@ -1,4 +1,4 @@
-import ReactECharts from 'echarts-for-react'
+import ResponsiveEChart from './ResponsiveEChart.jsx'
 
 const TOOLTIP = {
   backgroundColor: 'rgba(3, 17, 46, 0.95)',
@@ -9,9 +9,27 @@ const TOOLTIP = {
   confine: true,
 }
 
-const AXIS_LABEL = { color: '#8fc8e8', fontSize: 11, fontFamily: 'monospace' }
+const CHART_FONT_FAMILY = 'Microsoft YaHei, PingFang SC, Noto Sans CJK SC, Source Han Sans SC, Arial, sans-serif'
+const AXIS_LABEL = { color: '#8fc8e8', fontSize: 11, fontFamily: CHART_FONT_FAMILY, hideOverlap: true }
 const SPLIT_LINE = {
   lineStyle: { color: 'rgba(56, 189, 248, 0.1)', type: 'dotted' },
+}
+
+const LEGEND_UNITS = {
+  当日累计降雨量: 'mm',
+  日均径流: 'm³/min',
+  日累计流量: 'm³',
+  日均流量: 'm³/s',
+  日均流速: 'm/s',
+  日均含沙量: 'kg/L',
+  日均水位: 'm',
+  日均液位压力: 'kPa',
+}
+
+function formatLegendNumber(value) {
+  if (value == null || Number.isNaN(Number(value))) return '—'
+  const numeric = Number(value)
+  return Number.isInteger(numeric) ? String(numeric) : String(numeric)
 }
 
 export default function RunoffDailyChart({ data }) {
@@ -19,14 +37,26 @@ export default function RunoffDailyChart({ data }) {
   if (td.length === 0) return <Empty />
 
   const legendSelected = {
-    当日降雨量: true,
-    当日径流量: true,
-    平均流量: true,
-    瞬时流速: true,
-    累计流量: true,
-    平均含沙量: true,
-    水位监测: true,
-    液位压力: true,
+    当日累计降雨量: true,
+    日均径流: true,
+    日累计流量: true,
+    日均流量: true,
+    日均流速: true,
+    日均含沙量: true,
+    日均水位: true,
+    日均液位压力: true,
+  }
+
+  const latest = td[td.length - 1] || {}
+  const legendValueByName = {
+    当日累计降雨量: `${formatLegendNumber(latest.rainfall)} ${LEGEND_UNITS.当日累计降雨量}`,
+    日均径流: `${formatLegendNumber(latest.runoff_rate)} ${LEGEND_UNITS.日均径流}`,
+    日累计流量: `${formatLegendNumber(latest.total_flow)} ${LEGEND_UNITS.日累计流量}`,
+    日均流量: `${formatLegendNumber(latest.flow)} ${LEGEND_UNITS.日均流量}`,
+    日均流速: `${formatLegendNumber(latest.flow_speed)} ${LEGEND_UNITS.日均流速}`,
+    日均含沙量: `${formatLegendNumber(latest.sand)} ${LEGEND_UNITS.日均含沙量}`,
+    日均水位: `${formatLegendNumber(latest.water_level)} ${LEGEND_UNITS.日均水位}`,
+    日均液位压力: `${formatLegendNumber(latest.liquid_pressure)} ${LEGEND_UNITS.日均液位压力}`,
   }
 
   const option = {
@@ -52,6 +82,7 @@ export default function RunoffDailyChart({ data }) {
       icon: 'circle',
       itemGap: 10,
       selected: legendSelected,
+      formatter: (name) => `${name}  ${legendValueByName[name] || '—'}`,
     },
     xAxis: {
       type: 'category',
@@ -60,27 +91,27 @@ export default function RunoffDailyChart({ data }) {
       axisLine: { lineStyle: { color: 'rgba(56, 189, 248, 0.4)' } },
       axisTick: { show: false },
       splitLine: { show: false },
-      boundaryGap: false,
+      boundaryGap: true,
     },
     yAxis: [
       {
         type: 'value',
-        name: '流速 / 流量 / 径流 (m/s, m³/s, m³)',
+        name: '日均径流 / 日累计流量 / 日均流量 / 日均流速',
         nameLocation: 'end',
         nameGap: 10,
         nameRotate: 0,
-        nameTextStyle: { color: '#4ade80', fontSize: 10, align: 'left' },
+        nameTextStyle: { color: '#4ade80', fontSize: 10, fontFamily: CHART_FONT_FAMILY, align: 'left' },
         axisLine: { show: true, lineStyle: { color: '#4ade80' } },
         axisLabel: { ...AXIS_LABEL, color: '#4ade80' },
         splitLine: SPLIT_LINE,
       },
       {
         type: 'value',
-        name: '水位 / 压力 / 含沙量 (m, kPa, kg/L)',
+        name: '日均水位 / 日均液位压力 / 日均含沙量',
         nameLocation: 'end',
         nameGap: 10,
         nameRotate: 0,
-        nameTextStyle: { color: '#facc15', fontSize: 10, align: 'right' },
+        nameTextStyle: { color: '#facc15', fontSize: 10, fontFamily: CHART_FONT_FAMILY, align: 'right' },
         axisLine: { show: true, lineStyle: { color: '#facc15' } },
         axisLabel: { ...AXIS_LABEL, color: '#facc15' },
         splitLine: { show: false },
@@ -88,26 +119,27 @@ export default function RunoffDailyChart({ data }) {
     ],
     series: [
       {
-        name: '当日降雨量',
+        name: '当日累计降雨量',
         type: 'bar',
         yAxisIndex: 1,
         z: 2,
-        data: td.map((d) => d.rainfall),
+        data: td.map((d) => Number(d.rainfall ?? 0)),
         barMaxWidth: 15,
+        barMinHeight: 2,
         itemStyle: {
           color: 'rgba(56, 189, 248, 0.3)',
           borderColor: 'rgba(56, 189, 248, 0.75)',
           borderWidth: 1,
           borderRadius: [4, 4, 0, 0],
         },
-        tooltip: { valueFormatter: (v) => (v != null ? `${v} mm` : '—') },
+        tooltip: { valueFormatter: (v) => (v != null ? `${Number(v).toFixed(1)} mm` : '—') },
       },
       {
-        name: '当日径流量',
+        name: '日均径流',
         type: 'bar',
         yAxisIndex: 0,
         z: 2,
-        data: td.map((d) => d.runoff),
+        data: td.map((d) => d.runoff_rate),
         barMaxWidth: 15,
         itemStyle: {
           color: 'rgba(74, 222, 128, 0.34)',
@@ -115,10 +147,21 @@ export default function RunoffDailyChart({ data }) {
           borderWidth: 1,
           borderRadius: [4, 4, 0, 0],
         },
+        tooltip: { valueFormatter: (v) => (v != null ? `${v} m³/min` : '—') },
+      },
+      {
+        name: '日累计流量',
+        type: 'line',
+        smooth: true,
+        yAxisIndex: 0,
+        data: td.map((d) => d.total_flow),
+        lineStyle: { color: '#22c55e', width: 1.5, type: 'dotted' },
+        itemStyle: { color: '#22c55e' },
+        showSymbol: false,
         tooltip: { valueFormatter: (v) => (v != null ? `${v} m³` : '—') },
       },
       {
-        name: '平均流量',
+        name: '日均流量',
         type: 'line',
         smooth: true,
         yAxisIndex: 0,
@@ -129,7 +172,7 @@ export default function RunoffDailyChart({ data }) {
         tooltip: { valueFormatter: (v) => (v != null ? `${v} m³/s` : '—') },
       },
       {
-        name: '瞬时流速',
+        name: '日均流速',
         type: 'line',
         smooth: true,
         yAxisIndex: 0,
@@ -140,18 +183,7 @@ export default function RunoffDailyChart({ data }) {
         tooltip: { valueFormatter: (v) => (v != null ? `${v} m/s` : '—') },
       },
       {
-        name: '累计流量',
-        type: 'line',
-        smooth: true,
-        yAxisIndex: 0,
-        data: td.map((d) => d.total_flow),
-        lineStyle: { color: '#38bdf8', width: 2 },
-        itemStyle: { color: '#38bdf8' },
-        showSymbol: false,
-        tooltip: { valueFormatter: (v) => (v != null ? `${v} m³` : '—') },
-      },
-      {
-        name: '平均含沙量',
+        name: '日均含沙量',
         type: 'line',
         smooth: true,
         yAxisIndex: 1,
@@ -162,7 +194,7 @@ export default function RunoffDailyChart({ data }) {
         tooltip: { valueFormatter: (v) => (v != null ? `${v} kg/L` : '—') },
       },
       {
-        name: '水位监测',
+        name: '日均水位',
         type: 'line',
         smooth: true,
         yAxisIndex: 1,
@@ -173,7 +205,7 @@ export default function RunoffDailyChart({ data }) {
         tooltip: { valueFormatter: (v) => (v != null ? `${v} m` : '—') },
       },
       {
-        name: '液位压力',
+        name: '日均液位压力',
         type: 'line',
         smooth: true,
         yAxisIndex: 1,
@@ -187,9 +219,9 @@ export default function RunoffDailyChart({ data }) {
   }
 
   return (
-    <ReactECharts
+    <ResponsiveEChart
       option={option}
-      style={{ width: '100%', height: '100%' }}
+      resizeDeps={[td.length]}
       notMerge
       opts={{ renderer: 'canvas' }}
     />

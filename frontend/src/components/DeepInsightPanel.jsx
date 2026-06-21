@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import ReactECharts from 'echarts-for-react'
+import ResponsiveEChart from './ResponsiveEChart.jsx'
 import s from './DeepInsightPanel.module.css'
 
 function clamp(value, min, max) {
@@ -147,7 +147,7 @@ export default function DeepInsightPanel({ ecoIndex, guidelineMetrics }) {
       ],
       shape: 'polygon',
       radius: '68%',
-      splitNumber: 6,
+      splitNumber: 5,
       axisName: { color: '#a5b4fc', fontSize: 11, fontWeight: 'bold' },
       splitLine: {
         lineStyle: {
@@ -252,7 +252,7 @@ export default function DeepInsightPanel({ ecoIndex, guidelineMetrics }) {
       meta: `捕获 ${valueText(pest.recent_week_top_species?.count ?? pest.top_species?.count, '只')}`,
     },
     {
-      label: '虫情活跃天数',
+      label: '虫情监测天数',
       value: valueText(pest.active_insect_days, '天'),
       meta: `统计周期 ${valueText(pest.period_days, '天')}`,
     },
@@ -266,7 +266,7 @@ export default function DeepInsightPanel({ ecoIndex, guidelineMetrics }) {
         <div className={s.radarShell}>
           <div className={s.radarHaloOuter} />
           <div className={s.radarHaloInner} />
-          <ReactECharts option={radarOption} style={{ width: '100%', height: '100%' }} />
+          <ResponsiveEChart option={radarOption} resizeDeps={[ecoHealth ?? -1]} />
         </div>
 
         <div className={s.scorePanel}>

@@ -1,6 +1,7 @@
 import { useCallback, useEffect } from 'react'
 import { usePolling } from '../hooks/usePolling.js'
 import { api } from '../utils/api.js'
+import { clearRequestCache } from '../utils/requestCache.js'
 import InsectHeatmapChart from './InsectHeatmapChart.jsx'
 import CombinedTrendChart from './CombinedTrendChart.jsx'
 import WaterQualityDailyChart from './WaterQualityDailyChart.jsx'
@@ -16,7 +17,7 @@ const IconWater = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="no
 const IconInsect = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2A4 4 0 0 0 8 6v2h8V6a4 4 0 0 0-4-4z" /><path d="M6 10h12v7a6 6 0 0 1-12 0v-7z" /><path d="M4 14l3-3" /><path d="M20 14l-3-3" /><path d="M4 18l3-3" /><path d="M20 18l-3-3" /><path d="M22 6l-3 3" /><path d="M2 6l3 3" /><path d="M12 22v-5" /></svg>
 const IconHeat = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
 
-const POLL = 60_000
+const POLL = 30_000
 
 function ChartCard({ title, icon, extra, children, className = '', bodyClassName = '' }) {
   return (
@@ -44,17 +45,93 @@ function wrapData(data) {
   return { data }
 }
 
+const ECO_INDEX_CACHE_KEY = 'analytics-eco-index'
+const GUIDELINE_CACHE_KEY = 'analytics-guideline-metrics'
+const WQ_DAILY_CACHE_KEY = 'analytics-water-quality-daily'
+const RUNOFF_DAILY_CACHE_KEY = 'analytics-runoff-daily'
+const COMBINED_TREND_CACHE_KEY = 'analytics-combined-trend'
+const HEATMAP_CACHE_KEY = 'analytics-insect-heatmap'
+
 export default function AnalyticsPage({ active = true }) {
-  const dashboard = usePolling(
-    useCallback(() => api.analysisDashboard(), []),
+  const ecoIndexRequest = usePolling(
+    useCallback(() => api.ecoIndex(), []),
     POLL,
     {
-      cacheKey: 'analysis-dashboard',
-      persist: true,
+      cacheKey: ECO_INDEX_CACHE_KEY,
+      persist: false,
       staleMs: POLL,
       enabled: active,
     },
   )
+
+  const guidelineMetricsRequest = usePolling(
+    useCallback(() => api.guidelineMetrics(), []),
+    POLL,
+    {
+      cacheKey: GUIDELINE_CACHE_KEY,
+      persist: false,
+      staleMs: POLL,
+      enabled: active,
+    },
+  )
+
+  const waterQualityDailyRequest = usePolling(
+    useCallback(() => api.waterQualityDaily(30), []),
+    POLL,
+    {
+      cacheKey: WQ_DAILY_CACHE_KEY,
+      persist: false,
+      staleMs: POLL,
+      enabled: active,
+    },
+  )
+
+  const runoffDailyRequest = usePolling(
+    useCallback(() => api.runoffDaily(30), []),
+    POLL,
+    {
+      cacheKey: RUNOFF_DAILY_CACHE_KEY,
+      persist: false,
+      staleMs: POLL,
+      enabled: active,
+    },
+  )
+
+  const combinedTrendRequest = usePolling(
+    useCallback(() => api.insectCombinedTrend(30), []),
+    POLL,
+    {
+      cacheKey: COMBINED_TREND_CACHE_KEY,
+      persist: false,
+      staleMs: POLL,
+      enabled: active,
+    },
+  )
+
+  const insectHeatmapRequest = usePolling(
+    useCallback(() => api.insectHeatmap(14), []),
+    POLL,
+    {
+      cacheKey: HEATMAP_CACHE_KEY,
+      persist: false,
+      staleMs: POLL,
+      enabled: active,
+    },
+  )
+
+  const dashboardRequests = [
+    ecoIndexRequest,
+    guidelineMetricsRequest,
+    waterQualityDailyRequest,
+    runoffDailyRequest,
+    combinedTrendRequest,
+    insectHeatmapRequest,
+  ]
+
+  useEffect(() => {
+    clearRequestCache('analysis-dashboard-runtime')
+    clearRequestCache('analysis-dashboard')
+  }, [])
 
   useEffect(() => {
     if (!active) {
@@ -62,20 +139,21 @@ export default function AnalyticsPage({ active = true }) {
     }
 
     const handleRefresh = () => {
-      dashboard.refetch().catch(() => {})
+      dashboardRequests.forEach((request) => {
+        request.refetch().catch(() => {})
+      })
     }
 
     window.addEventListener('app:refresh-data', handleRefresh)
     return () => window.removeEventListener('app:refresh-data', handleRefresh)
-  }, [active, dashboard])
+  }, [active, dashboardRequests])
 
-  const payload = dashboard.data?.data || {}
-  const ecoIndex = wrapData(payload.eco_index || {})
-  const guidelineMetrics = wrapData(payload.guideline_metrics || {})
-  const wqDaily = wrapData(payload.water_quality_daily || [])
-  const runoffDaily = wrapData(payload.runoff_daily || [])
-  const combinedTrend = wrapData(payload.combined_trend || [])
-  const insectHeatmap = wrapData(payload.insect_heatmap || {})
+  const ecoIndex = wrapData(ecoIndexRequest.data?.data || {})
+  const guidelineMetrics = wrapData(guidelineMetricsRequest.data?.data || {})
+  const wqDaily = wrapData(waterQualityDailyRequest.data?.data || [])
+  const runoffDaily = wrapData(runoffDailyRequest.data?.data || [])
+  const combinedTrend = wrapData(combinedTrendRequest.data?.data || [])
+  const insectHeatmap = wrapData(insectHeatmapRequest.data?.data || {})
 
   return (
     <div className={s.page}>
@@ -90,9 +168,9 @@ export default function AnalyticsPage({ active = true }) {
         </ChartCard>
 
         <ChartCard
-          title="气象与水文支撑"
+          title="气象与水文支撑（外部接口）"
           icon={<IconWater />}
-          extra="近7天历史气象"
+          extra="近30天历史气象"
           className={s.cardWeather}
         >
           <WeatherSupportPanel data={guidelineMetrics} />
@@ -116,6 +194,7 @@ export default function AnalyticsPage({ active = true }) {
           icon={<IconWater />}
           extra="30天趋势"
           className={s.cardHalf}
+          bodyClassName={s.chartBody}
         >
           <WaterQualityDailyChart data={wqDaily} />
         </ChartCard>
@@ -125,15 +204,17 @@ export default function AnalyticsPage({ active = true }) {
           icon={<IconRunoff />}
           extra="30天趋势"
           className={s.cardHalf}
+          bodyClassName={s.chartBody}
         >
           <RunoffDailyChart data={runoffDaily} />
         </ChartCard>
 
         <ChartCard
-          title="虫情与孢子协同趋势"
+          title="虫情趋势"
           icon={<IconInsect />}
-          extra="30天联动"
+          extra="30天趋势"
           className={s.cardHalf}
+          bodyClassName={s.chartBody}
         >
           <CombinedTrendChart data={combinedTrend} />
         </ChartCard>
@@ -143,6 +224,7 @@ export default function AnalyticsPage({ active = true }) {
           icon={<IconHeat />}
           extra="14天热度"
           className={s.cardHalf}
+          bodyClassName={s.chartBody}
         >
           <InsectHeatmapChart data={insectHeatmap} />
         </ChartCard>

@@ -148,6 +148,15 @@ class CollectLog(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, index=True)
 
 
+class AuthSession(Base):
+    __tablename__ = "auth_sessions"
+
+    session_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    role: Mapped[str] = mapped_column(String(16), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=cn_now_naive, index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+
+
 class GeneratedReport(Base):
     __tablename__ = "generated_reports"
 

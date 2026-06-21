@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 FigureManifestItem = dict[str, Any]
@@ -239,6 +240,203 @@ def build_figure_reference_rules(manifest: list[FigureManifestItem]) -> str:
         ]
     )
     return "\n".join(lines)
+
+
+_FIGURE_REF_RE = re.compile(r"图(\d+)")
+_FIGURE_REFERENCE_PHRASE_RE = re.compile(
+    r"[（(]\s*(?:见|参见|如)?图\d+(?:\s*[、,，和及至~\-—–]\s*图?\d+)*\s*(?:所示)?\s*[）)]"
+    r"|(?:见|参见|如)?图\d+(?:\s*[、,，和及至~\-—–]\s*图?\d+)*\s*(?:所示)?"
+)
+
+_SECTION_REFERENCE_TARGETS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    (
+        "insect",
+        (
+            "森林生物多样性",
+            "生态健康",
+            "虫情",
+            "病虫",
+            "害虫",
+        ),
+    ),
+    (
+        "hydrology",
+        (
+            "水文调节",
+            "水土流失",
+            "水文",
+            "径流",
+            "降雨",
+            "雨量",
+        ),
+    ),
+    (
+        "water_quality",
+        (
+            "水环境质量",
+            "生态容量",
+            "水质",
+            "面源",
+            "污染负荷",
+        ),
+    ),
+)
+
+
+def _format_figure_reference_sentence(numbers: list[int]) -> str:
+    refs = "、".join(f"图{number}" for number in numbers)
+    return f"本章相关图表见{refs}。"
+
+
+def strip_figure_references(text: str) -> str:
+    """Remove AI-supplied figure numbers before deterministic renumbering."""
+
+    if not text:
+        return text
+
+    cleaned = _FIGURE_REFERENCE_PHRASE_RE.sub("", text)
+    cleaned = re.sub(r"[（(]\s*[）)]", "", cleaned)
+    cleaned = re.sub(r"([。；;，,、])\1+", r"\1", cleaned)
+    cleaned = re.sub(r"^[，,、；;]\s*", "", cleaned, flags=re.MULTILINE)
+    return cleaned
+
+
+def finalize_figure_references(
+    text: str,
+    manifest: list[FigureManifestItem],
+) -> tuple[str, list[FigureManifestItem]]:
+    """Return AI text and manifest with one authoritative figure order."""
+
+    cleaned_text = strip_figure_references(text or "")
+    ordered_manifest = order_manifest_for_text(manifest, cleaned_text)
+    return augment_text_with_figure_references(cleaned_text, ordered_manifest), ordered_manifest
+
+
+def _is_heading_line(line: str) -> bool:
+    stripped = line.strip()
+    return stripped.startswith("#") or stripped.startswith("**")
+
+
+def _section_order_for_text(text: str) -> list[str]:
+    ordered_sections: list[str] = []
+    for line in (text or "").splitlines():
+        if not _is_heading_line(line):
+            continue
+        for section, keywords in _SECTION_REFERENCE_TARGETS:
+            if section in ordered_sections:
+                continue
+            if any(keyword in line for keyword in keywords):
+                ordered_sections.append(section)
+                break
+    for section, _keywords in _SECTION_REFERENCE_TARGETS:
+        if section not in ordered_sections:
+            ordered_sections.append(section)
+    return ordered_sections
+
+
+def order_manifest_for_text(
+    manifest: list[FigureManifestItem],
+    text: str = "",
+) -> list[FigureManifestItem]:
+    """Return a copy renumbered in the order figures should appear in body text."""
+
+    if not manifest:
+        return []
+
+    section_order = _section_order_for_text(text)
+    section_rank = {section: index for index, section in enumerate(section_order)}
+    original_index = {id(item): index for index, item in enumerate(manifest)}
+    ordered = sorted(
+        manifest,
+        key=lambda item: (
+            section_rank.get(str(item.get("section")), len(section_rank)),
+            original_index[id(item)],
+        ),
+    )
+    renumbered: list[FigureManifestItem] = []
+    for number, item in enumerate(ordered, 1):
+        copied = dict(item)
+        copied["number"] = number
+        if str(copied.get("html_id", "")).startswith("fig-pest-"):
+            copied["html_id"] = f"fig-pest-{number}"
+        renumbered.append(copied)
+    return renumbered
+
+
+def augment_text_with_figure_references(
+    text: str,
+    manifest: list[FigureManifestItem],
+) -> str:
+    """Add missing in-body 图N references so report figures have deterministic anchors.
+
+    AI output sometimes omits requested figure references. HTML can then show charts
+    disconnected from the article, and DOCX has no reliable inline insertion point.
+    This helper adds one concise reference sentence after the matching chapter
+    heading, without duplicating figure numbers that already exist in the body.
+    """
+
+    if not text or not text.strip() or not manifest:
+        return text
+
+    referenced_numbers = {
+        int(match.group(1))
+        for match in _FIGURE_REF_RE.finditer(text)
+        if match.group(1).isdigit()
+    }
+    section_numbers: dict[str, list[int]] = {}
+    for item in manifest:
+        number = item.get("number")
+        section = item.get("section")
+        if not isinstance(number, int) or not section or number in referenced_numbers:
+            continue
+        section_numbers.setdefault(str(section), []).append(number)
+
+    if not section_numbers:
+        return text
+
+    lines = text.splitlines()
+    inserted_sections: set[str] = set()
+    output: list[str] = []
+    active_section: str | None = None
+
+    for line in lines:
+        if _is_heading_line(line):
+            active_section = None
+            for section, keywords in _SECTION_REFERENCE_TARGETS:
+                numbers = section_numbers.get(section)
+                if not numbers or section in inserted_sections:
+                    continue
+                if any(keyword in line for keyword in keywords):
+                    active_section = section
+                    break
+            output.append(line)
+            continue
+
+        if active_section and line.strip():
+            numbers = section_numbers.get(active_section)
+            if numbers and active_section not in inserted_sections:
+                line = f"{line.rstrip()}（{_format_figure_reference_sentence(numbers)}）"
+                inserted_sections.add(active_section)
+                active_section = None
+        output.append(line)
+
+    for line_index, line in enumerate(output):
+        for section, keywords in _SECTION_REFERENCE_TARGETS:
+            numbers = section_numbers.get(section)
+            if not numbers or section in inserted_sections:
+                continue
+            if any(keyword in line for keyword in keywords):
+                output.insert(line_index + 1, _format_figure_reference_sentence(numbers))
+                inserted_sections.add(section)
+                break
+
+    for section, _keywords in _SECTION_REFERENCE_TARGETS:
+        numbers = section_numbers.get(section)
+        if numbers and section not in inserted_sections:
+            output.append(_format_figure_reference_sentence(numbers))
+            inserted_sections.add(section)
+
+    return "\n".join(output)
 
 
 def build_figure_map(

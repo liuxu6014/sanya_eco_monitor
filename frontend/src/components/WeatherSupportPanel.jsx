@@ -1,5 +1,8 @@
-import ReactECharts from 'echarts-for-react'
+import ResponsiveEChart from './ResponsiveEChart.jsx'
 import s from './WeatherSupportPanel.module.css'
+
+const CHART_FONT_FAMILY = 'Microsoft YaHei, PingFang SC, Noto Sans CJK SC, Source Han Sans SC, Arial, sans-serif'
+const AXIS_LABEL = { fontFamily: CHART_FONT_FAMILY, hideOverlap: true }
 
 function valueText(value, suffix = '') {
   if (value === null || value === undefined || value === '') {
@@ -51,9 +54,11 @@ export default function WeatherSupportPanel({ data }) {
   const historyDaily = weather.history_daily || []
   const historySummary = weather.history_summary || {}
   const latestHistory = historyDaily[historyDaily.length - 1]
+  const historyDays = historySummary.days || historyDaily.length || 30
+  const historyLabel = `近${historyDays}天`
 
   if (!historyDaily.length) {
-    return <div className={s.empty}>{weather.message || '暂无最近 7 天历史气象数据'}</div>
+    return <div className={s.empty}>{weather.message || '暂无近30天历史气象数据'}</div>
   }
 
   const overviewMetrics = [
@@ -78,31 +83,31 @@ export default function WeatherSupportPanel({ data }) {
     },
     {
       key: 'et0',
-      label: '近7天估算蒸散',
+      label: `${historyLabel}估算蒸散`,
       value: valueText(historySummary.total_et0_estimate, ' mm'),
       meta: `日均 ${valueText(historySummary.avg_et0_estimate, ' mm/d')}`,
     },
     {
       key: 'precip',
-      label: '近7天累计降水',
+      label: `${historyLabel}累计降水`,
       value: valueText(historySummary.total_precip, ' mm'),
       meta: `降水日数 ${valueText(historySummary.rainy_days, ' 天')}`,
     },
     {
       key: 'avgHumidity',
-      label: '近7天平均湿度',
+      label: `${historyLabel}平均湿度`,
       value: valueText(historySummary.avg_humidity, '%'),
       meta: `平均气温 ${valueText(historySummary.avg_temp_mean, '°C')}`,
     },
     {
       key: 'avgWind',
-      label: '近7天平均最大风速',
+      label: `${historyLabel}平均最大风速`,
       value: valueText(historySummary.avg_wind_speed, ' km/h'),
       meta: `末日最大风速 ${formatWindSpeed(latestHistory?.wind_speed_max)}`,
     },
     {
       key: 'avgRange',
-      label: '近7天平均温差',
+      label: `${historyLabel}平均温差`,
       value: valueText(historySummary.avg_temp_range, '°C'),
       meta: '昼夜温差参考',
     },
@@ -114,9 +119,14 @@ export default function WeatherSupportPanel({ data }) {
     grid: { top: 42, right: 20, bottom: 34, left: 40, containLabel: true },
     tooltip: {
       trigger: 'axis',
+      appendToBody: true,
+      confine: true,
       backgroundColor: 'rgba(4, 18, 44, 0.96)',
       borderColor: 'rgba(56, 189, 248, 0.45)',
+      borderWidth: 1,
+      padding: [8, 10],
       textStyle: { color: '#dbeeff' },
+      extraCssText: 'z-index: 9999; min-width: 150px; max-width: 220px; line-height: 1.45; box-shadow: 0 12px 28px rgba(0,0,0,0.34);',
       formatter(params) {
         const point = historyDaily[params?.[0]?.dataIndex ?? -1]
         const rows = [
@@ -139,7 +149,7 @@ export default function WeatherSupportPanel({ data }) {
     xAxis: {
       type: 'category',
       data: historyDaily.map((item) => shortDate(item.date)),
-      axisLabel: { color: '#93c5fd', fontSize: 12 },
+      axisLabel: { ...AXIS_LABEL, color: '#93c5fd', fontSize: 12 },
       axisLine: { lineStyle: { color: 'rgba(56, 189, 248, 0.3)' } },
       axisTick: { show: false },
     },
@@ -147,16 +157,16 @@ export default function WeatherSupportPanel({ data }) {
       {
         type: 'value',
         name: '温度 (°C)',
-        nameTextStyle: { color: '#38bdf8', fontSize: 10 },
-        axisLabel: { color: '#93c5fd', fontSize: 11 },
+        nameTextStyle: { color: '#38bdf8', fontSize: 10, fontFamily: CHART_FONT_FAMILY },
+        axisLabel: { ...AXIS_LABEL, color: '#93c5fd', fontSize: 11 },
         axisLine: { show: true, lineStyle: { color: '#38bdf8' } },
         splitLine: { lineStyle: { color: 'rgba(56, 189, 248, 0.08)' } },
       },
       {
         type: 'value',
         name: '降水 (mm)',
-        nameTextStyle: { color: '#4ade80', fontSize: 10 },
-        axisLabel: { color: '#86efac', fontSize: 11 },
+        nameTextStyle: { color: '#4ade80', fontSize: 10, fontFamily: CHART_FONT_FAMILY },
+        axisLabel: { ...AXIS_LABEL, color: '#86efac', fontSize: 11 },
         axisLine: { show: true, lineStyle: { color: '#4ade80' } },
         splitLine: { show: false },
       },
@@ -214,9 +224,9 @@ export default function WeatherSupportPanel({ data }) {
       </section>
 
       <div className={s.chartWrap}>
-        <ReactECharts
+        <ResponsiveEChart
           option={option}
-          style={{ width: '100%', height: '100%' }}
+          resizeDeps={[historyDaily.length]}
           notMerge
           opts={{ renderer: 'canvas' }}
         />

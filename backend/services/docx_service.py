@@ -31,9 +31,11 @@ from docx.shared import RGBColor
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from config import settings
 from services.report_figures import (
     build_figure_manifest,
     build_figure_map as build_shared_figure_map,
+    finalize_figure_references,
 )
 from services.report_service import build_special_analysis_sections
 
@@ -406,7 +408,7 @@ def _insert_figure(doc, image_src: str, caption: str, width_inches: float = 5.5)
 def _download_image(url: str, timeout: int = 15) -> bytes | None:
     """Download image bytes from a URL; return None on failure."""
     try:
-        with httpx.Client(verify=False, timeout=timeout, follow_redirects=True) as client:
+        with httpx.Client(verify=settings.HTTP_TLS_VERIFY, timeout=timeout, follow_redirects=True) as client:
             resp = client.get(url)
             resp.raise_for_status()
             return resp.content
@@ -562,6 +564,7 @@ def _append_guideline_summary(doc: Document, summary: dict) -> None:
         current = weather.get("current") or {}
         summary_info = weather.get("history_summary") or {}
         history_range = weather.get("history_range") or {}
+        history_days = summary_info.get("days") or 30
         _set_heading(doc, "五、气象补充与水源涵养支撑", level=2)
         _add_paragraph(
             doc,
@@ -573,10 +576,10 @@ def _append_guideline_summary(doc: Document, summary: dict) -> None:
                     f"当前湿度：{_value_text(current.get('humidity'), '%')}",
                     f"当前风速：{_value_text(current.get('wind_speed'), ' km/h')}",
                     f"历史区间：{_value_text(history_range.get('start'))} 至 {_value_text(history_range.get('end'))}",
-                    f"最近7天累计降水：{_value_text(summary_info.get('total_precip'), ' mm')}",
-                    f"最近7天平均气温：{_value_text(summary_info.get('avg_temp_mean'), ' ℃')}",
-                    f"最近7天平均湿度：{_value_text(summary_info.get('avg_humidity'), ' %')}",
-                    f"最近7天平均风速：{_value_text(summary_info.get('avg_wind_speed'), ' km/h')}",
+                    f"最近{history_days}天累计降水：{_value_text(summary_info.get('total_precip'), ' mm')}",
+                    f"最近{history_days}天平均气温：{_value_text(summary_info.get('avg_temp_mean'), ' ℃')}",
+                    f"最近{history_days}天平均湿度：{_value_text(summary_info.get('avg_humidity'), ' %')}",
+                    f"最近{history_days}天平均风速：{_value_text(summary_info.get('avg_wind_speed'), ' km/h')}",
                 ]
             ),
             first_indent=False,
@@ -603,7 +606,7 @@ def _append_special_analysis_section(doc: Document, summary: dict) -> None:
     if not sections:
         return
 
-    _set_heading(doc, "四类深度专项分析", level=1)
+    _set_heading(doc, "八、四类深度专项分析", level=1)
     _add_paragraph(
         doc,
         "围绕虫情、雨情、水土流失与径流、面源水质污染四个专项方向，结合本期监测统计、历史同口径对比和管理阈值进行分项研判，形成可直接用于巡查、预警和处置的专项结论。孢子内容不进入正文分析，仅在报告最后作为设备采集图像附录展示。",
@@ -763,20 +766,20 @@ def generate_docx_report(
     doc.add_page_break()
 
     # Build figure map
+    figure_manifest = figure_manifest or build_figure_manifest(summary, charts, ai_images)
+    ai_analysis, figure_manifest = finalize_figure_references(ai_analysis or "", figure_manifest)
     figures = _build_figure_map(summary, charts, ai_images, figure_manifest)
 
-    FIG_REF_RE = re.compile(r'[（(](?:见)?图(\d+)[）)]')
+    FIG_REF_RE = re.compile(r'(?:见)?图(\d+)')
     SUBSECTION_REF_RE = re.compile(r'^\*\*(\d+\.\d+\s+.+?)\*\*$')
-    next_expected_fig = 1
 
-    def _insert_figures_through(target_fig: int) -> None:
-        nonlocal next_expected_fig
-        while next_expected_fig <= target_fig:
-            if next_expected_fig in figures:
-                b64, caption = figures[next_expected_fig]
-                _insert_figure(doc, b64, caption)
-                figures.pop(next_expected_fig, None)
-            next_expected_fig += 1
+    def _insert_referenced_figures(refs: list[int]) -> None:
+        for figure_number in refs:
+            if figure_number not in figures:
+                continue
+            b64, caption = figures[figure_number]
+            _insert_figure(doc, b64, caption)
+            figures.pop(figure_number, None)
 
     def _strip_inline_markdown(text: str) -> str:
         return re.sub(r"\*\*(.+?)\*\*", r"\1", text or "").strip()
@@ -802,17 +805,11 @@ def generate_docx_report(
                 _add_paragraph(doc, _strip_inline_markdown(line))
 
             # Check for figure references and insert figures immediately after the paragraph
-            refs = sorted([int(match.group(1)) for match in FIG_REF_RE.finditer(line)])
+            refs = sorted({int(match.group(1)) for match in FIG_REF_RE.finditer(line)})
             if refs:
-                # Insert all figures up to the highest one mentioned in this line
-                _insert_figures_through(max(refs))
+                _insert_referenced_figures(refs)
 
     _append_special_analysis_section(doc, summary)
-
-    # Any remaining AI/chart figures → standard appendix
-    if figures:
-        _set_heading(doc, "附录：数据图表", level=1)
-        _insert_figures_through(max(figures))
 
     # Device capture image appendix (downloads from CDN URLs)
     _append_device_image_section(doc, summary)

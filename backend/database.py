@@ -9,7 +9,7 @@ from sqlalchemy.orm import DeclarativeBase
 from config import settings
 
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 UNIQUE_COLLECTION_TABLES = (
     "insect_records",
     "spore_records",

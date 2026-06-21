@@ -39,6 +39,9 @@ class Settings(BaseSettings):
     LEADER_ACCESS_PASSWORD: str = ""
     AUTH_COOKIE_NAME: str = "sanya_monitor_auth"
     AUTH_MAX_AGE_HOURS: int = 12
+    AUTH_COOKIE_SECURE: bool = False
+    HTTP_TLS_VERIFY: bool = False
+    RUN_COLLECTORS_ON_STARTUP: bool = False
     LOG_DIR: str = str((BACKEND_DIR.parent / "logs" / "backend").resolve())
     LOG_LEVEL: str = "INFO"
     LOG_FILE_MAX_BYTES: int = 10 * 1024 * 1024
@@ -46,7 +49,11 @@ class Settings(BaseSettings):
     SQLALCHEMY_ECHO: bool = False
     ENABLE_AI_IMAGE_GEN: bool = True
     DEVICE_STATUS_CACHE_SECONDS: int = 60
+    OVERVIEW_CACHE_SECONDS: int = 30
     ANALYTICS_DASHBOARD_CACHE_SECONDS: int = 60
+    ANALYSIS_RUNTIME_CACHE_SECONDS: int = 60
+    SENSOR_SERIES_CACHE_SECONDS: int = 60
+    INSECT_SERIES_CACHE_SECONDS: int = 60
 
     APP_TITLE: str = "三亚市天涯区橡胶林近自然化改造和农田提升监测平台"
     DEBUG: bool = True
@@ -89,6 +96,9 @@ class Settings(BaseSettings):
         "SQLALCHEMY_ECHO",
         "ENABLE_AI_IMAGE_GEN",
         "QWEATHER_ENABLED",
+        "AUTH_COOKIE_SECURE",
+        "HTTP_TLS_VERIFY",
+        "RUN_COLLECTORS_ON_STARTUP",
         mode="before",
     )
     @classmethod

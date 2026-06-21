@@ -1,4 +1,4 @@
-import ReactECharts from 'echarts-for-react'
+import ResponsiveEChart from './ResponsiveEChart.jsx'
 
 const TOOLTIP = { 
   backgroundColor: 'rgba(3, 17, 46, 0.95)', 
@@ -12,7 +12,8 @@ const TOOLTIP = {
   borderRadius: 8
 }
 
-const AXIS_LABEL = { color: '#8fc8e8', fontSize: 11, fontFamily: 'monospace' }
+const CHART_FONT_FAMILY = 'Microsoft YaHei, PingFang SC, Noto Sans CJK SC, Source Han Sans SC, Arial, sans-serif'
+const AXIS_LABEL = { color: '#8fc8e8', fontSize: 11, fontFamily: CHART_FONT_FAMILY, hideOverlap: true }
 
 export default function CombinedTrendChart({ data }) {
   const td = data?.data || []
@@ -20,18 +21,17 @@ export default function CombinedTrendChart({ data }) {
 
   const xData = td.map(d => d.date.slice(5))
   const insectData = td.map(d => d.insect)
-  const sporeData = td.map(d => d.spore)
 
   const option = {
     backgroundColor: 'transparent',
-    grid: { top: 65, bottom: 35, left: 55, right: 55, containLabel: true },
+    grid: { top: 42, bottom: 35, left: 55, right: 28, containLabel: true },
     tooltip: { 
       ...TOOLTIP, 
       trigger: 'axis', 
       axisPointer: { type: 'cross', crossStyle: { color: 'rgba(255,255,255,0.4)', type: 'dashed' } } 
     },
     legend: {
-      data: ['虫情', '孢子'],
+      data: ['虫情'],
       top: 0, left: 'center',
       textStyle: { color: '#b0d8f0', fontSize: 12, fontWeight: 500 },
       itemGap: 24,
@@ -45,20 +45,12 @@ export default function CombinedTrendChart({ data }) {
       axisTick: { show: false },
       splitLine: { show: false },
     },
-    yAxis: [
-      {
-        type: 'value', name: '虫情数量 (只)',
-        nameTextStyle: { color: '#ff7043', fontSize: 11, padding: [0, 20, 10, 0] },
-        axisLabel: { ...AXIS_LABEL, color: '#ff9a80' },
-        splitLine: { lineStyle: { color: 'rgba(255, 112, 67, 0.1)', type: 'dashed' } },
-      },
-      {
-        type: 'value', name: '孢子量 (个)',
-        nameTextStyle: { color: '#d500f9', fontSize: 11, padding: [0, 0, 10, 20] },
-        axisLabel: { ...AXIS_LABEL, color: '#ea80fc' },
-        splitLine: { show: false },
-      },
-    ],
+    yAxis: {
+      type: 'value', name: '虫情数量 (只)',
+      nameTextStyle: { color: '#ff7043', fontSize: 11, fontFamily: CHART_FONT_FAMILY, padding: [0, 20, 10, 0] },
+      axisLabel: { ...AXIS_LABEL, color: '#ff9a80' },
+      splitLine: { lineStyle: { color: 'rgba(255, 112, 67, 0.1)', type: 'dashed' } },
+    },
     dataZoom: [
       { type: 'inside', start: 0, end: 100 }
     ],
@@ -66,7 +58,6 @@ export default function CombinedTrendChart({ data }) {
       {
         name: '虫情', 
         type: 'bar', 
-        yAxisIndex: 0,
         data: insectData,
         barMaxWidth: 16,
         itemStyle: {
@@ -93,51 +84,13 @@ export default function CombinedTrendChart({ data }) {
         symbolPosition: 'end',
         symbolOffset: [0, -2],
         data: insectData,
-        yAxisIndex: 0,
         tooltip: { show: false },
         zlevel: 3,
-      },
-      {
-        name: '孢子', 
-        type: 'line', 
-        yAxisIndex: 1, 
-        smooth: true,
-        data: sporeData,
-        symbol: 'circle',
-        symbolSize: 8,
-        showSymbol: false,
-        lineStyle: { 
-          color: '#00e5ff', 
-          width: 3,
-          shadowBlur: 15,
-          shadowColor: '#00e5ff',
-          shadowOffsetY: 0
-        },
-        areaStyle: { 
-          color: { 
-            type: 'linear', x: 0, y: 0, x2: 0, y2: 1, 
-            colorStops: [{ offset: 0, color: 'rgba(0, 229, 255, 0.4)' }, { offset: 1, color: 'rgba(0, 229, 255, 0)' }] 
-          } 
-        },
-        itemStyle: {
-          color: '#fff',
-          borderColor: '#00e5ff',
-          borderWidth: 2,
-          shadowColor: '#00e5ff',
-          shadowBlur: 10
-        },
-        markPoint: {
-          data: [
-            { type: 'max', name: '最高孢子量', symbolSize: 45, itemStyle: { color: 'rgba(0, 229, 255, 0.8)', shadowBlur: 10, shadowColor: '#00e5ff' } }
-          ],
-          label: { color: '#fff', fontSize: 10, fontWeight: 'bold' }
-        },
-        zlevel: 4,
       },
     ],
   }
 
-  return <ReactECharts option={option} style={{ height: '100%' }} opts={{ renderer: 'canvas' }} />
+  return <ResponsiveEChart option={option} resizeDeps={[td.length]} opts={{ renderer: 'canvas' }} />
 }
 
 function Empty() {

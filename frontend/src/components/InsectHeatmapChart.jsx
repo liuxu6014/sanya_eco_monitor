@@ -1,4 +1,4 @@
-import ReactECharts from 'echarts-for-react'
+import ResponsiveEChart from './ResponsiveEChart.jsx'
 
 const TOOLTIP = { 
   backgroundColor: 'rgba(5, 10, 25, 0.95)', 
@@ -11,6 +11,8 @@ const TOOLTIP = {
   shadowColor: 'rgba(255, 112, 67, 0.2)',
   borderRadius: 8
 }
+const CHART_FONT_FAMILY = 'Microsoft YaHei, PingFang SC, Noto Sans CJK SC, Source Han Sans SC, Arial, sans-serif'
+const AXIS_LABEL = { fontFamily: CHART_FONT_FAMILY, hideOverlap: true }
 
 export default function InsectHeatmapChart({ data }) {
   const hm = data?.data
@@ -24,7 +26,7 @@ export default function InsectHeatmapChart({ data }) {
     tooltip: {
       ...TOOLTIP,
       formatter: (p) => `
-        <div style="font-family: monospace; font-size: 12px; color: #8fc8e8; margin-bottom: 6px; letter-spacing: 0.5px;">
+        <div style="font-family: ${CHART_FONT_FAMILY}; font-size: 12px; color: #8fc8e8; margin-bottom: 6px; letter-spacing: 0.5px;">
           ${species[p.data[1]]}（${dates[p.data[0]]}）
         </div>
         <div style="font-size: 14px; font-weight: bold;">
@@ -36,7 +38,7 @@ export default function InsectHeatmapChart({ data }) {
     xAxis: {
       type: 'category',
       data: dates,
-      axisLabel: { color: '#8fc8e8', fontSize: 10, fontFamily: 'monospace', interval: 'auto', rotate: 30 },
+      axisLabel: { ...AXIS_LABEL, color: '#8fc8e8', fontSize: 10, interval: 'auto', rotate: 30 },
       axisLine: { lineStyle: { color: 'rgba(56,189,248,0.3)' }, width: 2 },
       axisTick: { show: true, lineStyle: { color: 'rgba(56,189,248,0.3)' } },
       splitLine: { show: true, lineStyle: { color: 'rgba(56,189,248,0.05)', type: 'dashed' } }
@@ -44,8 +46,8 @@ export default function InsectHeatmapChart({ data }) {
     yAxis: {
       type: 'category',
       data: species,
-      nameTextStyle: { color: '#8fc8e8', padding: [0, 40, 0, 0] },
-      axisLabel: { color: '#b0d8f0', fontSize: 11, fontWeight: 'bold' },
+      nameTextStyle: { color: '#8fc8e8', fontFamily: CHART_FONT_FAMILY, padding: [0, 40, 0, 0] },
+      axisLabel: { ...AXIS_LABEL, color: '#b0d8f0', fontSize: 11, fontWeight: 'bold' },
       axisLine: { lineStyle: { color: 'rgba(56,189,248,0.3)' }, width: 2 },
       axisTick: { show: true, lineStyle: { color: 'rgba(56,189,248,0.3)' } },
       splitLine: { show: true, lineStyle: { color: 'rgba(56,189,248,0.05)', type: 'dashed' } }
@@ -57,7 +59,7 @@ export default function InsectHeatmapChart({ data }) {
       orient: 'horizontal',
       bottom: 0, right: 30,
       itemWidth: 10, itemHeight: 140,
-      textStyle: { color: '#8fc8e8', fontSize: 10, fontFamily: 'monospace' },
+      textStyle: { color: '#8fc8e8', fontSize: 10, fontFamily: CHART_FONT_FAMILY },
       inRange: { 
           color: ['rgba(56, 189, 248, 0.4)', '#4ade80', '#fbbf24', '#ff7043', '#f43f5e'] 
       },
@@ -100,7 +102,7 @@ export default function InsectHeatmapChart({ data }) {
     ],
   }
 
-  return <ReactECharts option={option} style={{ height: '100%' }} opts={{ renderer: 'canvas' }} />
+  return <ResponsiveEChart option={option} resizeDeps={[dates.length, species.length, values.length]} opts={{ renderer: 'canvas' }} />
 }
 
 function Empty() {

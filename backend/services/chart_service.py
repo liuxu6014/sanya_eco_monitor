@@ -14,9 +14,42 @@ import matplotlib
 matplotlib.use("Agg")
 
 from matplotlib import font_manager
+from matplotlib.font_manager import FontProperties
 
 
 logger = logging.getLogger(__name__)
+
+
+_PREFERRED_FONT_FAMILIES = [
+    "Microsoft YaHei",
+    "WenQuanYi Zen Hei",
+    "Noto Sans CJK SC",
+    "Source Han Sans SC",
+    "SimHei",
+    "SimSun",
+    "Noto Sans CJK JP",
+    "Noto Serif CJK SC",
+    "AR PL UKai CN",
+    "AR PL UMing CN",
+    "DejaVu Sans",
+]
+
+_PREFERRED_FONT_PATHS = [
+    Path("C:/Windows/Fonts/msyh.ttc"),
+    Path("C:/Windows/Fonts/msyhbd.ttc"),
+    Path("C:/Windows/Fonts/simhei.ttf"),
+    Path("C:/Windows/Fonts/simsun.ttc"),
+    Path("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"),
+    Path("/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc"),
+    Path("/usr/share/fonts/opentype/noto/NotoSerifCJK-Regular.ttc"),
+    Path("/usr/share/fonts/opentype/noto/NotoSerifCJK-Bold.ttc"),
+    Path("/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc"),
+    Path("/usr/share/fonts/truetype/arphic/ukai.ttc"),
+    Path("/usr/share/fonts/truetype/arphic/uming.ttc"),
+]
+
+_REGULAR_FONT_HINTS = ("regular", "normal")
+_BOLD_FONT_HINTS = ("bold", "demi", "medium", "semibold")
 
 
 def _register_font(path: Path, registered: list[str]) -> None:
@@ -50,33 +83,99 @@ def _fontconfig_match_paths(patterns: list[str]) -> list[Path]:
     return matched
 
 
-def _configure_fonts() -> list[str]:
-    font_paths = [
-        Path("C:/Windows/Fonts/msyh.ttc"),
-        Path("C:/Windows/Fonts/msyhbd.ttc"),
-        Path("C:/Windows/Fonts/simhei.ttf"),
-        Path("C:/Windows/Fonts/simsun.ttc"),
-        Path("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"),
-        Path("/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc"),
-        Path("/usr/share/fonts/opentype/noto/NotoSerifCJK-Regular.ttc"),
-        Path("/usr/share/fonts/opentype/noto/NotoSerifCJK-Bold.ttc"),
-        Path("/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc"),
-        Path("/usr/share/fonts/truetype/arphic/ukai.ttc"),
-        Path("/usr/share/fonts/truetype/arphic/uming.ttc"),
-    ]
-    font_paths.extend(
+def _ordered_font_families(registered: list[str]) -> list[str]:
+    # Keep Simplified Chinese families ahead of TTC-derived aliases such as
+    # "Noto Sans CJK JP" so single titles do not mix glyphs across locales.
+    ordered: list[str] = []
+    for family in _PREFERRED_FONT_FAMILIES + registered:
+        if family and family not in ordered:
+            ordered.append(family)
+    return ordered
+
+
+def _find_font_for_family(family: str, *, weight: str | None = None) -> str | None:
+    try:
+        return font_manager.findfont(
+            FontProperties(family=[family], weight=weight),
+            fallback_to_default=False,
+        )
+    except Exception:
+        return None
+
+
+def _get_chart_font_family(*, weight: str | None = None) -> str | None:
+    for family in _PREFERRED_FONT_FAMILIES:
+        if _find_font_for_family(family, weight=weight):
+            return family
+    return None
+
+
+def _resolve_preferred_font_paths() -> list[Path]:
+    paths = list(_PREFERRED_FONT_PATHS)
+    paths.extend(
         _fontconfig_match_paths(
             [
+                "Microsoft YaHei",
+                "WenQuanYi Zen Hei",
+                "SimHei",
                 "Noto Sans CJK SC",
+                "Source Han Sans SC",
                 "Noto Sans CJK JP",
                 "Noto Serif CJK SC",
-                "WenQuanYi Zen Hei",
-                "Microsoft YaHei",
-                "SimHei",
             ]
         )
     )
+    ordered: list[Path] = []
+    seen: set[Path] = set()
+    for path in paths:
+        resolved = path.resolve(strict=False)
+        if resolved in seen or not path.exists():
+            continue
+        seen.add(resolved)
+        ordered.append(path)
+    return ordered
 
+
+def _select_font_path(paths: list[Path], *, weight: str | None = None) -> Path | None:
+    if not paths:
+        return None
+    if not weight:
+        return paths[0]
+
+    weight_lower = weight.lower()
+    hints = _BOLD_FONT_HINTS if weight_lower == "bold" else _REGULAR_FONT_HINTS
+    fallback = paths[0]
+    for path in paths:
+        name = path.name.lower()
+        if any(hint in name for hint in hints):
+            return path
+    return fallback
+
+
+def _get_chart_font_path(*, weight: str | None = None) -> Path | None:
+    paths = _resolve_preferred_font_paths()
+    return _select_font_path(paths, weight=weight)
+
+
+def _build_chart_font(*, size: float | None = None, weight: str | None = None) -> FontProperties | None:
+    family = _get_chart_font_family(weight=weight)
+    if family:
+        return FontProperties(family=[family], size=size, weight=weight)
+    path = _get_chart_font_path(weight=weight)
+    if path is not None:
+        return FontProperties(fname=str(path), size=size)
+    return None
+
+
+def _get_chart_font(*, size: float | None = None, weight: str | None = None) -> FontProperties:
+    font = _build_chart_font(size=size, weight=weight)
+    if font is not None:
+        return font
+    return FontProperties(family=_FONT_FAMILIES, size=size, weight=weight)
+
+
+def _configure_fonts() -> list[str]:
+    font_paths = _resolve_preferred_font_paths()
     registered: list[str] = []
     seen_paths: set[Path] = set()
     for path in font_paths:
@@ -86,20 +185,7 @@ def _configure_fonts() -> list[str]:
         seen_paths.add(resolved)
         _register_font(path, registered)
 
-    fallback = [
-        "Microsoft YaHei",
-        "SimHei",
-        "SimSun",
-        "Noto Sans CJK SC",
-        "Noto Sans CJK JP",
-        "Noto Serif CJK SC",
-        "WenQuanYi Zen Hei",
-        "AR PL UKai CN",
-        "AR PL UMing CN",
-        "Source Han Sans SC",
-        "DejaVu Sans",
-    ]
-    families = list(dict.fromkeys(registered + fallback))
+    families = _ordered_font_families(registered)
     matplotlib.rcParams.update(
         {
             "font.family": "sans-serif",
@@ -112,6 +198,26 @@ def _configure_fonts() -> list[str]:
 
 
 _FONT_FAMILIES = _configure_fonts()
+
+
+def _apply_tick_font(labels: list[Any], *, size: float, weight: str | None = None) -> None:
+    font = _get_chart_font(size=size, weight=weight)
+    for label in labels:
+        label.set_fontproperties(font)
+        label.set_color(_TEXT)
+
+
+def _apply_axis_title(text_obj: Any, *, size: float, weight: str | None = None) -> None:
+    text_obj.set_fontproperties(_get_chart_font(size=size, weight=weight))
+    text_obj.set_color(_TEXT)
+
+
+def _text_kwargs(*, size: float, weight: str | None = None) -> dict[str, Any]:
+    return {
+        "fontsize": size,
+        "fontproperties": _get_chart_font(size=size, weight=weight),
+        "color": _TEXT,
+    }
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -212,14 +318,16 @@ def chart_insect_daily(summary: dict[str, Any]) -> str | None:
                 str(count),
                 ha="center",
                 va="bottom",
-                fontsize=7.5,
-                color=_TEXT,
+                **_text_kwargs(size=7.5),
             )
 
     ax.set_xticks(x)
-    ax.set_xticklabels(dates, rotation=45, ha="right", fontsize=8)
-    ax.set_ylabel(_LABEL_CAPTURE, fontsize=9, color=_TEXT)
-    ax.set_title(_TITLE_INSECT_DAILY, fontsize=12, fontweight="bold", color=_TEXT, pad=10)
+    ax.set_xticklabels(dates, rotation=45, ha="right")
+    _apply_tick_font(list(ax.get_xticklabels()), size=8)
+    ylabel = ax.set_ylabel(_LABEL_CAPTURE)
+    _apply_axis_title(ylabel, size=9)
+    title = ax.set_title(_TITLE_INSECT_DAILY, pad=10)
+    _apply_axis_title(title, size=12, weight="bold")
     fig.tight_layout()
     return _fig_to_b64(fig)
 
@@ -246,14 +354,16 @@ def chart_rainfall_daily(summary: dict[str, Any]) -> str | None:
                 f"{value:.1f}",
                 ha="center",
                 va="bottom",
-                fontsize=7.5,
-                color=_TEXT,
+                **_text_kwargs(size=7.5),
             )
 
     ax.set_xticks(x)
-    ax.set_xticklabels(dates, rotation=45, ha="right", fontsize=8)
-    ax.set_ylabel(_LABEL_RAINFALL, fontsize=9, color=_TEXT)
-    ax.set_title(_TITLE_RAIN_DAILY, fontsize=12, fontweight="bold", color=_TEXT, pad=10)
+    ax.set_xticklabels(dates, rotation=45, ha="right")
+    _apply_tick_font(list(ax.get_xticklabels()), size=8)
+    ylabel = ax.set_ylabel(_LABEL_RAINFALL)
+    _apply_axis_title(ylabel, size=9)
+    title = ax.set_title(_TITLE_RAIN_DAILY, pad=10)
+    _apply_axis_title(title, size=12, weight="bold")
     fig.tight_layout()
     return _fig_to_b64(fig)
 
@@ -283,15 +393,17 @@ def chart_runoff_device(summary: dict[str, Any]) -> str | None:
             bar.get_y() + bar.get_height() / 2,
             f"{value:.2f} m3",
             va="center",
-            fontsize=8,
-            color=_TEXT,
+            **_text_kwargs(size=8),
         )
 
     ax.set_yticks(y)
-    ax.set_yticklabels(names, fontsize=9)
+    ax.set_yticklabels(names)
+    _apply_tick_font(list(ax.get_yticklabels()), size=9)
     ax.invert_yaxis()
-    ax.set_xlabel("\u7d2f\u8ba1\u5f84\u6d41\u91cf\uff08m3\uff09", fontsize=9, color=_TEXT)
-    ax.set_title(_TITLE_RUNOFF_DEVICE, fontsize=12, fontweight="bold", color=_TEXT, pad=10)
+    xlabel = ax.set_xlabel("\u7d2f\u8ba1\u5f84\u6d41\u91cf\uff08m3\uff09")
+    _apply_axis_title(xlabel, size=9)
+    title = ax.set_title(_TITLE_RUNOFF_DEVICE, pad=10)
+    _apply_axis_title(title, size=12, weight="bold")
     ax.xaxis.grid(True, color=_GRID, linestyle="--", linewidth=0.6, alpha=0.8)
     ax.yaxis.grid(False)
     ax.set_axisbelow(True)
@@ -327,14 +439,16 @@ def chart_water_quality_metrics(summary: dict[str, Any]) -> str | None:
             f"{value:.2f}",
             ha="center",
             va="bottom",
-            fontsize=8,
-            color=_TEXT,
+            **_text_kwargs(size=8),
         )
 
     ax.set_xticks(x)
-    ax.set_xticklabels(names, fontsize=9)
-    ax.set_ylabel("\u5e73\u5747\u503c\uff08\u6309\u5404\u81ea\u6307\u6807\u5355\u4f4d\uff09", fontsize=9, color=_TEXT)
-    ax.set_title(_TITLE_WATER_QUALITY, fontsize=12, fontweight="bold", color=_TEXT, pad=10)
+    ax.set_xticklabels(names)
+    _apply_tick_font(list(ax.get_xticklabels()), size=9)
+    ylabel = ax.set_ylabel("\u5e73\u5747\u503c\uff08\u6309\u5404\u81ea\u6307\u6807\u5355\u4f4d\uff09")
+    _apply_axis_title(ylabel, size=9)
+    title = ax.set_title(_TITLE_WATER_QUALITY, pad=10)
+    _apply_axis_title(title, size=12, weight="bold")
     ax.set_xlim(-0.5, len(names) - 0.5)
     fig.tight_layout()
     return _fig_to_b64(fig)
@@ -363,15 +477,17 @@ def chart_insect_species(summary: dict[str, Any]) -> str | None:
             bar.get_y() + bar.get_height() / 2,
             f"{count} {_UNIT_ONLY} ({pct:.1f}%)",
             va="center",
-            fontsize=8,
-            color=_TEXT,
+            **_text_kwargs(size=8),
         )
 
     ax.set_yticks(y)
-    ax.set_yticklabels(names, fontsize=9)
+    ax.set_yticklabels(names)
+    _apply_tick_font(list(ax.get_yticklabels()), size=9)
     ax.invert_yaxis()
-    ax.set_xlabel(_LABEL_CAPTURE, fontsize=9, color=_TEXT)
-    ax.set_title(_TITLE_INSECT_SPECIES, fontsize=12, fontweight="bold", color=_TEXT, pad=10)
+    xlabel = ax.set_xlabel(_LABEL_CAPTURE)
+    _apply_axis_title(xlabel, size=9)
+    title = ax.set_title(_TITLE_INSECT_SPECIES, pad=10)
+    _apply_axis_title(title, size=12, weight="bold")
     ax.xaxis.grid(True, color=_GRID, linestyle="--", linewidth=0.6, alpha=0.8)
     ax.yaxis.grid(False)
     ax.set_axisbelow(True)
@@ -410,10 +526,15 @@ def chart_spore_daily(summary: dict[str, Any]) -> str | None:
     ax.fill_between(x, y, alpha=0.10, color=_PURPLE)
 
     ax.set_xticks(x)
-    ax.set_xticklabels(dates, rotation=45, ha="right", fontsize=8)
-    ax.set_ylabel(_LABEL_SPORE, fontsize=9, color=_TEXT)
-    ax.set_title(_TITLE_SPORE_DAILY, fontsize=12, fontweight="bold", color=_TEXT, pad=10)
-    ax.legend(fontsize=8, framealpha=0.7)
+    ax.set_xticklabels(dates, rotation=45, ha="right")
+    _apply_tick_font(list(ax.get_xticklabels()), size=8)
+    ylabel = ax.set_ylabel(_LABEL_SPORE)
+    _apply_axis_title(ylabel, size=9)
+    title = ax.set_title(_TITLE_SPORE_DAILY, pad=10)
+    _apply_axis_title(title, size=12, weight="bold")
+    legend = ax.legend(prop=_get_chart_font(size=8), framealpha=0.7)
+    for text in legend.get_texts():
+        text.set_color(_TEXT)
     fig.tight_layout()
     return _fig_to_b64(fig)
 
@@ -452,15 +573,17 @@ def chart_history_core(summary: dict[str, Any]) -> str | None:
             f"{value:+.1f}%",
             va="center",
             ha="left" if value >= 0 else "right",
-            fontsize=8,
-            color=_TEXT,
+            **_text_kwargs(size=8),
         )
 
     ax.set_yticks(y)
-    ax.set_yticklabels(labels, fontsize=9)
+    ax.set_yticklabels(labels)
+    _apply_tick_font(list(ax.get_yticklabels()), size=9)
     ax.invert_yaxis()
-    ax.set_xlabel("较上一等长周期变化率（%）", fontsize=9, color=_TEXT)
-    ax.set_title(_TITLE_HISTORY_CORE, fontsize=12, fontweight="bold", color=_TEXT, pad=10)
+    xlabel = ax.set_xlabel("较上一等长周期变化率（%）")
+    _apply_axis_title(xlabel, size=9)
+    title = ax.set_title(_TITLE_HISTORY_CORE, pad=10)
+    _apply_axis_title(title, size=12, weight="bold")
     ax.xaxis.grid(True, color=_GRID, linestyle="--", linewidth=0.6, alpha=0.8)
     ax.yaxis.grid(False)
     ax.set_xlim(-axis_limit, axis_limit)
@@ -497,15 +620,19 @@ def chart_history_water_quality(summary: dict[str, Any]) -> str | None:
                 f"{bar.get_height():.2f}",
                 ha="center",
                 va="bottom",
-                fontsize=8,
-                color=_TEXT,
+                **_text_kwargs(size=8),
             )
 
     ax.set_xticks(x)
-    ax.set_xticklabels(filtered_names, fontsize=9)
-    ax.set_ylabel("指标均值（mg/L）", fontsize=9, color=_TEXT)
-    ax.set_title(_TITLE_HISTORY_WATER, fontsize=12, fontweight="bold", color=_TEXT, pad=10)
-    ax.legend(fontsize=8, framealpha=0.75)
+    ax.set_xticklabels(filtered_names)
+    _apply_tick_font(list(ax.get_xticklabels()), size=9)
+    ylabel = ax.set_ylabel("指标均值（mg/L）")
+    _apply_axis_title(ylabel, size=9)
+    title = ax.set_title(_TITLE_HISTORY_WATER, pad=10)
+    _apply_axis_title(title, size=12, weight="bold")
+    legend = ax.legend(prop=_get_chart_font(size=8), framealpha=0.75)
+    for text in legend.get_texts():
+        text.set_color(_TEXT)
     fig.tight_layout()
     return _fig_to_b64(fig)
 

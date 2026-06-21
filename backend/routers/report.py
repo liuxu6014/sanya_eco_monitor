@@ -28,7 +28,11 @@ from services.ai_report import generate_ai_analysis
 from services.chart_service import generate_all_charts
 from services.gemini_image_service import generate_report_images
 from services.docx_service import generate_docx_report
-from services.report_figures import build_figure_manifest
+from services.report_figures import (
+    build_figure_manifest,
+    finalize_figure_references,
+    order_manifest_for_text,
+)
 from time_utils import cn_now_naive
 
 router = APIRouter(prefix="/api/report", tags=["报告生成"])
@@ -65,8 +69,9 @@ async def _gather_all(summary: dict) -> tuple[str, dict, dict, list[dict]]:
     chart_task = loop.run_in_executor(_chart_executor, generate_all_charts, summary)
     img_task = asyncio.create_task(generate_report_images(summary))
     charts, ai_images = await asyncio.gather(chart_task, img_task)
-    figure_manifest = build_figure_manifest(summary, charts, ai_images)
+    figure_manifest = order_manifest_for_text(build_figure_manifest(summary, charts, ai_images))
     ai_text = await generate_ai_analysis(summary, figure_manifest=figure_manifest)
+    ai_text, figure_manifest = finalize_figure_references(ai_text, figure_manifest)
     return ai_text, charts, ai_images, figure_manifest
 
 
@@ -110,6 +115,9 @@ def _report_dict(report: GeneratedReport) -> dict:
 
 
 async def _build_and_store_report(report_db_id: int, report_type: str, start_date: date, end_date: date) -> None:
+    html_path: str | None = None
+    docx_path: str | None = None
+
     async with AsyncSessionLocal() as db:
         result = await db.execute(select(GeneratedReport).where(GeneratedReport.id == report_db_id))
         report = result.scalar_one_or_none()
@@ -118,49 +126,55 @@ async def _build_and_store_report(report_db_id: int, report_type: str, start_dat
 
         report.status = "running"
         report.error_message = None
-        await db.commit()
-
         html_path = report.html_path
         docx_path = report.docx_path
-        try:
+        await db.commit()
+
+    try:
+        async with AsyncSessionLocal() as db:
             summary = await _service.get_custom_summary(db, start_date, end_date)
-            ai_text, charts, ai_images, figure_manifest = await _gather_all(summary)
-            html_content = ReportService.generate_html_report(
+
+        ai_text, charts, ai_images, figure_manifest = await _gather_all(summary)
+        html_content = ReportService.generate_html_report(
+            summary,
+            ai_analysis=ai_text,
+            charts=charts,
+            ai_images=ai_images,
+            figure_manifest=figure_manifest,
+        )
+
+        if html_path:
+            with open(html_path, "w", encoding="utf-8") as f:
+                f.write(html_content)
+
+        if docx_path:
+            generate_docx_report(
                 summary,
-                ai_analysis=ai_text,
-                charts=charts,
-                ai_images=ai_images,
+                ai_text,
+                charts,
+                ai_images,
+                docx_path,
                 figure_manifest=figure_manifest,
             )
 
-            if html_path:
-                with open(html_path, "w", encoding="utf-8") as f:
-                    f.write(html_content)
-
-            if docx_path:
-                generate_docx_report(
-                    summary,
-                    ai_text,
-                    charts,
-                    ai_images,
-                    docx_path,
-                    figure_manifest=figure_manifest,
-                )
-
-            report.status = "completed"
-            report.review_status = "pending"
-            report.visible_to_leader = False
-            report.error_message = None
-            await db.commit()
-        except Exception as exc:
-            await db.rollback()
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(select(GeneratedReport).where(GeneratedReport.id == report_db_id))
+            report = result.scalar_one_or_none()
+            if report:
+                report.status = "completed"
+                report.review_status = "pending"
+                report.visible_to_leader = False
+                report.error_message = None
+                await db.commit()
+    except Exception as exc:
+        async with AsyncSessionLocal() as db:
             result = await db.execute(select(GeneratedReport).where(GeneratedReport.id == report_db_id))
             report = result.scalar_one_or_none()
             if report:
                 report.status = "failed"
                 report.error_message = str(exc)
                 await db.commit()
-            logger.exception("background report generation failed: report_id=%s type=%s", report_db_id, report_type)
+        logger.exception("background report generation failed: report_id=%s type=%s", report_db_id, report_type)
 
 
 # ---------------------------------------------------------------------------

@@ -11,9 +11,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config import settings
 from models import InsectRecord, RunoffRecord, SporeRecord, WaterQualityRecord
 from routers.insect import get_combined_trend, get_species_heatmap
-from routers.sensor import get_runoff_daily, get_wq_daily
+from routers.sensor import get_rainfall_daily, get_runoff_daily, get_wq_daily
 from services.guideline_metrics import build_guideline_metrics
-from services.water_quality_support import get_latest_water_quality_record, resolve_water_quality_codes
+from services.water_quality_support import (
+    get_latest_water_quality_record,
+    resolve_water_quality_codes,
+    water_metric_value,
+)
 
 _dashboard_cache: dict[str, Any] = {"value": None, "expires_at": 0.0}
 _dashboard_lock = asyncio.Lock()
@@ -28,6 +32,17 @@ def _avg(values: list[float | None], digits: int = 2) -> float:
     if not clean:
         return 0.0
     return round(sum(clean) / len(clean), digits)
+
+
+def _bounded_values(values: list[float | None], *, upper_bound: float) -> list[float]:
+    clean = []
+    for value in values:
+        if value is None:
+            continue
+        numeric = float(value)
+        if 0 <= numeric <= upper_bound:
+            clean.append(numeric)
+    return clean
 
 
 async def build_eco_index_payload(db: AsyncSession) -> dict[str, Any]:
@@ -59,10 +74,10 @@ async def build_eco_index_payload(db: AsyncSession) -> dict[str, Any]:
         .order_by(desc(RunoffRecord.collection_time))
     )
     runoff_records = runoff_result.scalars().all()
-    avg_flow = _avg([record.flow_rate for record in runoff_records])
-    avg_sand = _avg([record.sand_content for record in runoff_records])
-    avg_runoff = _avg([record.runoff for record in runoff_records])
-    avg_level = _avg([record.water_level for record in runoff_records])
+    avg_flow = _avg(_bounded_values([record.flow_rate for record in runoff_records], upper_bound=100))
+    avg_sand = _avg(_bounded_values([record.sand_content for record in runoff_records], upper_bound=1))
+    avg_runoff = _avg(_bounded_values([record.runoff for record in runoff_records], upper_bound=10))
+    avg_level = _avg(_bounded_values([record.water_level for record in runoff_records], upper_bound=100))
 
     configured_water_code = settings.WATER_QUALITY_CODE.strip() or "16133028"
     active_water_codes = await resolve_water_quality_codes(db, preferred_code=configured_water_code)
@@ -86,7 +101,8 @@ async def build_eco_index_payload(db: AsyncSession) -> dict[str, Any]:
     erosion_index = round(_clamp(erosion_val, 0, 100))
 
     if water_record:
-        p_permanganate = _clamp((water_record.permanganate_index or 0) / 15 * 100, 0, 100)
+        permanganate_value = water_metric_value(water_record, "permanganate_index", "permanganate")
+        p_permanganate = _clamp((permanganate_value or 0) / 15 * 100, 0, 100)
         p_nh4 = _clamp((water_record.ammonia_nitrogen or 0) / 2.0 * 100, 0, 100)
         p_tp = _clamp((water_record.total_phosphorus or 0) / 0.4 * 100, 0, 100)
         p_tn = _clamp((water_record.total_nitrogen or 0) / 2.0 * 100, 0, 100)
@@ -152,6 +168,7 @@ async def build_eco_index_payload(db: AsyncSession) -> dict[str, Any]:
 async def _fetch_dashboard_bundle(db: AsyncSession) -> dict[str, Any]:
     eco_index = await build_eco_index_payload(db)
     guideline_metrics = await build_guideline_metrics(db)
+    rainfall_daily = await get_rainfall_daily(days=30, db=db)
     water_quality_daily = await get_wq_daily(days=30, db=db)
     runoff_daily = await get_runoff_daily(days=30, db=db)
     combined_trend = await get_combined_trend(days=30, db=db)
@@ -160,8 +177,13 @@ async def _fetch_dashboard_bundle(db: AsyncSession) -> dict[str, Any]:
     return {
         "eco_index": eco_index,
         "guideline_metrics": guideline_metrics,
+        "rainfall_daily": rainfall_daily.get("data", []),
+        "rainfall_daily_by_device": rainfall_daily.get("by_device", {}),
+        "rainfall_daily_anomaly_summary": rainfall_daily.get("anomaly_summary", {}),
         "water_quality_daily": water_quality_daily.get("data", []),
         "runoff_daily": runoff_daily.get("data", []),
+        "runoff_daily_by_device": runoff_daily.get("by_device", {}),
+        "runoff_daily_anomaly_summary": runoff_daily.get("anomaly_summary", {}),
         "combined_trend": combined_trend.get("data", []),
         "insect_heatmap": insect_heatmap.get("data", {}),
         "generated_at": datetime.now().isoformat(),

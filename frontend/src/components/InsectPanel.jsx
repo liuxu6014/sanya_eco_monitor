@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import ReactECharts from 'echarts-for-react'
 import dayjs from 'dayjs'
 import ImagePreviewModal from './ImagePreviewModal.jsx'
+import ResponsiveEChart from './ResponsiveEChart.jsx'
 
-const COLORS = ['#ff7043','#ffaa00','#00d4ff','#00ff9d','#a855f7','#ff4757']
+const COLORS = ['#ff7043','#ffaa00','#00d4ff','#00ff9d','#a855f7','#ff4757','#38bdf8','#84cc16','#f472b6','#facc15','#22c55e','#fb7185']
 const TOOLTIP = { backgroundColor:'#03112e', borderColor:'rgba(0,180,255,0.35)', textStyle:{color:'#c8e0f4',fontSize:11} }
 
 export default function InsectPanel({ latest, trend, species }) {
@@ -30,8 +30,10 @@ export default function InsectPanel({ latest, trend, species }) {
     tooltip: { ...TOOLTIP, trigger:'item', formatter:'{b}: {c}只 ({d}%)' },
     series: [{
       type:'pie', radius:['42%','68%'], center:['50%','50%'],
-      data: sp.slice(0,6).map((d,i) => ({ name:d.name, value:d.value, itemStyle:{color:COLORS[i]} })),
-      label: { formatter:'{b}\n{c}', fontSize:10, color:'#7a9fb8' },
+      minAngle: 2,
+      data: sp.map((d,i) => ({ name:d.name, value:d.value, itemStyle:{color:COLORS[i % COLORS.length]} })),
+      label: { formatter:'{b}\n{c}', fontSize:10, color:'#7a9fb8', overflow:'truncate', width:68 },
+      labelLayout: { hideOverlap:true },
       labelLine: { lineStyle:{ color:'#2a4f6a' } },
       emphasis: { itemStyle:{ shadowBlur:10, shadowColor:'rgba(0,0,0,0.5)' } },
     }],
@@ -80,7 +82,7 @@ export default function InsectPanel({ latest, trend, species }) {
       <div style={{ flexShrink:0, height:85 }}>
         <div style={{ fontSize:10, color:'var(--text-muted)' }}>捕获趋势（只）</div>
         {td.length > 0
-          ? <ReactECharts option={barOpt} style={{ height:76 }} opts={{ renderer:'canvas' }} />
+          ? <ResponsiveEChart option={barOpt} style={{ height:76 }} resizeDeps={[td.length]} opts={{ renderer:'canvas' }} />
           : <Empty h={76} />}
       </div>
 
@@ -90,8 +92,8 @@ export default function InsectPanel({ latest, trend, species }) {
       <div style={{ flex:1, minHeight:0, display:'flex', flexDirection:'column' }}>
         <div style={{ fontSize:10, color:'var(--text-muted)', flexShrink:0 }}>虫种构成分析</div>
         {sp.length > 0
-          ? <div style={{ flex: 1, position: 'relative' }}>
-              <ReactECharts option={pieOpt} style={{ position:'absolute', top:0, left:0, width:'100%', height:'100%' }} opts={{ renderer:'canvas' }} />
+          ? <div style={{ flex: 1, minHeight:0, position: 'relative' }}>
+              <ResponsiveEChart option={pieOpt} style={{ position:'absolute', top:0, left:0, width:'100%', height:'100%' }} resizeDeps={[sp.length]} opts={{ renderer:'canvas' }} />
             </div>
           : <Empty />}
       </div>

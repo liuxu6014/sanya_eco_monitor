@@ -1,9 +1,10 @@
 .header {
   height: 70px;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(760px, max-content) minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
-  padding: 0 24px;
+  column-gap: 16px;
+  padding: 0 clamp(12px, 1.45vw, 24px);
   background: linear-gradient(180deg,
       rgba(2, 6, 23, 0.7) 0%,
       rgba(5, 18, 48, 0.5) 100%);
@@ -52,7 +53,25 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  min-width: 200px;
+  min-width: 0;
+  position: relative;
+  z-index: 2;
+}
+
+.rightSide {
+  align-items: flex-end;
+  gap: 6px;
+  justify-self: end;
+  max-width: 420px;
+}
+
+.navActions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  gap: 4px;
+  max-width: 420px;
+  min-width: 0;
 }
 
 .location {
@@ -81,7 +100,7 @@
 }
 
 .clock {
-  font-size: 24px;
+  font-size: clamp(18px, 1.4vw, 24px);
   font-weight: 300;
   color: var(--cyan);
   font-variant-numeric: tabular-nums;
@@ -98,10 +117,12 @@
   color: #e0f2fe;
   font-size: 12px;
   font-weight: 500;
-  padding: 6px 18px;
+  min-width: 0;
+  padding: 5px 8px;
+  white-space: nowrap;
   cursor: pointer;
   font-family: inherit;
-  letter-spacing: 1px;
+  letter-spacing: 0;
   box-shadow: 0 4px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
   transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
@@ -114,25 +135,39 @@
   color: #fff;
 }
 
+.logoutBtn {
+  border-color: rgba(248, 113, 113, 0.34);
+  border-top-color: rgba(248, 113, 113, 0.62);
+  background: linear-gradient(180deg, rgba(248, 113, 113, 0.16) 0%, rgba(127, 29, 29, 0.12) 100%);
+  color: #fecaca;
+}
+
+.logoutBtn:hover {
+  border-color: rgba(248, 113, 113, 0.82);
+  background: linear-gradient(180deg, rgba(248, 113, 113, 0.24) 0%, rgba(127, 29, 29, 0.18) 100%);
+  box-shadow: 0 6px 15px rgba(248, 113, 113, 0.18), inset 0 1px 0 rgba(255,255,255,0.16);
+}
+
 /* ===== Center ===== */
 .center {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  grid-column: 2;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 12px;
+  min-width: 0;
   pointer-events: none;
 }
 
 .titleBlock {
   text-align: center;
+  min-width: 0;
 }
 
 .title {
-  font-size: 32px;
+  font-size: clamp(22px, 1.85vw, 34px);
   font-weight: 800;
-  letter-spacing: 6px;
+  letter-spacing: clamp(1px, 0.22vw, 4px);
   background: linear-gradient(180deg, #ffffff 0%, #a0e0ff 45%, #00b4ff 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -141,9 +176,9 @@
 }
 
 .subtitle {
-  font-size: 9.5px;
+  font-size: clamp(7px, 0.62vw, 9.5px);
   font-weight: 500;
-  letter-spacing: 3px;
+  letter-spacing: clamp(1.2px, 0.18vw, 3px);
   background: linear-gradient(90deg, #00d4ff 0%, #a855f7 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -151,6 +186,8 @@
   text-transform: uppercase;
   text-align: center;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Decorative arrows */
@@ -164,9 +201,97 @@
 
 .hLine {
   display: block;
-  width: 40px;
+  width: clamp(18px, 2.1vw, 40px);
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--cyan));
+}
+
+@media (max-width: 1720px) {
+  .header {
+    height: 78px;
+  }
+
+  .clock {
+    display: none;
+  }
+
+  .navActions {
+    flex-wrap: wrap;
+    gap: 4px;
+    max-width: 360px;
+  }
+
+  .btn {
+    font-size: 11px;
+    padding-inline: 7px;
+    letter-spacing: 0;
+  }
+}
+
+@media (max-width: 1480px) {
+  .header {
+    grid-template-columns: minmax(0, 1fr) minmax(640px, max-content) minmax(0, 1fr);
+    column-gap: 10px;
+  }
+
+  .btn {
+    font-size: 11px;
+    padding-inline: 8px;
+    letter-spacing: 0.5px;
+  }
+
+  .decoLeft,
+  .decoRight {
+    display: none;
+  }
+
+  .title {
+    font-size: clamp(20px, 1.75vw, 28px);
+    letter-spacing: 1px;
+  }
+}
+
+@media (max-width: 1180px) {
+  .header {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: 86px;
+    row-gap: 6px;
+    padding-block: 8px;
+  }
+
+  .center {
+    grid-row: 1;
+  }
+
+  .rightSide {
+    grid-row: 2;
+    align-items: center;
+  }
+
+  .title {
+    font-size: 22px;
+    white-space: normal;
+    line-height: 1.18;
+  }
+
+  .location,
+  .date {
+    display: none;
+  }
+
+  .clock {
+    display: none;
+  }
+
+  .navActions {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .btn {
+    padding-inline: 7px;
+  }
 }
 
 .decoRight .hLine {

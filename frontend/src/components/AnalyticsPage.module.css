@@ -149,7 +149,12 @@
 
 .cardHalf {
   grid-column: span 6;
-  min-height: 360px;
+  min-height: 430px;
+}
+
+.cardFull {
+  grid-column: span 12;
+  min-height: 480px;
 }
 
 .card {
@@ -186,7 +191,7 @@
   z-index: 1;
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: 16px;
   padding: 16px 18px 14px;
   border-bottom: 1px solid rgba(125, 211, 252, 0.1);
@@ -196,7 +201,7 @@
 .cardHeading {
   min-width: 0;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
 }
 
@@ -251,6 +256,18 @@
   padding: 8px 10px 10px;
 }
 
+.chartBody {
+  height: clamp(330px, 32vh, 430px);
+  min-height: 330px;
+  overflow: hidden;
+}
+
+.chartBodyTall {
+  height: clamp(380px, 40vh, 520px);
+  min-height: 380px;
+  overflow: hidden;
+}
+
 .cardStrategic,
 .cardWeather,
 .cardSummary {
@@ -288,6 +305,10 @@
   .cardHalf {
     grid-column: span 12;
   }
+
+  .cardFull {
+    grid-column: span 12;
+  }
 }
 
 @media (max-width: 900px) {
@@ -310,7 +331,18 @@
   .cardStrategic,
   .cardWeather,
   .cardSummary,
-  .cardHalf {
+  .cardHalf,
+  .cardFull {
     min-height: auto;
+  }
+
+  .chartBody {
+    height: 320px;
+    min-height: 320px;
+  }
+
+  .chartBodyTall {
+    height: 360px;
+    min-height: 360px;
   }
 }

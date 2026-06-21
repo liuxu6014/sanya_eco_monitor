@@ -1,11 +1,141 @@
+import asyncio
+import time as runtime_time
 from datetime import datetime, time, timedelta
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
+from config import settings
 from database import get_db
 from models import InsectRecord, SporeRecord
+from services.image_quality import is_probably_black_image
 
 router = APIRouter(prefix="/api/insect", tags=["虫情"])
+
+_insect_runtime_cache: dict[str, dict[str, object]] = {
+    "value": {},
+    "expires_at": {},
+}
+_insect_runtime_locks: dict[str, asyncio.Lock] = {}
+
+
+async def _get_insect_cached_payload(cache_name: str, loader):
+    now = runtime_time.monotonic()
+    expires_at = float(_insect_runtime_cache["expires_at"].get(cache_name, 0.0))
+    if cache_name in _insect_runtime_cache["value"] and now < expires_at:
+        return _insect_runtime_cache["value"][cache_name]
+
+    lock = _insect_runtime_locks.setdefault(cache_name, asyncio.Lock())
+    async with lock:
+        now = runtime_time.monotonic()
+        expires_at = float(_insect_runtime_cache["expires_at"].get(cache_name, 0.0))
+        if cache_name in _insect_runtime_cache["value"] and now < expires_at:
+            return _insect_runtime_cache["value"][cache_name]
+
+        payload = await loader()
+        ttl = max(1, int(settings.INSECT_SERIES_CACHE_SECONDS))
+        _insect_runtime_cache["value"][cache_name] = payload
+        _insect_runtime_cache["expires_at"][cache_name] = now + ttl
+        return payload
+
+
+async def _build_spore_analysis_detail_cached(
+    name: str | None,
+    days: int,
+    db: AsyncSession,
+):
+    since = datetime.combine(datetime.now().date() - timedelta(days=days - 1), time.min)
+    result = await db.execute(
+        select(SporeRecord)
+        .where(SporeRecord.collection_time >= since)
+        .order_by(SporeRecord.collection_time)
+    )
+    records = _real_records(result.scalars().all())
+    latest_record_time = records[-1].collection_time if records else None
+
+    daily: dict[str, int] = {label: 0 for label in _recent_day_labels(days, "%Y-%m-%d")}
+    totals: dict[str, int] = {}
+    latest_image = None
+    images = []
+    for record in records:
+        day = record.collection_time.strftime("%Y-%m-%d")
+        spore_data = record.spore_data or {}
+        count = spore_data.get(name, 0) if name else record.total_count
+        daily[day] = daily.get(day, 0) + count
+        for spore_name, value in spore_data.items():
+            totals[spore_name] = totals.get(spore_name, 0) + value
+        if record.image_url and (not name or name in spore_data):
+            if await is_probably_black_image(record.image_url):
+                continue
+            image_item = {
+                "id": record.id,
+                "image_url": record.image_url,
+                "collection_time": record.collection_time.isoformat(),
+                "total_count": record.total_count,
+                "spore_count": spore_data.get(name) if name else None,
+            }
+            images.append(image_item)
+            latest_image = image_item
+
+    focus = []
+    for spore_name, count in sorted(totals.items(), key=lambda item: item[1], reverse=True)[:8]:
+        profile = _spore_profile(spore_name)
+        focus.append(
+            {
+                "name": spore_name,
+                "count": count,
+                "harm_score": profile["harm_score"],
+                "attention_score": min(100, round(profile["harm_score"] * 0.62 + min(count, 120) * 0.38)),
+                "warning_threshold": profile["warning_threshold"],
+            }
+        )
+    focus.sort(key=lambda item: item["attention_score"], reverse=True)
+
+    trend = [{"date": key, "total": value} for key, value in sorted(daily.items())]
+    total_count = sum(item["total"] for item in trend)
+    peak = max(trend, key=lambda item: item["total"], default={"date": None, "total": 0})
+    active_days = len([item for item in trend if item["total"] > 0])
+    avg_daily = round(total_count / max(days, 1), 1)
+    profile = _spore_profile(name) if name else None
+    analysis = _spore_analysis_text(
+        name=name,
+        days=days,
+        total_count=total_count,
+        avg_daily=avg_daily,
+        peak=peak,
+        active_days=active_days,
+        focus=focus,
+        profile=profile,
+    )
+
+    payload = {
+        "mode": "spore" if name else "overall",
+        "name": name,
+        "period_days": days,
+        "trend": trend,
+        "spore_stats": [{"name": key, "value": value} for key, value in sorted(totals.items(), key=lambda item: item[1], reverse=True)],
+        "latest_image": latest_image,
+        "latest_record_time": latest_record_time.isoformat() if latest_record_time else None,
+        "latest_image_time": latest_image["collection_time"] if latest_image else None,
+        "images": list(reversed(images[-60:])),
+        "focus_spores": focus,
+        "summary": {
+            "total_count": total_count,
+            "current_period_total": total_count,
+            "avg_daily": avg_daily,
+            "peak_date": peak["date"],
+            "peak_count": peak["total"],
+            "active_days": active_days,
+            "analysis": analysis,
+        },
+    }
+    if name and profile:
+        payload["profile"] = profile
+        payload["warning"] = {
+            "threshold": profile["warning_threshold"],
+            "current_month_total": total_count,
+            "level": "high" if total_count >= profile["warning_threshold"] else "attention" if total_count >= profile["warning_threshold"] * 0.6 else "low",
+        }
+    return {"data": payload}
 
 SPECIES_KNOWLEDGE = {
     "甜菜夜蛾": {
@@ -266,6 +396,10 @@ def _is_synthetic_record(record) -> bool:
     return bool((record.raw_data or {}).get("synthetic"))
 
 
+def _real_records(records):
+    return [record for record in records if not _is_synthetic_record(record)]
+
+
 async def _latest_non_empty_image(db: AsyncSession, model) -> tuple[str, datetime] | None:
     result = await db.execute(
         select(model.image_url, model.collection_time)
@@ -279,13 +413,33 @@ async def _latest_non_empty_image(db: AsyncSession, model) -> tuple[str, datetim
     return row[0], row[1]
 
 
+async def _latest_valid_spore_image(
+    db: AsyncSession,
+    *,
+    exclude_url: str | None = None,
+) -> tuple[str, datetime] | None:
+    result = await db.execute(
+        select(SporeRecord)
+        .where(SporeRecord.image_url.is_not(None), SporeRecord.image_url != "")
+        .order_by(desc(SporeRecord.collection_time))
+        .limit(60)
+    )
+    records = _real_records(result.scalars().all())
+    for record in records:
+        if exclude_url and record.image_url == exclude_url:
+            continue
+        if record.image_url and not await is_probably_black_image(record.image_url):
+            return record.image_url, record.collection_time
+    return None
+
+
 @router.get("/latest")
 async def get_latest_insect(db: AsyncSession = Depends(get_db)):
     """最新一条虫情记录"""
     result = await db.execute(
         select(InsectRecord).order_by(desc(InsectRecord.collection_time)).limit(20)
     )
-    records = result.scalars().all()
+    records = _real_records(result.scalars().all())
     record = next((item for item in records if not _is_synthetic_record(item)), None)
     if not record:
         return {"data": None}
@@ -315,7 +469,7 @@ async def get_insect_trend(
         .where(InsectRecord.collection_time >= since)
         .order_by(InsectRecord.collection_time)
     )
-    records = result.scalars().all()
+    records = _real_records(result.scalars().all())
 
     # Group by day
     daily: dict = {}
@@ -340,7 +494,7 @@ async def get_species_stats(
     result = await db.execute(
         select(InsectRecord).where(InsectRecord.collection_time >= since)
     )
-    records = result.scalars().all()
+    records = _real_records(result.scalars().all())
 
     totals: dict = {}
     for r in records:
@@ -359,13 +513,19 @@ async def get_latest_spore(db: AsyncSession = Depends(get_db)):
     result = await db.execute(
         select(SporeRecord).order_by(desc(SporeRecord.collection_time)).limit(20)
     )
-    records = result.scalars().all()
+    records = _real_records(result.scalars().all())
     record = next((item for item in records if not _is_synthetic_record(item)), None)
     if not record:
         return {"data": None}
-    fallback_image = None if record.image_url else await _latest_non_empty_image(db, SporeRecord)
-    image_url = record.image_url or (fallback_image[0] if fallback_image else None)
-    image_time = record.collection_time if record.image_url else (fallback_image[1] if fallback_image else None)
+    image_url = None
+    image_time = None
+    if record.image_url and not await is_probably_black_image(record.image_url):
+        image_url = record.image_url
+        image_time = record.collection_time
+    else:
+        fallback_image = await _latest_valid_spore_image(db, exclude_url=record.image_url)
+        if fallback_image:
+            image_url, image_time = fallback_image
     return {
         "data": {
             "collection_time": record.collection_time.isoformat(),
@@ -389,7 +549,7 @@ async def get_spore_trend(
         .where(SporeRecord.collection_time >= since)
         .order_by(SporeRecord.collection_time)
     )
-    records = result.scalars().all()
+    records = _real_records(result.scalars().all())
 
     daily: dict = {}
     for r in records:
@@ -407,41 +567,44 @@ async def get_combined_trend(
     db: AsyncSession = Depends(get_db),
 ):
     """虫情+孢子 联合趋势（逐日，用于相关性分析图）"""
-    since = datetime.now() - timedelta(days=days)
+    async def _load():
+        since = datetime.now() - timedelta(days=days)
 
-    insect_res = await db.execute(
-        select(InsectRecord)
-        .where(InsectRecord.collection_time >= since)
-        .order_by(InsectRecord.collection_time)
-    )
-    spore_res = await db.execute(
-        select(SporeRecord)
-        .where(SporeRecord.collection_time >= since)
-        .order_by(SporeRecord.collection_time)
-    )
-    insects = insect_res.scalars().all()
-    spores = spore_res.scalars().all()
+        insect_res = await db.execute(
+            select(InsectRecord)
+            .where(InsectRecord.collection_time >= since)
+            .order_by(InsectRecord.collection_time)
+        )
+        spore_res = await db.execute(
+            select(SporeRecord)
+            .where(SporeRecord.collection_time >= since)
+            .order_by(SporeRecord.collection_time)
+        )
+        insects = _real_records(insect_res.scalars().all())
+        spores = _real_records(spore_res.scalars().all())
 
-    insect_daily: dict = {}
-    for r in insects:
-        day = r.collection_time.strftime("%Y-%m-%d")
-        insect_daily[day] = insect_daily.get(day, 0) + r.total_count
+        insect_daily: dict = {}
+        for r in insects:
+            day = r.collection_time.strftime("%Y-%m-%d")
+            insect_daily[day] = insect_daily.get(day, 0) + r.total_count
 
-    spore_daily: dict = {}
-    for r in spores:
-        day = r.collection_time.strftime("%Y-%m-%d")
-        spore_daily[day] = spore_daily.get(day, 0) + r.total_count
+        spore_daily: dict = {}
+        for r in spores:
+            day = r.collection_time.strftime("%Y-%m-%d")
+            spore_daily[day] = spore_daily.get(day, 0) + r.total_count
 
-    all_days = sorted(set(list(insect_daily.keys()) + list(spore_daily.keys())))
-    data = [
-        {
-            "date": d,
-            "insect": insect_daily.get(d, 0),
-            "spore": spore_daily.get(d, 0),
-        }
-        for d in all_days
-    ]
-    return {"data": data}
+        all_days = sorted(set(list(insect_daily.keys()) + list(spore_daily.keys())))
+        data = [
+            {
+                "date": d,
+                "insect": insect_daily.get(d, 0),
+                "spore": spore_daily.get(d, 0),
+            }
+            for d in all_days
+        ]
+        return {"data": data}
+
+    return await _get_insect_cached_payload(f"combined-trend:{days}", _load)
 
 
 @router.get("/species-heatmap")
@@ -450,34 +613,38 @@ async def get_species_heatmap(
     db: AsyncSession = Depends(get_db),
 ):
     """虫种-日期热力图数据（二维矩阵）"""
-    today = datetime.now().date()
-    since = datetime.combine(today - timedelta(days=days - 1), time.min)
-    result = await db.execute(
-        select(InsectRecord)
-        .where(InsectRecord.collection_time >= since)
-        .order_by(InsectRecord.collection_time)
-    )
-    records = result.scalars().all()
+    async def _load():
+        today = datetime.now().date()
+        since = datetime.combine(today - timedelta(days=days - 1), time.min)
+        result = await db.execute(
+            select(InsectRecord)
+            .where(InsectRecord.collection_time >= since)
+            .order_by(InsectRecord.collection_time)
+        )
+        records = _real_records(result.scalars().all())
 
-    # Collect all dates and species
-    from collections import defaultdict
-    matrix: dict = defaultdict(lambda: defaultdict(int))
-    all_species: set = set()
-    for r in records:
-        day = r.collection_time.strftime("%m-%d")
-        for sp, cnt in (r.species_data or {}).items():
-            matrix[day][sp] += cnt
-            all_species.add(sp)
+        # Collect all dates and species
+        from collections import defaultdict
 
-    dates = _recent_day_labels(days, "%m-%d")
-    species = sorted(all_species)
-    # Build flat list: [date_index, species_index, value]
-    flat = []
-    for di, date in enumerate(dates):
-        for si, sp in enumerate(species):
-            flat.append([di, si, matrix[date].get(sp, 0)])
+        matrix: dict = defaultdict(lambda: defaultdict(int))
+        all_species: set = set()
+        for r in records:
+            day = r.collection_time.strftime("%m-%d")
+            for sp, cnt in (r.species_data or {}).items():
+                matrix[day][sp] += cnt
+                all_species.add(sp)
 
-    return {"data": {"dates": dates, "species": species, "values": flat}}
+        dates = _recent_day_labels(days, "%m-%d")
+        species = sorted(all_species)
+        # Build flat list: [date_index, species_index, value]
+        flat = []
+        for di, date in enumerate(dates):
+            for si, sp in enumerate(species):
+                flat.append([di, si, matrix[date].get(sp, 0)])
+
+        return {"data": {"dates": dates, "species": species, "values": flat}}
+
+    return await _get_insect_cached_payload(f"species-heatmap:{days}", _load)
 
 
 @router.get("/images")
@@ -497,7 +664,7 @@ async def get_insect_images(
         .order_by(desc(InsectRecord.collection_time))
         .limit(240)
     )
-    records = result.scalars().all()
+    records = _real_records(result.scalars().all())
     items = []
     for record in records:
         species_data = record.species_data or {}
@@ -522,13 +689,18 @@ async def get_insect_analysis_detail(
     days: int = Query(30, ge=7, le=180),
     db: AsyncSession = Depends(get_db),
 ):
+    if not isinstance(species, str) or not species.strip():
+        species = None
+    else:
+        species = species.strip()
+
     since = datetime.combine(datetime.now().date() - timedelta(days=days - 1), time.min)
     result = await db.execute(
         select(InsectRecord)
         .where(InsectRecord.collection_time >= since)
         .order_by(InsectRecord.collection_time)
     )
-    records = result.scalars().all()
+    records = _real_records(result.scalars().all())
 
     daily: dict[str, int] = {label: 0 for label in _recent_day_labels(days, "%Y-%m-%d")}
     totals: dict[str, int] = {}
@@ -553,7 +725,7 @@ async def get_insect_analysis_detail(
             latest_image = image_item
 
     focus = []
-    for name, count in sorted(totals.items(), key=lambda item: item[1], reverse=True)[:8]:
+    for name, count in totals.items():
         profile = _species_profile(name)
         focus.append(
             {
@@ -564,7 +736,8 @@ async def get_insect_analysis_detail(
                 "warning_threshold": profile["warning_threshold"],
             }
         )
-    focus.sort(key=lambda item: item["attention_score"], reverse=True)
+    focus.sort(key=lambda item: (item["harm_score"], item["count"]), reverse=True)
+    focus = focus[:8]
 
     trend = [{"date": key, "total": value} for key, value in sorted(daily.items())]
     total_count = sum(item["total"] for item in trend)
@@ -619,6 +792,11 @@ async def get_spore_images(
     name: str | None = Query(default=None),
     db: AsyncSession = Depends(get_db),
 ):
+    if not isinstance(name, str) or not name.strip():
+        name = None
+    else:
+        name = name.strip()
+
     since = datetime.combine(datetime.now().date() - timedelta(days=days - 1), time.min)
     result = await db.execute(
         select(SporeRecord)
@@ -630,11 +808,13 @@ async def get_spore_images(
         .order_by(desc(SporeRecord.collection_time))
         .limit(240)
     )
-    records = result.scalars().all()
+    records = _real_records(result.scalars().all())
     items = []
     for record in records:
         spore_data = record.spore_data or {}
         if name and name not in spore_data:
+            continue
+        if await is_probably_black_image(record.image_url):
             continue
         items.append(
             {
@@ -655,14 +835,23 @@ async def get_spore_analysis_detail(
     days: int = Query(30, ge=7, le=180),
     db: AsyncSession = Depends(get_db),
 ):
+    if not isinstance(name, str) or not name.strip():
+        name = None
+    else:
+        name = name.strip()
+    return await _get_insect_cached_payload(
+        f"spore-analysis-detail:{days}:{name or '__overall__'}",
+        lambda: _build_spore_analysis_detail_cached(name, days, db),
+    )
+
     since = datetime.combine(datetime.now().date() - timedelta(days=days - 1), time.min)
     result = await db.execute(
         select(SporeRecord)
         .where(SporeRecord.collection_time >= since)
         .order_by(SporeRecord.collection_time)
     )
-    records = result.scalars().all()
-    real_records = [record for record in records if not _is_synthetic_record(record)]
+    records = _real_records(result.scalars().all())
+    real_records = records
     latest_record_time = real_records[-1].collection_time if real_records else None
 
     daily: dict[str, int] = {label: 0 for label in _recent_day_labels(days, "%Y-%m-%d")}
@@ -677,6 +866,8 @@ async def get_spore_analysis_detail(
         for spore_name, value in spore_data.items():
             totals[spore_name] = totals.get(spore_name, 0) + value
         if record.image_url and (not name or name in spore_data):
+            if await is_probably_black_image(record.image_url):
+                continue
             image_item = {
                 "id": record.id,
                 "image_url": record.image_url,

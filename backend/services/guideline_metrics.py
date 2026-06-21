@@ -1,26 +1,35 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 from typing import Any
 
 from sqlalchemy import asc, desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import settings
-from models import InsectRecord, RunoffRecord, SporeRecord, WaterQualityRecord
+from models import InsectRecord, RainfallRecord, RunoffRecord, SporeRecord, WaterQualityRecord
+from services.anomaly_flags import build_anomaly_summary, flag_numeric_anomalies
+from services.rainfall_aggregation import aggregate_rainfall_daily
 from services.weather_support import get_weather_support
 from services.warning_rules import build_warning_analysis, derive_pest_risk_level
 from services.water_quality_support import get_water_quality_records, resolve_water_quality_codes
 
 
 RUNOFF_DEVICE_NAMES = {
-    "16132920": "芒果林径流点 1",
-    "16132921": "橡胶林径流点 1",
-    "16132922": "次生林径流点",
-    "16132923": "芒果林径流点 2",
+    "16132920": "橡胶林径流点 1",
+    "16132921": "次生林径流点",
+    "16132922": "芒果林径流点 1",
+    "16132923": "槟榔林径流点",
     "16132924": "橡胶林径流点 2",
-    "16132925": "槟榔林径流点",
+    "16132925": "芒果林径流点 2",
+}
+
+RUNOFF_STATION_ANOMALY_RULES = {
+    "avg_runoff": {"min": 0, "max": 10, "label": "平均径流"},
+    "avg_flow_rate": {"min": 0, "max": 100, "label": "平均流量"},
+    "avg_sand_content": {"min": 0, "max": 1, "label": "平均含沙量"},
+    "avg_rainfall": {"min": 0, "max": 100, "label": "平均降雨量"},
 }
 
 WATER_METRICS = (
@@ -83,6 +92,7 @@ async def _build_water_quality_metrics(
 
     baseline_candidates = await get_water_quality_records(db, codes=water_codes)
     first_record = baseline_candidates[0] if baseline_candidates else None
+    latest_baseline_record = baseline_candidates[-1] if baseline_candidates else None
     if not first_record:
         return {
             "available": False,
@@ -91,9 +101,10 @@ async def _build_water_quality_metrics(
 
     now = datetime.now()
     baseline_start = first_record.collection_time
+    baseline_latest = latest_baseline_record.collection_time
     baseline_days = min(
         settings.GUIDELINE_BASELINE_DAYS,
-        max(1, (now.date() - baseline_start.date()).days + 1),
+        max(1, (baseline_latest.date() - baseline_start.date()).days + 1),
     )
     baseline_end = baseline_start + timedelta(days=baseline_days - 1)
     recent_start = now - timedelta(days=recent_days - 1)
@@ -157,7 +168,7 @@ async def _build_water_quality_metrics(
             "end": baseline_end.date().isoformat(),
             "days": baseline_days,
             "records_count": len(baseline_records),
-            "note": "系统统一以设备接入后的前 30 天均值作为基准期；不足 30 天时按已有天数计算。",
+            "note": "系统统一以设备接入后的前 30 天有数据区间均值作为基准期；不足 30 天时按当前已有水质数据天数计算。",
         },
         "recent_period": {
             "start": recent_start.date().isoformat(),
@@ -237,6 +248,18 @@ async def _build_runoff_metrics(
             }
         )
 
+    anomaly_flags = []
+    for item in station_metrics:
+        flags = flag_numeric_anomalies(
+            item,
+            RUNOFF_STATION_ANOMALY_RULES,
+            context={"device_code": item.get("device_code"), "name": item.get("name")},
+        )
+        if flags:
+            item["has_anomaly"] = True
+            item["anomaly_flags"] = flags
+            anomaly_flags.extend(flags)
+
     station_metrics.sort(key=lambda item: item["_raw_erosion_proxy"], reverse=True)
     reference_station = next((item for item in station_metrics if item["device_code"] == reference_code), None)
     reference_proxy_raw = reference_station["_raw_erosion_proxy"] if reference_station else None
@@ -273,6 +296,11 @@ async def _build_runoff_metrics(
     valid_stations = [item for item in station_metrics if item["erosion_proxy"] is not None]
     highest_risk_station = valid_stations[0] if valid_stations else None
     lowest_risk_station = valid_stations[-1] if valid_stations else None
+    highest_sand_station = max(
+        station_metrics,
+        key=lambda item: item.get("avg_sand_content") if item.get("avg_sand_content") is not None else float("-inf"),
+        default=None,
+    )
 
     for item in station_metrics:
         item.pop("_raw_erosion_proxy", None)
@@ -281,6 +309,7 @@ async def _build_runoff_metrics(
         "available": True,
         "period_days": recent_days,
         "station_count": len(station_metrics),
+        "anomaly_summary": build_anomaly_summary(anomaly_flags, subject="径流导则指标"),
         "reference_station": reference_station,
         "plantation_avg_proxy": plantation_avg_proxy,
         "avg_erosion_proxy": avg_erosion_proxy,
@@ -288,9 +317,62 @@ async def _build_runoff_metrics(
         "estimated_reduction_rate": estimated_reduction_rate,
         "reference_gap": reference_gap,
         "highest_risk_station": highest_risk_station,
+        "highest_sand_station": highest_sand_station,
         "lowest_risk_station": lowest_risk_station,
         "station_metrics": station_metrics,
         "note": "以次生林为参照样地，按径流或流量与含沙量构建监测型侵蚀压力代理指标。",
+    }
+
+
+async def _build_rainfall_device_metrics(
+    db: AsyncSession,
+    *,
+    recent_days: int,
+) -> dict[str, Any]:
+    today = datetime.now().date()
+    end_day = today - timedelta(days=1)
+    start_day = end_day - timedelta(days=max(recent_days, 1) - 1)
+    start_dt = datetime.combine(start_day, time.min)
+    end_dt = datetime.combine(end_day, time.max)
+
+    result = await db.execute(
+        select(RainfallRecord)
+        .where(
+            RainfallRecord.collection_time >= start_dt,
+            RainfallRecord.collection_time <= end_dt,
+        )
+        .order_by(RainfallRecord.collection_time)
+    )
+    records = result.scalars().all()
+    daily_items = aggregate_rainfall_daily(records, start_day, end_day)
+    measured_items = [item for item in daily_items if item.get("records", 0) > 0]
+
+    if not measured_items:
+        return {
+            "available": False,
+            "source": "rain_gauge_device",
+            "period_days": recent_days,
+            "range": {"start": start_day.isoformat(), "end": end_day.isoformat()},
+            "message": "暂无雨量计设备完整历史日数据，单日降水强度暂不判定。",
+        }
+
+    peak_item = max(measured_items, key=lambda item: item.get("rainfall") or 0)
+    total_rainfall = round(sum(item.get("rainfall") or 0 for item in measured_items), 1)
+    rainy_days = len([item for item in measured_items if (item.get("rainfall") or 0) > 0])
+
+    return {
+        "available": True,
+        "source": "rain_gauge_device",
+        "period_days": recent_days,
+        "range": {"start": start_day.isoformat(), "end": end_day.isoformat()},
+        "records_count": len(records),
+        "daily": measured_items,
+        "summary": {
+            "days": len(measured_items),
+            "total_rainfall": total_rainfall,
+            "rainy_days": rainy_days,
+            "peak": peak_item,
+        },
     }
 
 
@@ -357,6 +439,8 @@ async def _build_pest_management_metrics(
     total_spores = sum(spore_daily.values())
     active_insect_days = len(insect_daily)
     active_spore_days = len(spore_daily)
+    positive_insect_days = len([total for total in insect_daily.values() if total > 0])
+    positive_spore_days = len([total for total in spore_daily.values() if total > 0])
     species_count = len(insect_species)
     dominant_species_share = round(top_species_count / total_insects * 100, 1) if total_insects else None
     peak_gap_days = _day_gap(
@@ -388,6 +472,8 @@ async def _build_pest_management_metrics(
         "avg_daily_spores": round(total_spores / active_spore_days, 1) if active_spore_days else None,
         "active_insect_days": active_insect_days,
         "active_spore_days": active_spore_days,
+        "positive_insect_days": positive_insect_days,
+        "positive_spore_days": positive_spore_days,
         "species_count": species_count,
         "top_species": {
             "name": top_species_name,
@@ -424,12 +510,14 @@ async def build_guideline_metrics(
     weather_support = await get_weather_support()
     water_quality = await _build_water_quality_metrics(db, recent_days=recent_days)
     runoff_erosion = await _build_runoff_metrics(db, recent_days=recent_days)
+    rainfall_device = await _build_rainfall_device_metrics(db, recent_days=30)
     pest_management = await _build_pest_management_metrics(db, recent_days=recent_days)
     warning_analysis = build_warning_analysis(
         recent_days=recent_days,
         pest_management=pest_management,
         runoff_erosion=runoff_erosion,
         weather_support=weather_support,
+        rainfall_device_metrics=rainfall_device,
     )
 
     history_summary = weather_support.get("history_summary") or {}
@@ -485,7 +573,7 @@ async def build_guideline_metrics(
                 "name": "气象补充参数",
                 "status": weather_enabled and "已补充" or "部分补充",
                 "detail": weather_enabled
-                and "已接入最近7天历史气温、湿度、降水与风速，可做监测型支撑分析；正式蒸散发参数仍不足。"
+                and "已接入近30天历史气温、湿度、降水与风速，可做监测型支撑分析；正式蒸散发参数仍不足。"
                 or "当前缺少稳定历史气象补充，蒸散发与多年对比暂不具备。",
             },
         ],
@@ -581,6 +669,7 @@ async def build_guideline_metrics(
         "recent_days": recent_days,
         "water_quality": water_quality,
         "runoff_erosion": runoff_erosion,
+        "rainfall_device": rainfall_device,
         "pest_management": pest_management,
         "warning_analysis": warning_analysis,
         "weather_support": weather_support,

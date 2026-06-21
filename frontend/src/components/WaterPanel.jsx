@@ -43,7 +43,7 @@ export default function WaterPanel({ water }) {
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: '8px', height: '100%', padding: '4px 0' }}>
       {card('氨氮', water.nh4n, 'mg/L', getStatusColor(water.nh4n, [1.0, 2.0]))}
       {card('总磷', water.tp, 'mg/L', getStatusColor(water.tp, [0.2, 0.4]))}
-      {card('高猛酸盐', water.permanganate, 'mg/L', getStatusColor(water.permanganate, [6.0, 15.0]))}
+      {card('高锰酸盐', water.permanganate, 'mg/L', getStatusColor(water.permanganate, [6.0, 15.0]))}
       {card('总氮', water.tn, 'mg/L', getStatusColor(water.tn, [1.0, 2.0]))}
     </div>
   )

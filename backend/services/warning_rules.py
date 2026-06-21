@@ -171,6 +171,7 @@ def build_warning_analysis(
     pest_management: dict[str, Any],
     runoff_erosion: dict[str, Any],
     weather_support: dict[str, Any],
+    rainfall_device_metrics: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     insect_thresholds = _parse_thresholds(settings.WARNING_INSECT_THRESHOLDS, (40, 80, 100, 120))
     spore_thresholds = _parse_thresholds(settings.WARNING_SPORE_THRESHOLDS, (10, 30, 60, 90))
@@ -182,8 +183,14 @@ def build_warning_analysis(
     top_species = pest_management.get("top_species") or {}
     weather_daily = weather_support.get("history_daily") or []
     history_summary = weather_support.get("history_summary") or {}
-    highest_station = runoff_erosion.get("highest_risk_station") or {}
+    history_days = history_summary.get("days") or len(weather_daily) or 30
+    highest_station = (
+        runoff_erosion.get("highest_sand_station")
+        or runoff_erosion.get("highest_risk_station")
+        or {}
+    )
     reference_station = runoff_erosion.get("reference_station") or {}
+    highest_sand_value = highest_station.get("avg_sand_content")
 
     insect_warning = _base_indicator_warning(
         key="insect_peak",
@@ -223,7 +230,7 @@ def build_warning_analysis(
         digits=0,
         summary=(
             f"{spore_peak.get('date') or '--'}孢子峰值为{_format_number(spore_peak.get('count'), 0)}个，"
-            f"最近7个完整历史日平均湿度为{_format_number(history_summary.get('avg_humidity'), 1)}%。"
+            f"最近{history_days}个完整历史日平均湿度为{_format_number(history_summary.get('avg_humidity'), 1)}%。"
         ),
         action_map={
             "normal": "维持常规孢子监测，关注湿度波动。",
@@ -238,20 +245,24 @@ def build_warning_analysis(
         },
     )
 
-    wettest_item = max(weather_daily, key=lambda item: item.get("precip") or 0, default=None)
+    rainfall_device_metrics = rainfall_device_metrics or {}
+    rainfall_summary = rainfall_device_metrics.get("summary") or {}
+    rainfall_peak = rainfall_summary.get("peak") or {}
+    rainfall_days = rainfall_summary.get("days") or rainfall_device_metrics.get("period_days") or 30
+    rainfall_value = rainfall_peak.get("rainfall") if rainfall_device_metrics.get("available") else None
     rainfall_warning = _base_indicator_warning(
         key="rainfall_peak",
         title="单日降水强度",
-        metric_label="最近7个完整历史日最大单日降水",
-        basis="按最近7个完整自然日历史降水序列进行分级判定",
+        metric_label=f"最近{rainfall_days}个完整设备监测日最大单日降水",
+        basis=f"按雨量计设备最近{rainfall_days}个完整自然日聚合降水序列进行分级判定",
         unit="mm",
-        value=wettest_item.get("precip") if wettest_item else None,
+        value=rainfall_value,
         thresholds=rainfall_thresholds,
         digits=1,
         summary=(
-            f"最近7个完整历史日最大单日降水为{_format_number(wettest_item.get('precip') if wettest_item else None, 1)} mm，"
-            f"对应日期为{wettest_item.get('date') if wettest_item else '--'}，7天累计降水"
-            f"{_format_number(history_summary.get('total_precip'), 1)} mm。"
+            f"雨量计设备最近{rainfall_days}个完整监测日最大单日降水为{_format_number(rainfall_value, 1)} mm，"
+            f"对应日期为{rainfall_peak.get('date') or '--'}，设备聚合累计降水"
+            f"{_format_number(rainfall_summary.get('total_rainfall'), 1)} mm。"
         ),
         action_map={
             "normal": "降水扰动较低，维持常规巡查即可。",
@@ -261,9 +272,12 @@ def build_warning_analysis(
             "critical": "建议启动暴雨过程专项巡查，联动检查径流和侵蚀风险。",
         },
         supporting={
-            "peak_date": wettest_item.get("date") if wettest_item else None,
-            "seven_day_total": history_summary.get("total_precip"),
-            "rainy_days": history_summary.get("rainy_days"),
+            "source": "rain_gauge_device",
+            "peak_date": rainfall_peak.get("date"),
+            "history_days": rainfall_days,
+            "period_total": rainfall_summary.get("total_rainfall"),
+            "rainy_days": rainfall_summary.get("rainy_days"),
+            "records_count": rainfall_device_metrics.get("records_count"),
         },
     )
 
@@ -273,13 +287,20 @@ def build_warning_analysis(
         metric_label=f"最近{recent_days}天站点平均含沙量高值",
         basis=f"按最近{recent_days}天各径流站平均含沙量高值进行分级判定",
         unit="",
-        value=highest_station.get("avg_sand_content"),
+        value=highest_sand_value,
         thresholds=sand_thresholds,
         digits=4,
         summary=(
-            f"最近{recent_days}天含沙高值站点为{highest_station.get('name') or '--'}，"
-            f"平均含沙量{_format_number(highest_station.get('avg_sand_content'), 4)}，"
-            f"参照样地为{reference_station.get('name') or '--'}。"
+            (
+                f"最近{recent_days}天各站平均含沙量均为{_format_number(highest_sand_value, 4)}，"
+                f"参照样地为{reference_station.get('name') or '--'}。"
+            )
+            if highest_sand_value == 0
+            else (
+                f"最近{recent_days}天含沙高值站点为{highest_station.get('name') or '--'}，"
+                f"平均含沙量{_format_number(highest_sand_value, 4)}，"
+                f"参照样地为{reference_station.get('name') or '--'}。"
+            )
         ),
         action_map={
             "normal": "当前含沙扰动较低，维持常规监测。",

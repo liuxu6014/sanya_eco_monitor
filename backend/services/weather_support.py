@@ -22,6 +22,7 @@ _weather_cache: dict[str, object] = {
 _weather_lock = asyncio.Lock()
 _OPEN_METEO_ARCHIVE_URL = "https://archive-api.open-meteo.com/v1/archive"
 _WEATHER_ERROR_CACHE_SECONDS = 120
+_HISTORY_DAYS = 30
 
 
 def _to_float(value: Any) -> float | None:
@@ -302,11 +303,11 @@ async def _get_json_with_retries(
 async def _fetch_history_bundle() -> dict[str, Any]:
     location = _parse_location()
     if location is None:
-        return _empty_history_result("未配置天气坐标，无法获取最近7天历史天气。")
+        return _empty_history_result("未配置天气坐标，无法获取近30天历史天气。")
 
     lon, lat = location
     end_date = datetime.now().date() - timedelta(days=1)
-    start_date = end_date - timedelta(days=6)
+    start_date = end_date - timedelta(days=_HISTORY_DAYS - 1)
     timeout = httpx.Timeout(20.0, connect=8.0)
     params = {
         "latitude": lat,
@@ -378,7 +379,7 @@ async def _fetch_history_bundle() -> dict[str, Any]:
 
 async def _fetch_weather_bundle() -> dict[str, Any]:
     forecast = _empty_forecast_result("未配置和风天气参数，无法获取实时与预报天气。")
-    history = _empty_history_result("未配置天气坐标，无法获取最近7天历史天气。")
+    history = _empty_history_result("未配置天气坐标，无法获取近30天历史天气。")
 
     tasks: list[tuple[str, Any]] = [("history", _fetch_history_bundle())]
     if _is_forecast_enabled():

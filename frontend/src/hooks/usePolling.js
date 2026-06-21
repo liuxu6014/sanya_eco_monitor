@@ -14,7 +14,7 @@ export function usePolling(fetchFn, intervalMs = 30000, options = {}) {
     enabled = true,
   } = options
 
-  const initialCache = cacheKey ? readRequestCache(cacheKey) : null
+  const initialCache = cacheKey ? readRequestCache(cacheKey, { persist }) : null
   const [data, setData] = useState(initialCache?.data ?? null)
   const [loading, setLoading] = useState(!initialCache)
   const [error, setError] = useState(null)
@@ -23,7 +23,7 @@ export function usePolling(fetchFn, intervalMs = 30000, options = {}) {
   )
 
   const fetch = useCallback(async ({ force = false } = {}) => {
-    const cached = cacheKey ? readRequestCache(cacheKey) : null
+    const cached = cacheKey ? readRequestCache(cacheKey, { persist }) : null
     if (cached) {
       setData(cached.data)
       setLastUpdated(new Date(cached.savedAt))

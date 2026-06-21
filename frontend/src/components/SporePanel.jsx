@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react'
-import ReactECharts from 'echarts-for-react'
 import dayjs from 'dayjs'
 import s from './SporePanel.module.css'
 import ImagePreviewModal from './ImagePreviewModal.jsx'
+import ResponsiveEChart from './ResponsiveEChart.jsx'
 
 export default function SporePanel({ latest, trend }) {
   const [previewOpen, setPreviewOpen] = useState(false)
@@ -104,7 +104,7 @@ export default function SporePanel({ latest, trend }) {
          </div>
          <div className={s.chart}>
            {td.length > 0 ? (
-             <ReactECharts option={chartOpt} style={{height: '100%'}} />
+             <ResponsiveEChart option={chartOpt} resizeDeps={[td.length]} opts={{ renderer: 'canvas' }} />
            ) : (
              <div className={s.emptyChart}>无趋势数据</div>
            )}

@@ -26,8 +26,10 @@ async function request(path, init = {}) {
   return res.json()
 }
 
-function get(path) {
-  return request(path)
+function get(path, options = {}) {
+  const { query } = options
+  const suffix = query ? `?${new URLSearchParams(query).toString()}` : ''
+  return request(`${path}${suffix}`)
 }
 
 function post(path, body) {
@@ -67,7 +69,13 @@ export const api = {
   runoffAnalysis: (days = 30) => get(`/sensor/runoff/analysis?days=${days}`),
   ecoIndex: () => get('/analysis/eco-index'),
   guidelineMetrics: () => get('/analysis/guideline-metrics'),
-  analysisDashboard: () => get('/analysis/dashboard'),
+  analysisDashboard: (options = {}) => get('/analysis/dashboard', {
+    query: options.forceRefresh ? { force_refresh: '1' } : undefined,
+  }),
   triggerCollect: () => post('/collect/trigger'),
   deleteReport: (id) => del(`/report/${id}`),
+}
+
+export function analysisDashboardRequest(options = {}) {
+  return api.analysisDashboard(options)
 }

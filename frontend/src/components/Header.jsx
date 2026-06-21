@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import dayjs from 'dayjs'
 import s from './Header.module.css'
 
-export default function Header({ onTriggerCollect, activeTab, onTabChange }) {
+export default function Header({ onTriggerCollect, onLogout, activeTab, onTabChange }) {
   const [time, setTime] = useState(dayjs())
 
   useEffect(() => {
@@ -43,9 +43,9 @@ export default function Header({ onTriggerCollect, activeTab, onTabChange }) {
         </div>
       </div>
 
-      <div className={s.side} style={{ alignItems: 'flex-end', gap: 6 }}>
+      <div className={`${s.side} ${s.rightSide}`}>
         <div className={s.clock}>{time.format('HH:mm:ss')}</div>
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div className={s.navActions}>
           <button
             className={s.btn}
             style={activeTab === 'overview' ? { background: 'rgba(0,212,255,0.25)', borderColor: 'rgba(0,212,255,0.7)' } : {}}
@@ -77,6 +77,9 @@ export default function Header({ onTriggerCollect, activeTab, onTabChange }) {
           <button className={s.btn} onClick={onTriggerCollect}>
             刷新
           </button>
+          <button className={`${s.btn} ${s.logoutBtn}`} onClick={onLogout}>
+            退出
+          </button>
           <FullscreenButton />
         </div>
       </div>
@@ -106,7 +109,7 @@ function FullscreenButton() {
       className={s.btn}
       onClick={toggle}
       title={isFullscreen ? '退出全屏' : '进入全屏'}
-      style={{ padding: '6px 10px' }}
+      aria-label={isFullscreen ? '退出全屏' : '进入全屏'}
     >
       {isFullscreen ? (
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

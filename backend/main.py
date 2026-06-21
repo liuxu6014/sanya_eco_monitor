@@ -4,7 +4,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from logging_setup import build_logging_config, configure_logging
-from auth import is_auth_enabled, is_valid_auth_cookie
+from auth import auth_role_from_cookie, is_auth_enabled, is_valid_auth_cookie
 from database import init_db
 from scheduler import setup_scheduler, _run_all_collectors
 from routers import (
@@ -27,11 +27,11 @@ async def lifespan(app: FastAPI):
     await init_db()
     logger.info("Database initialized.")
 
-    # Initial data collection on startup
-    try:
-        await _run_all_collectors()
-    except Exception as e:
-        logger.warning(f"Initial collection failed (non-fatal): {e}")
+    if settings.RUN_COLLECTORS_ON_STARTUP:
+        try:
+            await _run_all_collectors()
+        except Exception as e:
+            logger.warning(f"Initial collection failed (non-fatal): {e}")
 
     sched = setup_scheduler()
     sched.start()
@@ -91,6 +91,12 @@ app.include_router(report_router.router)
 app.include_router(analysis_router.router)
 
 
+def _require_admin(request: Request) -> JSONResponse | None:
+    if auth_role_from_cookie(request.cookies.get(settings.AUTH_COOKIE_NAME)) == "admin":
+        return None
+    return JSONResponse(status_code=403, content={"detail": "Admin role required"})
+
+
 @app.get("/api/health")
 async def health():
     return {"status": "ok", "title": settings.APP_TITLE}
@@ -106,14 +112,20 @@ async def ai_report_placeholder():
 
 
 @app.post("/api/collect/trigger")
-async def trigger_collect():
+async def trigger_collect(request: Request):
     """手动触发一次数据采集（调试用）"""
+    forbidden = _require_admin(request)
+    if forbidden:
+        return forbidden
     await _run_all_collectors()
     return {"status": "ok", "message": "采集完成"}
 
 
 @app.get("/api/debug/settings")
-async def debug_settings():
+async def debug_settings(request: Request):
+    forbidden = _require_admin(request)
+    if forbidden:
+        return forbidden
     return {
         "SENSOR_BASE_URL": settings.SENSOR_BASE_URL,
         "PLATFORM_BASE_URL": settings.PLATFORM_BASE_URL,

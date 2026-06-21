@@ -237,6 +237,10 @@
   grid-column: span 8;
 }
 
+.fullRow {
+  grid-column: 1 / -1;
+}
+
 .analysisActionCard {
   grid-column: 1 / -1;
   min-height: 0;
@@ -298,6 +302,11 @@
   overflow: hidden;
 }
 
+.deviceExplorerShell {
+  height: 100%;
+  min-height: 420px;
+}
+
 .empty,
 .state {
   height: 100%;
@@ -322,6 +331,19 @@
   gap: 8px;
   overflow-y: auto;
   padding-right: 2px;
+}
+
+.gallerySentinel {
+  grid-column: 1 / -1;
+  min-height: 44px;
+  display: grid;
+  place-items: center;
+  border: 1px dashed rgba(125, 211, 252, 0.18);
+  border-radius: 10px;
+  background: rgba(8, 22, 46, 0.42);
+  color: #8fc8e8;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .thumb,

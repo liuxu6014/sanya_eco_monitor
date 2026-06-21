@@ -84,6 +84,17 @@
   cursor: not-allowed;
 }
 
+.typeSelect option {
+  background: #07162e;
+  color: #f8fbff;
+}
+
+.typeSelect option:checked,
+.typeSelect option:hover {
+  background: #12345f;
+  color: #ffffff;
+}
+
 .typeSelect:focus {
   border-color: rgba(56, 189, 248, 0.52);
   box-shadow:
@@ -136,59 +147,6 @@
 
 .loading {
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.16), 0 0 24px rgba(14, 165, 233, 0.24);
-}
-
-.messageNotice {
-  position: sticky;
-  top: 0;
-  z-index: 8;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 12px;
-  min-height: 48px;
-  padding: 10px 14px;
-  border-radius: 14px;
-  border: 1px solid rgba(56, 189, 248, 0.26);
-  background: rgba(8, 28, 58, 0.96);
-  color: #d7f0ff;
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.24);
-}
-
-.messageNotice strong {
-  color: #ffffff;
-  font-size: 14px;
-  font-weight: 900;
-  white-space: nowrap;
-}
-
-.messageNotice span {
-  min-width: 0;
-  color: #b8d8f4;
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.messageNotice button {
-  height: 30px;
-  padding: 0 12px;
-  border-radius: 9px;
-  border: 1px solid rgba(125, 211, 252, 0.24);
-  background: rgba(14, 165, 233, 0.14);
-  color: #e6f7ff;
-  font-size: 12px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.messageNotice.success {
-  border-color: rgba(74, 222, 128, 0.34);
-  background: rgba(7, 44, 35, 0.96);
-}
-
-.messageNotice.error {
-  border-color: rgba(248, 113, 113, 0.36);
-  background: rgba(58, 18, 28, 0.96);
 }
 
 .statsGrid {
@@ -270,10 +228,13 @@
 .tableShell {
   flex: 0 0 auto;
   min-height: 0;
+  min-width: 0;
 }
 
 .tableWrap {
-  overflow: visible;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
   border-radius: 20px;
   border: 1px solid rgba(125, 211, 252, 0.14);
   background:
@@ -283,6 +244,7 @@
 
 .table {
   width: 100%;
+  min-width: 1040px;
   table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
@@ -293,7 +255,7 @@
   top: 0;
   z-index: 2;
   padding: 18px 20px;
-  text-align: left;
+  text-align: center;
   background: rgba(12, 34, 68, 0.98);
   color: #9bc6ea;
   font-size: 13px;
@@ -312,6 +274,7 @@
   color: #e6f3ff;
   font-size: 15px;
   line-height: 1.7;
+  text-align: center;
   vertical-align: middle;
 }
 
@@ -322,10 +285,35 @@
 .idCol {
   width: 76px;
   color: #8fb6da !important;
+  text-align: center;
 }
 
 .titleCol {
   font-weight: 700;
+  text-align: center;
+}
+
+.reportTitle {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  text-align: center;
+}
+
+.reportTitleMain,
+.reportTitlePeriod {
+  display: block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.reportTitlePeriod {
+  color: #a5c3df;
+  font-size: 14px;
+  font-weight: 800;
 }
 
 .periodCol {
@@ -432,16 +420,16 @@
 }
 
 .actions {
-  display: flex;
-  justify-content: flex-end;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, 72px);
+  justify-content: end;
   gap: 10px;
 }
 
 .actions button {
-  min-width: 72px;
+  width: 72px;
   height: 36px;
-  padding: 0 14px;
+  padding: 0 8px;
   border-radius: 10px;
   font-size: 13px;
   font-weight: 800;
@@ -515,6 +503,11 @@
   padding: 0 14px;
   font-size: 14px;
   font-weight: 700;
+}
+
+.pageSelect option {
+  background: #07162e;
+  color: #f8fbff;
 }
 
 .pageControls span {
