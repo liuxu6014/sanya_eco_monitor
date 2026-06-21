@@ -7,6 +7,9 @@ import TypeChip from './TypeChip.jsx'
 import { LOW_FREQ_TYPES } from '../utils/deviceTypes.js'
 import s from './DeviceMaintenancePanel.module.css'
 
+// 自动刷新间隔（毫秒）：每分钟静默重拉一次当前查询条件。
+const REFRESH_MS = 60000
+
 function formatDuration(seconds) {
   const total = Math.max(0, Math.round(Number(seconds) || 0))
   const days = Math.floor(total / 86400)
@@ -79,13 +82,13 @@ export default function DeviceMaintenancePanel({ active = true }) {
     return () => { alive = false }
   }, [])
 
-  const fetchReport = useCallback((params) => {
-    setLoading(true)
+  const fetchReport = useCallback((params, { silent = false } = {}) => {
+    if (!silent) setLoading(true)
     setError('')
-    api.maintenanceOutages(params)
+    return api.maintenanceOutages(params)
       .then((res) => setReport(res?.data || null))
-      .catch((err) => setError(err?.message || '加载失败'))
-      .finally(() => setLoading(false))
+      .catch((err) => { if (!silent) setError(err?.message || '加载失败') })
+      .finally(() => { if (!silent) setLoading(false) })
   }, [])
 
   useEffect(() => {
@@ -94,6 +97,13 @@ export default function DeviceMaintenancePanel({ active = true }) {
       fetchReport(applied)
     }
   }, [active, loaded, applied, fetchReport])
+
+  // 自动刷新：仅在本页激活时，每 REFRESH_MS 静默重拉当前查询条件，不打断操作。
+  useEffect(() => {
+    if (!active) return undefined
+    const id = setInterval(() => fetchReport(applied, { silent: true }), REFRESH_MS)
+    return () => clearInterval(id)
+  }, [active, applied, fetchReport])
 
   const onQuery = () => {
     if (start && end && start > end) {
@@ -166,6 +176,7 @@ export default function DeviceMaintenancePanel({ active = true }) {
           <button type="button" className={s.exportBtn} onClick={handleExport} disabled={exporting}>
             <span className={s.exportIcon}>⭳</span> {exporting ? '导出中…' : '导出 Excel'}
           </button>
+          <span className={s.autoHint}><span className={s.liveDot} />每分钟自动刷新</span>
         </div>
         {error ? <div className={s.error}>{error}</div> : null}
       </section>

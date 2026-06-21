@@ -54,6 +54,10 @@ test('maintenance panel renders per-device + detail tables and stats', () => {
   assert.match(panel, /下一页/)
   assert.match(panel, /每页/)
   assert.match(panel, /第 \{pageSafe\} \/ \{totalPages\} 页/)
+  // 自动刷新：每分钟静默重拉
+  assert.match(panel, /const REFRESH_MS = 60000/)
+  assert.match(panel, /setInterval\(\(\) => fetchReport\(applied, \{ silent: true \}\), REFRESH_MS\)/)
+  assert.match(panel, /每分钟自动刷新/)
 })
 
 test('custom device select shows "全部设备" and type chips', () => {
