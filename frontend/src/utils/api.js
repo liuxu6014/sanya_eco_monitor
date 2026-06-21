@@ -74,6 +74,24 @@ export const api = {
   }),
   triggerCollect: () => post('/collect/trigger'),
   deleteReport: (id) => del(`/report/${id}`),
+  maintenanceDevices: () => get('/maintenance/devices'),
+  maintenanceOutages: ({ device = '', start = '', end = '' } = {}) =>
+    get('/maintenance/outages', {
+      query: {
+        ...(device ? { device } : {}),
+        ...(start ? { start } : {}),
+        ...(end ? { end } : {}),
+      },
+    }),
+}
+
+export function maintenanceExportUrl({ device = '', start = '', end = '' } = {}) {
+  const query = new URLSearchParams({
+    ...(device ? { device } : {}),
+    ...(start ? { start } : {}),
+    ...(end ? { end } : {}),
+  }).toString()
+  return `${BASE}/maintenance/outages/export${query ? `?${query}` : ''}`
 }
 
 export function analysisDashboardRequest(options = {}) {

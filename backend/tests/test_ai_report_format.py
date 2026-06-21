@@ -5,7 +5,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from services.ai_report import ANALYSIS_PROMPT_TEMPLATE, format_summary_for_prompt  # noqa: E402
+from services.ai_report import ANALYSIS_PROMPT_TEMPLATE, format_summary_for_prompt, _strip_spore_sentences  # noqa: E402
 
 
 class AiReportPromptFormatTests(unittest.TestCase):
@@ -102,7 +102,18 @@ class AiReportPromptFormatTests(unittest.TestCase):
                             "recent_reduction_rate": 38.1,
                         }
                     ],
-                }
+                },
+                "methodology": {
+                    "monitoring_statement": "本项目构建了覆盖径流、雨量、水质、虫情和孢子的在线监测网络。",
+                    "baseline_statement": "统一按前30天建立基准。",
+                },
+                "pest_management": {
+                    "available": True,
+                    "risk_level": "中",
+                    "insect_peak": {"date": "2026-04-01", "count": 12},
+                    "suggestion": "建议提高巡检频率，并持续跟踪孢子波动。",
+                    "chain_text": "虫情峰值出现在2026-04-01；孢子峰值出现在2026-04-02。",
+                },
             },
             "history_comparison": {
                 "current_period": {"start": "2026-03-25", "end": "2026-04-23"},
@@ -173,6 +184,30 @@ class AiReportPromptFormatTests(unittest.TestCase):
         )
         for label in expected_labels:
             self.assertIn(label, prompt_summary)
+
+        self.assertNotIn("虫情和孢子", prompt_summary)
+        self.assertNotIn("孢子波动", prompt_summary)
+        self.assertNotIn("孢子峰值", prompt_summary)
+
+    def test_ai_analysis_text_removes_spore_sentences_from_body(self):
+        source = "\n".join(
+            [
+                "## 二、森林生物多样性恢复与生态链稳定性评估",
+                "当前监测数据揭示，近自然化改造尚未完全实现这一目标，需要在后续的抚育管理中重点加强天敌昆虫的引入和栖息地营造。此外，孢子监测数据（仅作为图片附录保留）显示周期内捕获孢子数为0，与上一周期持平，表明空气传播的病原菌孢子浓度处于较低水平。",
+                "## 七、演替趋势与未来风险预警",
+                "从虫情风险链条来看，孢子监测数据（作为图片附录）显示孢子数为0，与上一周期持平，这在一定程度上降低了病害协同爆发的风险。后续仍需持续关注虫情波动与田间巡检结果。",
+            ]
+        )
+
+        cleaned = _strip_spore_sentences(source)
+
+        self.assertIn("## 二、森林生物多样性恢复与生态链稳定性评估", cleaned)
+        self.assertIn("当前监测数据揭示，近自然化改造尚未完全实现这一目标", cleaned)
+        self.assertIn("## 七、演替趋势与未来风险预警", cleaned)
+        self.assertIn("后续仍需持续关注虫情波动与田间巡检结果。", cleaned)
+        self.assertNotIn("孢子监测数据", cleaned)
+        self.assertNotIn("捕获孢子数为0", cleaned)
+        self.assertNotIn("孢子数为0", cleaned)
 
 
 if __name__ == "__main__":

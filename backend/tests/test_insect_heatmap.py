@@ -2,10 +2,12 @@ import sys
 import unittest
 from datetime import datetime
 from pathlib import Path
+from unittest.mock import patch
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from routers import insect as insect_router  # noqa: E402
 from routers.insect import get_species_heatmap  # noqa: E402
 
 
@@ -25,6 +27,10 @@ class _FakeDb:
 
 
 class InsectHeatmapTests(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        insect_router._insect_runtime_cache["value"].clear()
+        insect_router._insect_runtime_cache["expires_at"].clear()
+
     async def test_heatmap_returns_full_requested_day_axis_without_records(self):
         result = await get_species_heatmap(days=14, db=_FakeDb())
 
@@ -34,6 +40,18 @@ class InsectHeatmapTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(datetime.now().strftime("%m-%d"), dates[-1])
         self.assertEqual([], result["data"]["species"])
         self.assertEqual([], result["data"]["values"])
+
+    async def test_heatmap_uses_runtime_cache_for_same_days_parameter(self):
+        with patch.object(insect_router.settings, "INSECT_SERIES_CACHE_SECONDS", 60):
+            first = await get_species_heatmap(days=14, db=_FakeDb())
+
+            class _ExplodingDb:
+                async def execute(self, _query):
+                    raise AssertionError("database should not be queried on cached heatmap call")
+
+            second = await get_species_heatmap(days=14, db=_ExplodingDb())
+
+        self.assertEqual(first, second)
 
 
 if __name__ == "__main__":

@@ -62,6 +62,48 @@ class WeatherSupportResilienceTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual([{"date": "2026-05-04"}], result["history_daily"])
         self.assertIn("ReadTimeout", result["message"])
 
+    async def test_history_bundle_requests_recent_30_complete_days(self):
+        captured = {}
+
+        async def fake_get_json(_client, _url, *, params, attempts=2):
+            captured.update(params)
+            return {
+                "daily": {
+                    "time": ["2026-04-10", "2026-05-09"],
+                    "temperature_2m_max": [30, 31],
+                    "temperature_2m_min": [20, 21],
+                    "temperature_2m_mean": [25, 26],
+                    "relative_humidity_2m_mean": [80, 81],
+                    "precipitation_sum": [1, 2],
+                    "wind_speed_10m_max": [10, 11],
+                    "wind_direction_10m_dominant": [90, 180],
+                }
+            }
+
+        class FixedDateTime:
+            @classmethod
+            def now(cls):
+                return fixed_now
+
+            @classmethod
+            def fromisoformat(cls, value):
+                return fixed_now.fromisoformat(value)
+
+        fixed_now = weather_support.datetime
+        FixedDateTime.now = classmethod(lambda cls: fixed_now(2026, 5, 10, 12, 0, 0))
+        FixedDateTime.fromisoformat = classmethod(lambda cls, value: fixed_now.fromisoformat(value))
+
+        with patch.object(weather_support.settings, "QWEATHER_LOCATION", "109.5,18.2"), patch.object(
+            weather_support,
+            "_get_json_with_retries",
+            side_effect=fake_get_json,
+        ), patch.object(weather_support, "datetime", FixedDateTime):
+            result = await weather_support._fetch_history_bundle()
+
+        self.assertEqual("2026-04-10", captured["start_date"])
+        self.assertEqual("2026-05-09", captured["end_date"])
+        self.assertEqual(2, result["summary"]["days"])
+
 
 if __name__ == "__main__":
     unittest.main()

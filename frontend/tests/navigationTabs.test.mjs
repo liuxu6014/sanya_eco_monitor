@@ -4,8 +4,11 @@ import assert from 'node:assert/strict'
 import {
   DEFAULT_TAB,
   normalizeTab,
+  resolveInitialTab,
   tabFromHash,
-  tabHash,
+  tabFromLocation,
+  tabFromPath,
+  tabPath,
 } from '../src/utils/navigationTabs.js'
 
 
@@ -22,7 +25,29 @@ test('reads tab from hash', () => {
   assert.equal(tabFromHash(''), null)
 })
 
-test('writes normalized tab hash', () => {
-  assert.equal(tabHash('reports'), '#reports')
-  assert.equal(tabHash('unknown'), '#overview')
+test('reads tab from path', () => {
+  assert.equal(tabFromPath('/analytics'), 'analytics')
+  assert.equal(tabFromPath('/reports'), 'reports')
+  assert.equal(tabFromPath('/'), 'overview')
+  assert.equal(tabFromPath('/unknown'), null)
+})
+
+test('writes normalized tab path without hash', () => {
+  assert.equal(tabPath('reports'), '/reports')
+  assert.equal(tabPath('unknown'), '/')
+})
+
+test('resolves tabs from modern paths while keeping legacy hash links working', () => {
+  assert.equal(tabFromLocation('/analytics', ''), 'analytics')
+  assert.equal(tabFromLocation('/reports', '#analytics'), 'reports')
+  assert.equal(tabFromLocation('/', '#analytics'), 'analytics')
+  assert.equal(tabFromLocation('/', ''), 'overview')
+})
+
+test('restores last active tab from storage when url has no explicit tab', () => {
+  assert.equal(resolveInitialTab('/', '', 'reports'), 'reports')
+  assert.equal(resolveInitialTab('/', '', 'analytics'), 'analytics')
+  assert.equal(resolveInitialTab('/', '', null), 'overview')
+  assert.equal(resolveInitialTab('/special', '', 'reports'), 'special')
+  assert.equal(resolveInitialTab('/', '#reports', 'analytics'), 'reports')
 })

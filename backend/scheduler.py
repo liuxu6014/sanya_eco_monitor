@@ -27,6 +27,22 @@ async def _run_all_collectors():
     logger.info("=== Data collection complete ===")
 
 
+async def _record_device_status():
+    """每轮按"最新数据时间戳是否陈旧"判活，把在线→离线翻转写入 device_status_events。
+
+    不依赖 HTTP 探测——平台接口即使设备停报通常仍回 200，会误判在线；
+    以数据时间戳新鲜度为准，与空档反推统计同源。
+    """
+    from services.device_uptime import compute_current_statuses, record_status_snapshot
+
+    try:
+        async with AsyncSessionLocal() as db:
+            statuses = await compute_current_statuses(db)
+            await record_status_snapshot(db, statuses)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Device status snapshot failed: %s", exc)
+
+
 async def _clean_old_reports():
     logger.info("=== Starting old reports cleanup ===")
     async with AsyncSessionLocal() as db:
@@ -58,6 +74,16 @@ def setup_scheduler():
         misfire_grace_time=60,
     )
     
+    # 设备状态采样：记录在线→离线翻转，用于设备运维统计
+    scheduler.add_job(
+        _record_device_status,
+        trigger=IntervalTrigger(minutes=settings.COLLECT_INTERVAL_MINUTES),
+        id="record_device_status",
+        replace_existing=True,
+        max_instances=1,
+        misfire_grace_time=60,
+    )
+
     # 添加每天清理过期报告的任务
     scheduler.add_job(
         _clean_old_reports,

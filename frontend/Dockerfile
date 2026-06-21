@@ -1,18 +1,15 @@
-# Stage 1: Build
-FROM node:20-alpine as build-stage
+# 多阶段构建：node 构建静态产物 → nginx 托管 + 反代 /api（生产用，替代 vite dev server）
+ARG NPM_REGISTRY=https://registry.npmmirror.com
+
+FROM node:20-alpine AS build
+ARG NPM_REGISTRY
 WORKDIR /app
 COPY package*.json ./
-RUN npm install
+RUN npm config set registry "$NPM_REGISTRY" && npm ci
 COPY . .
-# Ensure we build for production
 RUN npm run build
 
-# Stage 2: Serve
-FROM nginx:stable-alpine as production-stage
-COPY --from=build-stage /app/dist /usr/share/nginx/html
-# Copy standard nginx config for routing and proxying
+FROM nginx:1.27-alpine
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-RUN mkdir -p /var/log/nginx
+COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 80
-HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 CMD wget -q -O /dev/null http://127.0.0.1/
-CMD ["nginx", "-g", "daemon off;"]

@@ -70,7 +70,7 @@ export default function RunoffPanel({ runoffStations, deviceMeta = [] }) {
     { label: '含沙量', key: 'sand_content', unit: 'kg/L', color: '#fb923c' },
     { label: '液位压力', key: 'liquid_pressure', unit: 'kPa', color: '#c084fc' },
     { label: '当前径流', key: 'runoff', unit: 'm³/min', color: '#4ade80' },
-    ...(showRainfallMetric ? [{ label: '今日累计雨量', key: 'rainfall', unit: 'mm', color: '#60a5fa' }] : []),
+    ...(showRainfallMetric ? [{ label: '今日累计降雨量', key: 'rainfall', unit: 'mm', color: '#60a5fa' }] : []),
   ];
 
   return (

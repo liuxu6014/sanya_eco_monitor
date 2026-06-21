@@ -5,6 +5,7 @@ import { usePolling } from '../hooks/usePolling.js'
 import { api } from '../utils/api.js'
 import { clearRequestCache, readRequestCache, writeRequestCache } from '../utils/requestCache.js'
 import DeviceSeriesExplorer from './DeviceSeriesExplorer.jsx'
+import DeviceMaintenancePanel from './DeviceMaintenancePanel.jsx'
 import ImagePreviewModal from './ImagePreviewModal.jsx'
 import s from './SpecialAnalysisPage.module.css'
 
@@ -14,6 +15,7 @@ const SECTIONS = [
   { key: 'rainfall', label: '雨情分析' },
   { key: 'runoff', label: '水土流失与径流' },
   { key: 'water', label: '面源水质污染' },
+  { key: 'maintenance', label: '设备运维' },
 ]
 
 const PERIODS = [
@@ -611,6 +613,13 @@ export default function SpecialAnalysisPage({ active = true }) {
 
   const load = useCallback(async () => {
     if (!active) return
+    if (section === 'maintenance') {
+      // 设备运维板块自带数据获取，跳过通用 section 数据流。
+      setData(null)
+      setLoading(false)
+      setError('')
+      return
+    }
     const cachedAnalysis = analysisCacheKey ? readRequestCache(analysisCacheKey, { persist: false }) : null
     if (cachedAnalysis) {
       setData(cachedAnalysis.data || null)
@@ -696,6 +705,9 @@ export default function SpecialAnalysisPage({ active = true }) {
   }, [active, cappedDays, prefetchSectionData, section])
 
   const content = () => {
+    if (section === 'maintenance') {
+      return <DeviceMaintenancePanel active={active && section === 'maintenance'} />
+    }
     if (loading && !data) return <div className={s.state}>正在加载专项分析...</div>
     if (error) return <div className={s.state}>{error}</div>
     if (!data) return <div className={s.state}>暂无专项分析数据</div>
@@ -756,34 +768,36 @@ export default function SpecialAnalysisPage({ active = true }) {
             </button>
           ))}
         </div>
-        <div className={s.filters}>
-          {PERIODS.map((item) => (
-            <button
-              key={item.value}
-              type="button"
-              className={days === item.value ? s.activePeriod : ''}
-              onClick={() => {
-                setDays(item.value)
-                setCustomDays(String(item.value))
-              }}
-            >
-              {item.label}
-            </button>
-          ))}
-          <label className={s.customDays}>
-            <span>自定义</span>
-            <input
-              value={customDays}
-              onChange={(event) => setCustomDays(event.target.value.replace(/\D/g, '').slice(0, 3))}
-              onBlur={() => {
-                const next = Math.max(7, Math.min(Number(customDays) || 30, section === 'rainfall' ? 366 : 90))
-                setCustomDays(String(next))
-                setDays(next)
-              }}
-            />
-            <span>天</span>
-          </label>
-        </div>
+        {section !== 'maintenance' && (
+          <div className={s.filters}>
+            {PERIODS.map((item) => (
+              <button
+                key={item.value}
+                type="button"
+                className={days === item.value ? s.activePeriod : ''}
+                onClick={() => {
+                  setDays(item.value)
+                  setCustomDays(String(item.value))
+                }}
+              >
+                {item.label}
+              </button>
+            ))}
+            <label className={s.customDays}>
+              <span>自定义</span>
+              <input
+                value={customDays}
+                onChange={(event) => setCustomDays(event.target.value.replace(/\D/g, '').slice(0, 3))}
+                onBlur={() => {
+                  const next = Math.max(7, Math.min(Number(customDays) || 30, section === 'rainfall' ? 366 : 90))
+                  setCustomDays(String(next))
+                  setDays(next)
+                }}
+              />
+              <span>天</span>
+            </label>
+          </div>
+        )}
       </div>
 
       {content()}

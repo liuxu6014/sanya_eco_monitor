@@ -14,6 +14,7 @@ from routers import (
     report as report_router,
     analysis as analysis_router,
     auth as auth_dev_router,
+    maintenance as maintenance_router,
 )
 from config import settings
 
@@ -49,9 +50,19 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+def _cors_allow_origins() -> list[str]:
+    configured = [o.strip() for o in settings.CORS_ALLOW_ORIGINS.split(",") if o.strip()]
+    # 未配置时仅放行本地开发端口；生产经 nginx 同源代理无需跨域。
+    return configured or [
+        "http://localhost:5173",
+        "http://localhost:5175",
+        "http://localhost:5188",
+    ]
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=".*",
+    allow_origins=_cors_allow_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -89,6 +100,7 @@ app.include_router(sensor_router.router)
 app.include_router(summary_router.router)
 app.include_router(report_router.router)
 app.include_router(analysis_router.router)
+app.include_router(maintenance_router.router)
 
 
 def _require_admin(request: Request) -> JSONResponse | None:

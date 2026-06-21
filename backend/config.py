@@ -39,7 +39,10 @@ class Settings(BaseSettings):
     LEADER_ACCESS_PASSWORD: str = ""
     AUTH_COOKIE_NAME: str = "sanya_monitor_auth"
     AUTH_MAX_AGE_HOURS: int = 12
+    # 生产经 HTTPS 反代时应设为 true，使会话 cookie 带 Secure 标志。
     AUTH_COOKIE_SECURE: bool = False
+    # 允许的跨域来源（逗号分隔）。留空则仅放行本地开发端口；生产经 nginx 同源代理时无需配置。
+    CORS_ALLOW_ORIGINS: str = ""
     HTTP_TLS_VERIFY: bool = False
     RUN_COLLECTORS_ON_STARTUP: bool = False
     LOG_DIR: str = str((BACKEND_DIR.parent / "logs" / "backend").resolve())

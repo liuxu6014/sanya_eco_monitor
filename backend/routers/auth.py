@@ -29,10 +29,14 @@ async def auth_login(payload: LoginRequest, response: Response):
     if not is_auth_enabled():
         return {"status": "ok", "authenticated": True, "enabled": False}
 
+    # secrets.compare_digest 比较 str 时不支持非 ASCII 字符，密码可能含中文，统一按 UTF-8 字节比较。
+    def _password_matches(candidate: str, expected: str) -> bool:
+        return secrets.compare_digest(candidate.encode("utf-8"), expected.encode("utf-8"))
+
     role = None
-    if secrets.compare_digest(payload.password, settings.ACCESS_PASSWORD):
+    if _password_matches(payload.password, settings.ACCESS_PASSWORD):
         role = "admin"
-    elif settings.LEADER_ACCESS_PASSWORD.strip() and secrets.compare_digest(
+    elif settings.LEADER_ACCESS_PASSWORD.strip() and _password_matches(
         payload.password,
         settings.LEADER_ACCESS_PASSWORD,
     ):

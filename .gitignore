@@ -31,8 +31,15 @@ logs/
 *.log
 
 backend/tmp_*
+backend/tmp/
 backend/auth_cookie.txt
 backend/schema_test*.json
+
+# 临时调试产物（脚本/导出/抓取的中间文件）
+tmp_*
+/tmp_*.txt
+/tmp_*.jpg
+/tmp_*.png
 
 .DS_Store
 Thumbs.db

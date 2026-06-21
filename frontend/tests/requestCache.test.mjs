@@ -53,3 +53,20 @@ test('request cache falls back to sessionStorage', () => {
 
   assert.equal(cached.data.value, 2)
 })
+
+test('non-persistent cache reads do not revive sessionStorage history', () => {
+  globalThis.sessionStorage = new MemoryStorage()
+  clearRequestCache()
+
+  globalThis.sessionStorage.setItem(
+    'request-cache:spore-latest',
+    JSON.stringify({
+      data: { image_url: 'black.jpg' },
+      savedAt: Date.now(),
+    }),
+  )
+
+  const cached = readRequestCache('spore-latest', { persist: false })
+
+  assert.equal(cached, null)
+})

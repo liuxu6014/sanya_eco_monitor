@@ -4,8 +4,12 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: sanya-eco-backend
-    ports:
-      - "8888:8888"
+    # 仅在 docker 网络内暴露，由前端 nginx 反代 /api 访问，不直接对外。
+    expose:
+      - "8888"
+    # 如需本机直连后端调试，临时打开下面两行：
+    # ports:
+    #   - "8888:8888"
     volumes:
       - ./deploy/runtime/backend:/app/runtime
       - ./backend/data:/app/data
@@ -29,28 +33,27 @@ services:
         max-file: "3"
 
   frontend:
-    image: node:20
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     container_name: sanya-eco-frontend
-    working_dir: /app
-    environment:
-      VITE_API_PROXY_TARGET: http://backend:8888
-      CHOKIDAR_USEPOLLING: "true"
-    command: sh -c "if [ ! -d node_modules ] || [ -z \"$$(ls -A node_modules 2>/dev/null)\" ]; then npm ci; fi && npx vite --host 0.0.0.0 --port 5188"
     ports:
-      - "5188:5188"
-    volumes:
-      - ./frontend:/app
-      - frontend_node_modules:/app/node_modules
+      - "80:80"
+      # 启用 HTTPS 后取消注释（并在 frontend/nginx.conf 配置证书）：
+      # - "443:443"
+    # volumes:
+    #   # HTTPS 证书目录，需含 fullchain.pem / privkey.pem
+    #   - ./deploy/certs:/etc/nginx/certs:ro
     depends_on:
       backend:
         condition: service_healthy
     restart: always
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5188').then((res) => process.exit(res.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 15s
+      start_period: 10s
     logging:
       driver: "json-file"
       options:
@@ -60,6 +63,3 @@ services:
 networks:
   default:
     name: sanya-eco-network
-
-volumes:
-  frontend_node_modules:

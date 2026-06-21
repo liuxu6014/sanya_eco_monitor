@@ -174,3 +174,26 @@ class GeneratedReport(Base):
     visible_to_leader: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     task_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class DeviceStatusEvent(Base):
+    """设备掉线（异常）事件。ended_at 为空表示当前仍在异常中。
+
+    由调度器每轮采样写入：在线→离线开一条事件，离线→在线补全 ended_at。
+    与"数据空档反推"互补，用于设备运维统计与供应商反馈。
+    """
+
+    __tablename__ = "device_status_events"
+    __table_args__ = (
+        Index("ix_device_status_events_key_started", "device_key", "started_at"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    device_key: Mapped[str] = mapped_column(String(64), index=True)
+    device_name: Mapped[str] = mapped_column(String(128))
+    device_type: Mapped[str] = mapped_column(String(32), index=True)
+    status: Mapped[str] = mapped_column(String(16), default="offline")
+    started_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    source: Mapped[str] = mapped_column(String(16), default="probe")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=cn_now_naive, index=True)
